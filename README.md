@@ -8,7 +8,7 @@ An opinionated [Claude Code](https://code.claude.com) plugin for **vibe-crafting
 
 Vibe-coding is fast but drifts. Claudalisk keeps the speed and adds the craft: you describe what you want, and Claude builds it inside a fixed architecture, through a fixed workflow, with guardrails that catch it when it strays.
 
-> **Status: early.** The design is still being worked out ([#1](https://github.com/kharabasz/claudalisk/issues/1)). Nothing here is ready to use yet.
+> **Status: early.** The design is still being worked out ([#1](https://github.com/lucem-labs/claudalisk/issues/1)). Nothing here is ready to use yet.
 
 ## What it does
 
