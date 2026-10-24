@@ -19,7 +19,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0009](0009-no-data-changes-at-startup.md) | No data changes at startup | accepted | data-and-migrations |
 | [CLA-0010](0010-applied-migrations-are-immutable.md) | Applied migrations are never edited | accepted | data-and-migrations |
 | [CLA-0011](0011-fresh-database-migrates.md) | A fresh, empty database migrates end to end | proposed | data-and-migrations |
-| [CLA-0012](0012-one-off-data-fixes.md) | One-off data fixes are reviewed, idempotent scripts | proposed | data-and-migrations |
+| [CLA-0012](0012-one-off-data-fixes.md) | Data fixes are EF Core migrations | accepted | data-and-migrations |
 | [CLA-0013](0013-external-data-on-explicit-trigger.md) | External data is refreshed only on an explicit trigger, and never from tests | proposed | data-and-migrations |
 | [CLA-0014](0014-frontend-stack-and-api-module.md) | React, TypeScript and Vite, with one typed API module | accepted | frontend-conventions |
 | [CLA-0015](0015-ui-renders-api-values.md) | The UI renders what the API returns and never duplicates backend rules | accepted | frontend-conventions |
