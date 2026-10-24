@@ -25,5 +25,5 @@ Keeping operational complexity low is a second reason. These are single-owner, l
 
 - The boundaries are enforced by architecture tests and review, not by deployment topology.
 - A module can move to queued work, its own database or a remote call without touching its callers, as long as its contract stays the same.
-- Contracts must be designed so that any of these transports could serve them. They pass data, not shared object graphs or EF Core entities (CLA-0003), and they can't rely on a transaction shared with the caller.
+- Contracts must be designed so that any of these transports could serve them. They pass messages: plain data that belongs to one Interfaces project, never shared object graphs or EF Core entities (CLA-0003). They can't rely on a transaction shared with the caller.
 - Work that crosses a queue or a network boundary is asynchronous and can fail independently. The caller handles retries and idempotency, not the transport.

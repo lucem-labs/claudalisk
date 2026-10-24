@@ -10,7 +10,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 |---|---|---|---|
 | [CLA-0001](0001-modular-monolith.md) | The backend is a modular monolith | accepted | backend-architecture |
 | [CLA-0002](0002-interfaces-projects.md) | Modules are referenced only through their Interfaces projects | accepted | backend-architecture |
-| [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean | accepted | backend-architecture |
+| [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
 | [CLA-0005](0005-thin-controllers-and-mapping.md) | Controllers stay thin; mapping is internal extension methods | accepted | backend-architecture |
 | [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention | proposed | backend-architecture |
