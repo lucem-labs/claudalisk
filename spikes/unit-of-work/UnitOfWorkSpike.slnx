@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Spike.Persistence.Interfaces/Spike.Persistence.Interfaces.csproj" />
+  <Project Path="Spike.Persistence/Spike.Persistence.csproj" />
+  <Project Path="Spike.Modules.Orders.Persistence/Spike.Modules.Orders.Persistence.csproj" />
+  <Project Path="Spike.Modules.Billing.Persistence/Spike.Modules.Billing.Persistence.csproj" />
+  <Project Path="Spike.Tests/Spike.Tests.csproj" />
+</Solution>

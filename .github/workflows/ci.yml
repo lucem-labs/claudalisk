@@ -25,3 +25,14 @@ jobs:
         run: node tools/check-adrs.mjs
       - name: Tool tests
         run: node --test tools/*.test.mjs
+
+  unit-of-work-spike:
+    # Proves CLA-0007 against real PostgreSQL (Testcontainers needs Docker, which GitHub-hosted runners have).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Unit-of-work spike tests
+        run: dotnet test spikes/unit-of-work/UnitOfWorkSpike.slnx

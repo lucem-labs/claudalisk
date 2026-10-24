@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- No EF Core, no Npgsql: composition modules depend on this project only. -->
+</Project>

@@ -12,7 +12,7 @@ Throwaway test stacks, CI and the Stop gate all start from an empty database. A 
 
 ## Decision
 
-- A test migrates a fresh, empty PostgreSQL database to the latest migration, then down and up again.
+- A test migrates a fresh, empty PostgreSQL database to the latest migration of every module's DbContext, then down and up again.
 - Test fixtures never patch the schema to work around a migration.
 
 ## Consequences

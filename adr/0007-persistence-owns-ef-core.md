@@ -1,32 +1,80 @@
-# CLA-0007: EF Core and PostgreSQL, owned by persistence projects; a module may own its database
+# CLA-0007: Each module owns its schema; cross-module work uses a unit of work or the queue
 
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** architecture tests (only persistence projects use EF Core; no project touches another's DbContext), reviewer
+- **Enforced by:** architecture tests (EF Core only in persistence projects; entities map to their own context's schema; no foreign keys across schemas), reviewer; proven by `spikes/unit-of-work`
 
 ## Context
 
-CLA-0001 makes a module's contract its boundary, so a module may move to its own database without its callers noticing. Persistence needs one default that keeps simple apps simple, and a clear shape for the modules that own their data.
+A module owns its data, so that its tables can change, or even move to another database, without touching other modules (CLA-0001).
+
+Separate physical databases per module make that ownership strict, but they rule out atomic work across modules. .NET supports distributed transactions only on Windows, and the apps run in Linux containers. Two-phase commit in PostgreSQL is an operational burden. Every cross-module change would become eventually consistent, with outbox and inbox tables, idempotent handlers and compensation, even in a single-process app run by one owner.
+
+A **schema per module in one physical database** keeps the ownership and keeps atomic transactions available. Each module has its own tables, migrations and migration history. Because all modules share one database, a composition module can still commit work from several modules in one transaction.
 
 ## Decision
 
-- **Technology.** Data lives in PostgreSQL, accessed through EF Core and Npgsql.
-- **Default: one shared database.** `<Root>.Persistence` owns the shared DbContext, its mappings and its migrations. Modules use the store contracts in `<Root>.Persistence.Interfaces` and never see EF Core types.
-- **A module may own its database.** It then has its own `<Root>.Modules.<Name>.Persistence` project, with its own DbContext, migrations and connection string, and its own `*.Persistence.Interfaces` store contracts used only inside the module.
-  - Nothing outside the module reads or writes its tables.
-  - Other modules get its data only through its public contract (CLA-0002).
-  - There are no joins or transactions across databases. Consistency across modules comes from the contract, for example queued work (CLA-0001) and idempotent handlers.
-- **Migrations.** Schema changes are EF Core migrations, one migration history per DbContext:
-  `dotnet ef migrations add <Name> --project backend/<PersistenceProject> --startup-project backend/<Root>.Api.Host`
-- **Every database is first-class in operations:**
-  - it is listed by role in the app config (#8);
-  - it is migrated in the deploy step (CLA-0008);
-  - it is backed up and restored together with the others (CLA-0031);
-  - it is covered by the fresh-database test (CLA-0011).
+### One database, one schema per module
+
+- Data lives in PostgreSQL, accessed through EF Core and Npgsql. Each app has **one physical database** per environment.
+- Each module owns a **schema** named after it. Its `<Root>.Modules.<Name>.Persistence` project holds:
+  - the module's DbContext, with `HasDefaultSchema("<name>")`;
+  - its migrations, with the migrations history table in its own schema;
+  - its stores, which map entities to messages (CLA-0003).
+
+  The store contracts live in `<Root>.Modules.<Name>.Persistence.Interfaces` and are used only inside the module.
+- **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to each other's data by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema (CLA-0012).
+- **`<Root>.Persistence` is shared infrastructure** and holds no module's data. It contains:
+  - the app's single `NpgsqlDataSource`;
+  - one connection per DI scope (a request or a background job), which every module DbContext in that scope shares;
+  - the unit of work.
+
+  Module persistence projects reference it, like `<Root>.Shared` (CLA-0002). `IUnitOfWork` lives in `<Root>.Persistence.Interfaces`, which has no EF Core or Npgsql types.
+
+### Atomic work across modules: the unit of work
+
+- A **composition module**, meaning a module whose service coordinates other modules' contracts, runs that work inside `IUnitOfWork.RunAsync`. Everything the participating modules save in that call commits together or rolls back together.
+- **Only composition modules open a unit of work around other modules' calls.** A module may also use one around its own several saves. A nested call joins the outer unit of work; it doesn't start a new transaction.
+- **Inside a unit of work, modules save but never commit.** They don't start their own transactions or swallow exceptions, so any failure rolls everything back.
+- **How it's wired.** Module DbContexts are registered through `UseModuleSchema(sp, "<name>")`, which:
+  - uses the scope's shared connection;
+  - puts the migrations history table in the module's schema;
+  - adds an interceptor that points every save at the current unit of work's transaction.
+
+  Without that interceptor, a save that sends several statements would try to start its own transaction.
+- **Things that break the shared connection.** Don't use `AddDbContextPool`, because each context needs its own scope's connection. Don't use `EnableRetryOnFailure` on module contexts, because EF Core's retries don't work with a transaction you control. Retry the whole `RunAsync` call instead.
+
+### Asynchronous work and separated modules: the queue as outbox
+
+- Work that may happen later is **queued, not called**: in the queue table of the module that will do it, inside the same unit of work. The queue row commits or rolls back with the data, so the queue is the outbox, with no separate outbox table. The handler must be idempotent.
+- A module that **moves to its own database** (CLA-0001) gets its own data source and leaves the unit of work. Its callers switch to queued work: an outbox in the caller's schema, delivered to the module, with an inbox on the module's side that records handled message IDs. The architecture test flags any unit of work that still includes such a module.
+
+### Operations
+
+- One database means one migrate step, which migrates every module's DbContext (CLA-0008). It also means one backup and restore unit, which is consistent across modules at a single point in time (CLA-0031). The fresh-database test migrates every module's DbContext (CLA-0011).
+- A module that moves to its own database adds that database to the app config by role (#8), to the migrate step, to the backups and to the fresh-database test.
+
+## Proof
+
+`spikes/unit-of-work` has two module persistence projects, each with its own schema and migrations, plus the shared persistence infrastructure. Its Testcontainers tests show that:
+
+- work from two modules commits together;
+- a database error in the second module, or an exception after both saves, rolls back both;
+- a nested unit of work joins the outer one;
+- a context used before the unit of work began still joins it;
+- a save that sends several statements joins instead of starting its own transaction;
+- contexts don't keep a finished transaction;
+- queued work commits and rolls back with the data;
+- another scope can't see uncommitted work;
+- without a unit of work, each module commits on its own;
+- each schema has its own migrations history.
+
+Each test was checked to fail when the wiring is broken: without the interceptor, or with one connection per context. CI runs the tests on every push.
 
 ## Consequences
 
-- Moving a module to its own database is a data migration plus a new persistence project. Callers don't change.
-- Reporting that needs data from several modules goes through their contracts, or a read model built from them, not cross-database SQL.
-- Queries are verified against real PostgreSQL (CLA-0018), because fakes have hidden EF Core translation bugs before.
+- Modules keep strict data ownership, and cross-module work stays atomic and simple by default.
+- Every module in a unit of work must live in the app's one database. Moving a module out is a deliberate change: its callers move to queued work.
+- Because the whole app shares one connection role, schema ownership isn't enforced by database permissions. Architecture tests and review enforce it instead.
+- Reports that need data from several modules go through their contracts, or through a read model built from them. They never use SQL across schemas.
