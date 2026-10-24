@@ -12,7 +12,7 @@ user-invocable: false
 
 These are claudalisk's decisions for schema and data. The app's own `AGENTS.md` wins where it lists a deviation (CLA-0028). Before changing code that one of these decisions covers, read the ADR.
 
-- [CLA-0007](${CLAUDE_PLUGIN_ROOT}/adr/0007-persistence-owns-ef-core.md) (accepted): PostgreSQL through EF Core, owned by the Persistence project; schema changes are EF Core migrations.
+- [CLA-0007](${CLAUDE_PLUGIN_ROOT}/adr/0007-persistence-owns-ef-core.md) (accepted): PostgreSQL through EF Core; one shared Persistence project by default, or a module owns its database, with its own DbContext and migrations, and no cross-database joins.
 - [CLA-0008](${CLAUDE_PLUGIN_ROOT}/adr/0008-migrations-are-a-deploy-step.md) (accepted): migrations run as an explicit deploy step; the API refuses to start with pending migrations.
 - [CLA-0009](${CLAUDE_PLUGIN_ROOT}/adr/0009-no-data-changes-at-startup.md) (accepted): no seeding or other data changes at startup; default rows come from idempotent migrations.
 - [CLA-0010](${CLAUDE_PLUGIN_ROOT}/adr/0010-applied-migrations-are-immutable.md) (accepted): a migration tracked on `origin/main` is never edited; fix forward.

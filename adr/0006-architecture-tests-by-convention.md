@@ -14,7 +14,7 @@ In two existing apps, the architecture tests listed module assemblies by hand ("
 
 - Architecture tests load `<Root>.Modules.*` assemblies by naming convention and require an `.Interfaces` twin for each.
 - A safety test asserts that the number of modules found equals the number of module csproj files.
-- The generated rules cover CLA-0002 and CLA-0003, plus: controllers live in the API project, DTOs are free of MVC and EF Core, and only Persistence uses EF Core.
+- The generated rules cover CLA-0002 and CLA-0003, plus: controllers live in the API project, DTOs are free of MVC and EF Core, only persistence projects use EF Core, and no project references another module's persistence project (CLA-0007).
 
 ## Consequences
 
