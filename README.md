@@ -17,6 +17,10 @@ Vibe-coding is fast but drifts. Claudalisk keeps the speed and adds the craft: y
 - **Guardrailed.** Hooks and tests check the rules, so they don't depend on a prompt being followed.
 - **Layered on Claude.** It adds to Claude Code's built-in behaviour rather than replacing it, and loads its knowledge only when the work needs it.
 
+## Standards
+
+The standards live once, as architecture decision records in [`adr/`](adr/README.md). Knowledge skills in [`skills/`](skills) index them by area: backend architecture, data and migrations, frontend, testing, workflow and environments. A skill loads automatically when Claude works with files in its area, and Claude opens an ADR only when the work needs it. An app's own `AGENTS.md` wins, and it lists each deviation by ADR id.
+
 ## Security
 
 Hooks from this repo run with full access on your machine. **Pin a released version. Never track `main`.**

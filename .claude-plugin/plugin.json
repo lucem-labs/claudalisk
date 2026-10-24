@@ -1,0 +1,9 @@
+{
+  "name": "claudalisk",
+  "description": "Opinionated Claude Code plugin for vibe-crafting .NET + React apps: standards as ADRs, guided skills and guardrails.",
+  "author": { "name": "lucem-labs", "url": "https://github.com/lucem-labs" },
+  "homepage": "https://github.com/lucem-labs/claudalisk",
+  "repository": "https://github.com/lucem-labs/claudalisk",
+  "license": "MIT",
+  "keywords": ["dotnet", "react", "adr", "guardrails"]
+}
