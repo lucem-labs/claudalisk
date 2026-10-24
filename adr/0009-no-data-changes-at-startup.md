@@ -11,7 +11,7 @@ An existing app seeded fixtures at startup. The fixtures reappeared after cleanu
 
 ## Decision
 
-- The API never creates, changes or deletes data at startup: no seeding, no default rows, no implicit cleanups or regeneration.
+- The application never creates, changes or deletes data at startup: no seeding, no default rows, no implicit cleanups or regeneration.
 - Default rows come only from migrations, written idempotently (`INSERT … ON CONFLICT DO NOTHING`).
 - Real data comes only from the database itself and its backups.
 

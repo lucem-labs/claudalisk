@@ -12,14 +12,14 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0002](0002-interfaces-projects.md) | Modules are referenced only through their Interfaces projects | accepted | backend-architecture |
 | [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
-| [CLA-0005](0005-thin-controllers-and-mapping.md) | Controllers stay thin; mapping is internal extension methods | accepted | backend-architecture |
+| [CLA-0005](0005-thin-controllers-and-mapping.md) | Modules may expose their own API; controllers stay thin; mapping is internal extension methods | accepted | backend-architecture |
 | [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention | proposed | backend-architecture |
 | [CLA-0007](0007-persistence-owns-ef-core.md) | EF Core and PostgreSQL, owned by persistence projects; a module may own its database | accepted | data-and-migrations |
 | [CLA-0008](0008-migrations-are-a-deploy-step.md) | Migrations are an explicit deploy step | accepted | data-and-migrations |
 | [CLA-0009](0009-no-data-changes-at-startup.md) | No data changes at startup | accepted | data-and-migrations |
 | [CLA-0010](0010-applied-migrations-are-immutable.md) | Applied migrations are never edited | accepted | data-and-migrations |
 | [CLA-0011](0011-fresh-database-migrates.md) | A fresh, empty database migrates end to end | proposed | data-and-migrations |
-| [CLA-0012](0012-one-off-data-fixes.md) | One-off data fixes are reviewed, idempotent scripts | proposed | data-and-migrations |
+| [CLA-0012](0012-one-off-data-fixes.md) | Data fixes are EF Core migrations | accepted | data-and-migrations |
 | [CLA-0013](0013-external-data-on-explicit-trigger.md) | External data is refreshed only on an explicit trigger, and never from tests | proposed | data-and-migrations |
 | [CLA-0014](0014-frontend-stack-and-api-module.md) | React, TypeScript and Vite, with one typed API module | accepted | frontend-conventions |
 | [CLA-0015](0015-ui-renders-api-values.md) | The UI renders what the API returns and never duplicates backend rules | accepted | frontend-conventions |

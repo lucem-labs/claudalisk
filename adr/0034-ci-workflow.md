@@ -16,7 +16,7 @@ An existing app's CI ran up to three times per change: on push, on ready-for-rev
 - **Superseded runs.** Per-ref `concurrency` cancels them.
 - **Runners.** `runs-on` reads a repository variable, so the repo can fall back to GitHub-hosted runners when the machine is off.
 - **Pins.** The Playwright version is pinned exactly to the browsers baked into the runner image. Line endings are LF (`.gitattributes`).
-- **Jobs.** Backend and frontend jobs run in parallel. Each starts its own throwaway PostgreSQL (CLA-0017).
+- **Jobs.** Backend and frontend jobs run in parallel. Each starts its own throwaway PostgreSQL (CLA-0017). Backend tests do it through Testcontainers (CLA-0018), so the job needs Docker but no PostgreSQL service.
 
 ## Consequences
 
