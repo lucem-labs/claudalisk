@@ -12,7 +12,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0002](0002-interfaces-projects.md) | Modules are referenced only through their Interfaces projects | accepted | backend-architecture |
 | [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
-| [CLA-0005](0005-thin-controllers-and-mapping.md) | Controllers stay thin; mapping is internal extension methods | accepted | backend-architecture |
+| [CLA-0005](0005-thin-controllers-and-mapping.md) | Modules may expose their own API; controllers stay thin; mapping is internal extension methods | accepted | backend-architecture |
 | [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention | proposed | backend-architecture |
 | [CLA-0007](0007-persistence-owns-ef-core.md) | EF Core and PostgreSQL, owned by persistence projects; a module may own its database | accepted | data-and-migrations |
 | [CLA-0008](0008-migrations-are-a-deploy-step.md) | Migrations are an explicit deploy step | accepted | data-and-migrations |

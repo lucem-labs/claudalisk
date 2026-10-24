@@ -20,7 +20,7 @@ Calling the objects passed through an interface "models" quickly gets muddled wi
 - **No other dependencies.** Interfaces projects don't reference other Interfaces projects, EF Core or ASP.NET Core MVC.
 - **Layout.** One interface per file. A message used by only one interface lives next to it.
 - **Persistence.** Persistence is reached through store contracts in a `*.Persistence.Interfaces` project, either the shared one or the module's own (CLA-0007). Modules never see EF Core types: a store maps entities to messages inside the persistence project.
-- **Messages are not HTTP DTOs.** The API's request and response DTOs (CLA-0005) are separate types. Controllers map between DTOs and messages.
+- **Messages are not HTTP DTOs.** The request and response DTOs of a controller (CLA-0005) are separate types. Controllers map between DTOs and messages.
 
 ## Consequences
 
