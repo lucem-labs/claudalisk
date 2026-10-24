@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  adrs:
+    # claudalisk's own CI always runs on GitHub-hosted runners.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: ADR index check
+        run: node tools/check-adrs.mjs
+      - name: Tool tests
+        run: node --test tools/*.test.mjs
