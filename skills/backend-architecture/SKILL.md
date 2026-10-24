@@ -18,4 +18,4 @@ These are claudalisk's decisions for backend code. The app's own `AGENTS.md` win
 - [CLA-0004](${CLAUDE_PLUGIN_ROOT}/adr/0004-module-registration.md) (accepted): modules register themselves idempotently and declare their dependencies.
 - [CLA-0005](${CLAUDE_PLUGIN_ROOT}/adr/0005-thin-controllers-and-mapping.md) (accepted): controllers do HTTP only; DTOs live in `Contracts`; mapping is internal extension methods.
 - [CLA-0006](${CLAUDE_PLUGIN_ROOT}/adr/0006-architecture-tests-by-convention.md) (proposed): architecture tests find modules by naming convention, not hand-kept lists.
-- [CLA-0007](${CLAUDE_PLUGIN_ROOT}/adr/0007-persistence-owns-ef-core.md) (accepted): only the Persistence project uses EF Core; modules use store contracts.
+- [CLA-0007](${CLAUDE_PLUGIN_ROOT}/adr/0007-persistence-owns-ef-core.md) (accepted): only persistence projects use EF Core; a shared database by default, or a module owns its own and nothing else touches it.

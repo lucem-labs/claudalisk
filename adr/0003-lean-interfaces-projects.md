@@ -9,7 +9,7 @@
 
 - Interfaces projects do not reference other Interfaces projects, EF Core or ASP.NET Core MVC.
 - One interface per file. Models exposed only by that interface live next to it.
-- Persistence is reached through store contracts in `<Root>.Persistence.Interfaces`; modules never see EF Core types.
+- Persistence is reached through store contracts in a `*.Persistence.Interfaces` project (the shared one, or the module's own, CLA-0007); modules never see EF Core types.
 
 ## Consequences
 
