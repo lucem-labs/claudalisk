@@ -23,6 +23,6 @@ An existing app's CI ran up to three times per change: on push, on ready-for-rev
 - One green run per commit is what CD waits for before deploying (CLA-0030), and what the owner sees next to the Merge button (CLA-0024).
 - **CD is a separate workflow** (`cd.yml`):
   - it runs on the deploy runner (CLA-0033);
-  - it is triggered when CI completes (`workflow_run`) and when a pull request is marked ready (`ready_for_review`);
-  - it deploys a commit only when CI succeeded on it and the commit is `main` or the head of a ready pull request;
+  - it is triggered when CI completes (`workflow_run`) and when a pull request is opened or reopened (`pull_request: opened, reopened`);
+  - it deploys a commit only when CI succeeded on it and the commit is `main` or the head of an open pull request;
   - deploys are queued one at a time and never cancelled midway.
