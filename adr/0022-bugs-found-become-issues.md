@@ -7,7 +7,7 @@
 
 ## Decision
 
-- A bug found while working on something else is filed as a new issue labelled `needs-design-review`. It is not fixed inline.
+- File a bug found while working on something else as a new issue labelled `needs-design-review`. Do not fix it inline.
 - The current pull request stays about its own issue.
 
 ## Consequences

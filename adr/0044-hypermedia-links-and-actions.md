@@ -7,14 +7,14 @@
 
 ## Context
 
-The UI never re-implements business rules (CLA-0015). Without hypermedia it still has to decide which buttons to show, such as whether an order can still be cancelled, and that decision is a business rule. *RESTful Web APIs* solves this with hypermedia: the server tells the client what it can do next.
+The UI never re-implements business rules (CLA-0015). Without hypermedia, it still has to decide which buttons to show, such as whether an order can still be cancelled. That decision is a business rule. *RESTful Web APIs* solves this with hypermedia: the server tells the client what it can do next.
 
 ## Decision
 
 - Every resource representation has two extra members:
-  - **`_links`**, in the HAL style: a map from link relation to `{ "href": "…" }`. It always has `self`. Collections have `next` and `prev` when there are more pages, and items link to their `collection`. Relation names are [IANA-registered](https://www.iana.org/assignments/link-relations/link-relations.xhtml) where one fits, and otherwise a word from the module's ubiquitous language.
-  - **`_actions`**: a map from command name to `{ "href": "…", "method": "…" }`, listing only the commands (CLA-0043) and edits the aggregate allows right now. A command the aggregate would refuse isn't listed.
-- The aggregate decides what goes in `_actions`, through the same rules that run when the command is posted. A controller never decides it.
+  - **`_links`**, in the HAL style: a map from link relation to `{ "href": "…" }`. It always has `self`. Collections have `next` and `prev` when more pages exist, and items link to their `collection`. Relation names are [IANA-registered](https://www.iana.org/assignments/link-relations/link-relations.xhtml) where one fits. Otherwise they use a word from the module's ubiquitous language.
+  - **`_actions`**: a map from command name to `{ "href": "…", "method": "…" }`. It lists only the commands (CLA-0043) and edits that the aggregate allows right now. It does not list a command that the aggregate would refuse.
+- The aggregate decides what goes in `_actions`, through the same rules that run when a client posts the command. A controller never decides it.
 
 ```json
 {
@@ -36,7 +36,7 @@ The UI never re-implements business rules (CLA-0015). Without hypermedia it stil
 
 ## Consequences
 
-- "Can the user do this now?" is answered once, by the aggregate, and the UI can't disagree with the server.
-- An end-to-end test that checks a button is hidden is checking a server rule, which a backend test also covers.
+- The aggregate answers "Can the user do this now?" once, so the UI cannot disagree with the server.
+- An end-to-end test that checks a hidden button checks a server rule, which a backend test also covers.
 - Adding a command or link is a backward-compatible change (CLA-0041).
 - Representations are slightly larger, and every resource needs a way to build its links. That code lives in the module's mapping extension methods (CLA-0005).

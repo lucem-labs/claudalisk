@@ -1,8 +1,8 @@
 # Architecture decision records
 
-These are claudalisk's standards for the apps it builds. Each ADR is written once here. The knowledge skills in [`skills/`](../skills) index the ADRs for their area and link to them through `${CLAUDE_PLUGIN_ROOT}/adr/…`, so Claude loads an ADR only when the work needs it. A skill with `paths` loads automatically when Claude works with matching files.
+These are claudalisk's standards for the apps it builds. Each ADR is written once here. The knowledge skills in [`skills/`](../skills) index the ADRs for their area and link to them through `${CLAUDE_PLUGIN_ROOT}/adr/…`. Claude loads an ADR only when the work needs it. A skill with `paths` loads when Claude works with matching files.
 
-An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviation by ADR id ([CLA-0028](0028-app-agents-md-wins.md)).
+An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation by ADR id ([CLA-0028](0028-app-agents-md-wins.md)).
 
 ## Index
 
@@ -66,7 +66,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 
 ## Format
 
-Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and never reused. It starts with:
+Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and are never reused. An ADR starts with:
 
 ```markdown
 # CLA-NNNN: Decision as a sentence
@@ -78,10 +78,10 @@ Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and never re
 - **Issue:** #n (optional)
 ```
 
-Then come **Context** (optional), **Decision** and **Consequences**. Keep an ADR short and generic: never name a private app, its domain or its data, and say "an existing app" instead.
+Then come **Context** (optional), **Decision** and **Consequences**. Keep an ADR short and generic. Never name a private app, its domain or its data. Say "an existing app" instead.
 
-- **proposed** means the decision comes from a design issue that isn't agreed yet.
-- **accepted** means it is agreed in the epic or settled in its issue.
+- **proposed**: the decision comes from a design issue that is not agreed yet.
+- **accepted**: the epic or the issue settles the decision.
 
 ## Adding or changing an ADR
 
@@ -93,5 +93,5 @@ Then come **Context** (optional), **Decision** and **Consequences**. Keep an ADR
 
 4. Run `node tools/check-adrs.mjs`. CI runs it too. It fails when:
    - an ADR is missing from this index or from every skill;
-   - a link doesn't resolve;
-   - a status in an index line doesn't match the ADR.
+   - a link does not resolve;
+   - a status in an index line does not match the ADR.

@@ -7,17 +7,17 @@
 
 ## Context
 
-The two environments were first called dev and prod. In practice the second one isn't production. It is where the owner uses the app with real, hand-curated data and reviews each change before merging it. Calling it **uat** says that, and lets deploys drop the heavyweight production guards (CLA-0030). Its data still matters and can't be recreated, so the data protections stay.
+The two environments were first called dev and prod. The second one is not production. The owner uses the app there with real, hand-curated data and reviews each change before merging it. The name **uat** says this, and it lets deploys drop the heavyweight production guards (CLA-0030). The data still matters and cannot be recreated, so the data protections stay.
 
 ## Decision
 
 - **dev** (`<app>.dev.localhost`) is the **agent's** environment.
   - The agent deploys, resets and refreshes it freely, by hand or through CD.
   - It shows a DEV badge.
-- **uat** (`<app>.uat.localhost`) is the **owner's** environment. It holds real, hand-curated data that can't be recreated.
-  - Its data volume is external and created by the owner, so Compose can never delete it.
+- **uat** (`<app>.uat.localhost`) is the **owner's** environment. It holds real, hand-curated data that cannot be recreated.
+  - Its data volume is external and the owner creates it, so Compose can never delete it.
   - It changes only through CD (CLA-0030). The agent never deploys, restarts or reconfigures it by hand.
-  - Its data changes only through the app, used by the owner, through migrations deployed by CD (CLA-0012), and through CD's restores (CLA-0030). The agent never writes SQL against uat and never restores it. The only script it may run against uat's data is the read-only backup (CLA-0031).
+  - Its data changes only through the app (used by the owner), through migrations that CD deploys (CLA-0012), and through CD restores (CLA-0030). The agent never writes SQL against uat and never restores it. The only script the agent may run against uat data is the read-only backup (CLA-0031).
   - It shows a UAT badge.
 - **Compose files.** The files are `compose.base.yml` plus `compose.dev.yml` or `compose.uat.yml`. There is deliberately no `docker-compose.yml`.
 - **Never, on uat.** The agent never runs Compose commands against the uat project by hand. Neither the agent nor any script runs any of these against uat resources:

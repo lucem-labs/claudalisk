@@ -7,7 +7,7 @@
 
 ## Context
 
-Every feature sends a command or a query through the dispatcher (CLA-0047, CLA-0049), so each feature adds several types with closely related names. A fixed pattern lets a reader, or an agent, find a feature's pieces by name alone.
+Every feature sends a command or a query through the dispatcher (CLA-0047, CLA-0049), so each feature adds several types with closely related names. A fixed pattern helps a reader or an agent find a feature's pieces by name alone.
 
 ## Decision
 
@@ -30,10 +30,10 @@ Every feature sends a command or a query through the dispatcher (CLA-0047, CLA-0
 
 - The verb and noun come from the module's ubiquitous language (CLA-0041). The command's verb is the same word as the aggregate's method and the route's command sub-resource (CLA-0043): `CancelOrderCommand`, `order.Cancel()` and `POST /api/orders/{id}/cancel`.
 - Messages in a module's Interfaces project follow the same patterns (CLA-0003).
-- **Identifiers are in US English**, matching .NET's own types, such as `OperationCanceledException`: `OrderCanceled`, not `OrderCancelled`. Prose in docs and ADRs stays in British English.
+- **Identifiers are in US English**, like .NET's own types, such as `OperationCanceledException`: `OrderCanceled`, not `OrderCancelled`. Prose in docs and ADRs stays in British English.
 
 ## Consequences
 
-- The suffix keeps a command or query from having the same name as its feature's namespace (`Features.CancelOrder`), which C# handles badly.
-- An architecture test can check that every type implementing the dispatcher's command interface ends in `Command`, every query ends in `Query`, and every handler ends in `Handler`.
-- Searching for a use case's name finds its folder, controller, command, handler, validator and tests together.
+- The suffix stops a command or query from having the same name as its feature's namespace (`Features.CancelOrder`), which C# handles badly.
+- An architecture test can check three rules. Every type that implements the dispatcher's command interface ends in `Command`. Every query ends in `Query`. Every handler ends in `Handler`.
+- A search for a use case's name finds its folder, controller, command, handler, validator and tests together.

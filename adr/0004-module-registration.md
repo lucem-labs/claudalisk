@@ -7,13 +7,13 @@
 
 ## Context
 
-Two existing apps use the same registration code, which differs only in names. It keeps the Host down to a list of modules, while each module stays responsible for its own wiring. That includes its controllers, if it exposes an API (CLA-0005).
+Two existing apps use the same registration code, which differs only in names. It keeps the Host down to a list of modules. Each module stays responsible for its own wiring, including its controllers if it exposes an API (CLA-0005).
 
 ## Decision
 
 - Each module implements the app's module interface and registers its own internal implementations.
 - A module declares the module contracts it depends on, as marker interfaces from Interfaces projects. It never declares implementation types.
-- Registration resolves modules in dependency order and rejects missing, ambiguous and circular dependencies before any module registers a service.
+- Registration resolves modules in dependency order. It rejects missing, ambiguous and circular dependencies before any module registers a service.
 - It adds the controllers from each module's assembly.
 - It is idempotent: registering a module twice is a no-op.
 - Each module can be composed in isolation, with only its declared dependencies.
@@ -31,20 +31,20 @@ Two existing apps use the same registration code, which differs only in names. I
   - it validates the whole set first, and fails with a message that names the missing, ambiguous or circular dependency;
   - it then registers each new module once and adds its controllers.
 
-  Its state lives in the service collection, so separate collections, such as those in tests, don't affect each other.
+  Its state lives in the service collection, so separate collections (for example in tests) do not affect each other.
 - **Tests cover:**
   - the dependency failures;
   - registration order;
   - repeated calls and reuse of earlier registrations;
   - each module composing in isolation;
-  - the Host's full module list resolving every service.
+  - the full module list of the Host resolving every service.
 
 ## Consequences
 
-- Adding a module means writing:
+- To add a module, write:
   - its marker interface;
   - its module class with its declared dependencies;
   - one line in the Host;
   - a dependency on its marker in each module that consumes it.
-- Forgetting to declare a dependency fails at startup with a message that names the missing marker.
+- If a module forgets to declare a dependency, startup fails with a message that names the missing marker.
 - new-app generates the module interface, the registration call and its tests.

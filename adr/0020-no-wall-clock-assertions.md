@@ -8,13 +8,13 @@
 
 ## Context
 
-A rate-limiter test in an existing app asserted real elapsed time with tight bounds, and flaked under parallel load.
+In an existing app, a rate-limiter test asserted real elapsed time with tight bounds. It flaked under parallel load.
 
 ## Decision
 
-- Time-dependent code takes a `TimeProvider`; tests use a fake one.
+- Time-dependent code takes a `TimeProvider`. Tests use a fake one.
 - Tests assert order and counts, not durations.
-- `Stopwatch`, `DateTime.UtcNow` and `Task.Delay` don't appear in test assertions.
+- `Stopwatch`, `DateTime.UtcNow` and `Task.Delay` do not appear in test assertions.
 
 ## Consequences
 
