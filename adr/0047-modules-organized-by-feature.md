@@ -26,7 +26,7 @@ The .NET name for this is vertical slice architecture. Inside a modular monolith
 - **A feature folder holds the whole slice:**
   - one small controller, `<Feature>Controller`, with the feature's endpoint, or endpoints for a CRUD feature;
   - the request and response DTOs;
-  - the request sent through the dispatcher, and its handler (CLA-0049);
+  - the command or query sent through the dispatcher, and its handler (CLA-0049), named as in CLA-0052;
   - the feature's mapping extension methods (CLA-0005);
   - its validation.
 - **Tests mirror features.** A feature's tests live in a matching folder of the test project, such as `Modules/Orders/Features/CancelOrder/`.
@@ -38,7 +38,7 @@ The .NET name for this is vertical slice architecture. Inside a modular monolith
     PlaceOrder/
       PlaceOrderController.cs
       PlaceOrderRequest.cs
-      PlaceOrder.cs
+      PlaceOrderCommand.cs
       PlaceOrderHandler.cs
     CancelOrder/
     GetOrder/
