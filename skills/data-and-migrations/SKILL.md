@@ -1,6 +1,6 @@
 ---
 name: data-and-migrations
-description: Claudalisk data decisions (ADRs) - EF Core and PostgreSQL ownership, migrations as an explicit deploy step, no data changes at startup, immutable applied migrations, fresh-database migration tests, data fixes as migrations and external data refreshes. Use when adding or changing migrations, the DbContext, store contracts, seed or default data, or cleaning up or backfilling data in a claudalisk app.
+description: Claudalisk data decisions (ADRs) - EF Core and PostgreSQL ownership, migrations as an explicit deploy step, no data changes at startup, immutable applied migrations, fresh-database migration tests, data fixes as migrations, external data refreshes, and database naming. Use when adding or changing migrations, the DbContext, store contracts, seed or default data, or cleaning up or backfilling data in a claudalisk app.
 paths:
   - "**/Migrations/**"
   - "**/*Persistence*/**"
@@ -19,3 +19,4 @@ These are claudalisk's decisions for schema and data. The app's own `AGENTS.md` 
 - [CLA-0012](${CLAUDE_PLUGIN_ROOT}/adr/0012-one-off-data-fixes.md) (accepted): cleanups and backfills are EF Core migrations using raw SQL (never the DbContext), ordered between schema steps and tried on dev with uat data first.
 - [CLA-0013](${CLAUDE_PLUGIN_ROOT}/adr/0013-external-data-on-explicit-trigger.md) (proposed): third-party data is refreshed only on an explicit owner trigger, and never from tests.
 - [CLA-0031](${CLAUDE_PLUGIN_ROOT}/adr/0031-backups-and-restores.md) (accepted): uat backups are versioned with a manifest written last; restores are verified and swapped in, and only CD or the owner restores uat.
+- [CLA-0051](${CLAUDE_PLUGIN_ROOT}/adr/0051-database-naming.md) (proposed): identifiers are unquoted snake_case through `UseSnakeCaseNamingConvention()`; plural tables, `id` and `<thing>_id` keys, `_timestamp` and `_date` columns, `is_` and `has_` booleans, and no name over 63 bytes.

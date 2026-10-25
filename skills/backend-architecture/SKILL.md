@@ -1,6 +1,6 @@
 ---
 name: backend-architecture
-description: Claudalisk backend architecture decisions (ADRs) for the .NET modular monolith - modules and their Interfaces projects, the Host composition root, module registration, module-owned APIs and thin controllers, DTOs and mapping, feature folders, Domain projects and the dispatcher, and RESTful API design: bounded contexts, aggregates as resources, domain commands, hypermedia links and actions, HTTP semantics and Problem Details. Use when writing, reviewing or restructuring backend C# code or project references in a claudalisk app.
+description: Claudalisk backend architecture decisions (ADRs) for the .NET modular monolith - modules and their Interfaces projects, the Host composition root, module registration, module-owned APIs and thin controllers, DTOs and mapping, feature folders, Domain projects and the dispatcher, command, query and event naming, and RESTful API design: bounded contexts, aggregates as resources, domain commands, hypermedia links and actions, HTTP semantics and Problem Details. Use when writing, reviewing or restructuring backend C# code or project references in a claudalisk app.
 paths:
   - "backend/**/*.cs"
   - "backend/**/*.csproj"
@@ -29,3 +29,4 @@ These are claudalisk's decisions for backend code. The app's own `AGENTS.md` win
 - [CLA-0048](${CLAUDE_PLUGIN_ROOT}/adr/0048-aggregates-in-a-domain-project.md) (proposed): aggregates live in a plain-C# `<Root>.Modules.<Name>.Domain` project; the Persistence project's stores map EF Core entities to and from them.
 - [CLA-0049](${CLAUDE_PLUGIN_ROOT}/adr/0049-features-go-through-the-dispatcher.md) (proposed): every feature sends its request through the dispatcher; one handler per request; logging, validation and the unit of work are pipeline steps.
 - [CLA-0050](${CLAUDE_PLUGIN_ROOT}/adr/0050-module-dependencies-go-down-feature-first.md) (proposed): inside a module, features never reference each other and dependencies go down to Shared and Domain; domain rules start in the aggregate, other code starts in its feature and moves down on its second use.
+- [CLA-0052](${CLAUDE_PLUGIN_ROOT}/adr/0052-cqrs-naming.md) (proposed): `<Verb><Noun>Command`, `Get`/`List`/`Search` + `Query`, `<Message>Handler`, past-tense events with no suffix, `I<Aggregate>Store` and `I<Aggregate>ReadStore`; identifiers in US English.
