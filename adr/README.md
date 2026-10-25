@@ -54,6 +54,10 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0044](0044-hypermedia-links-and-actions.md) | Representations carry links and the commands available now; the UI shows only those | proposed | backend-architecture |
 | [CLA-0045](0045-http-semantics-and-problem-details.md) | The API uses HTTP's own semantics: status codes, Problem Details and conditional writes | proposed | backend-architecture |
 | [CLA-0046](0046-openapi-document.md) | The OpenAPI document groups endpoints by module, and frontend API types are generated from it | proposed | backend-architecture |
+| [CLA-0047](0047-modules-organized-by-feature.md) | A module's implementation is organized by feature folders | proposed | backend-architecture |
+| [CLA-0048](0048-aggregates-in-a-domain-project.md) | Aggregates live in a Domain project per module, and the stores map them | proposed | backend-architecture |
+| [CLA-0049](0049-features-go-through-the-dispatcher.md) | Every feature sends its request through the dispatcher | proposed | backend-architecture |
+| [CLA-0050](0050-module-dependencies-go-down-feature-first.md) | Inside a module, dependencies go down and code starts in its feature | proposed | backend-architecture |
 
 ## Format
 

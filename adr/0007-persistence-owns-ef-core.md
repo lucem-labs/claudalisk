@@ -21,7 +21,7 @@ A **schema per module in one physical database** keeps the ownership and keeps a
 - Each module owns a **schema** named after it. Its `<Root>.Modules.<Name>.Persistence` project holds:
   - the module's DbContext, with `HasDefaultSchema("<name>")`;
   - its migrations, with the migrations history table in its own schema;
-  - its stores, which map entities to messages (CLA-0003).
+  - its stores, which map EF Core entities to messages (CLA-0003), or to the module's aggregates under the proposed CLA-0048.
 
   The store contracts live in `<Root>.Modules.<Name>.Persistence.Interfaces` and are used only inside the module.
 - **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to each other's data by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema (CLA-0012).
