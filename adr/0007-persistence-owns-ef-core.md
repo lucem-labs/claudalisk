@@ -24,7 +24,7 @@ A **schema per module in one physical database** keeps the ownership and keeps a
   - its stores, which map EF Core entities to messages (CLA-0003), or to the module's aggregates under the proposed CLA-0048.
 
   The store contracts live in `<Root>.Modules.<Name>.Persistence.Interfaces` and are used only inside the module.
-- **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to each other's data by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema (CLA-0012).
+- **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to each other's data by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema.
 - **`<Root>.Persistence` is shared infrastructure** and holds no module's data. It contains:
   - the app's single `NpgsqlDataSource`;
   - one connection per DI scope (a request or a background job), which every module DbContext in that scope shares;
@@ -34,7 +34,7 @@ A **schema per module in one physical database** keeps the ownership and keeps a
 
 ### Atomic work across modules: the unit of work
 
-- A **composition module**, meaning a module whose service coordinates other modules' contracts, runs that work inside `IUnitOfWork.RunAsync`. Everything the participating modules save in that call commits together or rolls back together.
+- A **composition module**, meaning a module whose code coordinates other modules' contracts, runs that work inside `IUnitOfWork.RunAsync`. Everything the participating modules save in that call commits together or rolls back together.
 - **Only composition modules open a unit of work around other modules' calls.** A module may also use one around its own several saves. A nested call joins the outer unit of work; it doesn't start a new transaction.
 - **Inside a unit of work, modules save but never commit.** They don't start their own transactions or swallow exceptions, so any failure rolls everything back.
 - **How it's wired.** Module DbContexts are registered through `UseModuleSchema(sp, "<name>")`, which:
@@ -52,7 +52,7 @@ Modules may call each other through an in-process dispatcher: claudalisk's own m
 - **Same scope.** Handlers are resolved from the caller's DI scope, never from the root provider or a new scope. A handler in another scope gets another connection and commits on its own, outside the unit of work.
 - **Scoped or transient handlers.** Handlers are never singletons, which would capture a scoped DbContext. The service provider validates scopes at startup.
 - **One handler at a time.** Notification handlers run sequentially. Running them in parallel on the shared connection fails, because neither a DbContext nor a connection can run two operations at once.
-- **A pipeline step may own the unit of work.** A step can wrap composition commands in `IUnitOfWork.RunAsync`. Requests those handlers send in turn join the same unit of work.
+- **A pipeline step may own the unit of work.** A step can wrap commands in `IUnitOfWork.RunAsync`; the proposed CLA-0049 wraps every command. Commands and queries those handlers send in turn join the same unit of work.
 - **Exceptions propagate.** The dispatcher and its handlers don't catch and swallow exceptions, so a failure reaches the unit of work and rolls everything back.
 - **No fire-and-forget.** Work dispatched to run later is queued in the owning module's queue table inside the unit of work. It never runs on a background thread from the request.
 
@@ -63,7 +63,7 @@ Modules may call each other through an in-process dispatcher: claudalisk's own m
 
 ### Operations
 
-- One database means one migrate step, which migrates every module's DbContext (CLA-0008). It also means one backup and restore unit, which is consistent across modules at a single point in time (CLA-0031). The fresh-database test migrates every module's DbContext (CLA-0011).
+- One database means one migrate step, which migrates every module's DbContext (CLA-0008). It also means one backup and restore unit, which is consistent across modules at a single point in time (CLA-0031). The fresh-database test migrates every module's DbContext (CLA-0011, proposed).
 - A module that moves to its own database adds that database to the app config by role (#8), to the migrate step, to the backups and to the fresh-database test.
 
 ## Proof

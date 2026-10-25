@@ -16,6 +16,12 @@ Treating the second environment as production needed heavyweight guards on every
   - **`main`**, after the owner merges.
 
   A branch without a pull request doesn't deploy. The agent deploys dev by hand while it works.
+
+- **The workflow.** CD is its own workflow, `cd.yml`, separate from CI (CLA-0034):
+  - it is triggered when CI completes (`workflow_run`) and when a pull request is opened or reopened (`pull_request_target: opened, reopened`);
+  - both triggers run the workflow file and scripts from the default branch, never a pull request's own copy, and treat the pull request's commit only as what to build and deploy;
+  - it deploys a commit only when CI succeeded on it and the commit is `main` or the head of an open pull request;
+  - deploys are queued one at a time and never cancelled midway.
 - **One commit, both environments.** CD deploys the same commit to dev and uat, using the same image.
 - **Where CD runs.** It runs on a **deploy runner**: a self-hosted runner with the host's Docker socket and a `deploy` label, used only by CD jobs of private repositories (CLA-0033). CI keeps running on the Docker-in-Docker runners, which can't reach the host's Docker.
 - **Steps, per environment:**

@@ -12,9 +12,9 @@ In two existing apps, the architecture tests listed module assemblies by hand ("
 
 ## Decision
 
-- Architecture tests load `<Root>.Modules.*` assemblies by naming convention and require an `.Interfaces` twin for each.
-- A safety test asserts that the number of modules found equals the number of module csproj files.
-- The generated rules cover CLA-0002 and CLA-0003 (including the message rules), plus: controllers live only in the API project or a module implementation project, DTOs live next to their controller and are free of EF Core, features don't reference each other and Domain projects reference only `<Root>.Shared` (CLA-0047, CLA-0048, CLA-0050), only persistence projects use EF Core, no project references another module's persistence project, every entity maps to its own context's schema, and no foreign key crosses schemas (CLA-0007).
+- Architecture tests find modules by naming convention. A module is an assembly named `<Root>.Modules.<Name>` with no further suffix. Its other projects are found by suffix: `.Interfaces`, `.Persistence`, `.Persistence.Interfaces` and, under the proposed CLA-0048, `.Domain`. Every module must have an `.Interfaces` project.
+- A safety test asserts that the number of modules found equals the number of module implementation csproj files.
+- The generated rules cover CLA-0002 and CLA-0003 (including the message rules), plus: controllers live only in the API project (`<Root>.Api`) or a module implementation project, DTOs live next to their controller and are free of EF Core, features don't reference each other and Domain projects reference only `<Root>.Shared` (CLA-0047, CLA-0048, CLA-0050), only persistence projects use EF Core, no project references another module's persistence project, every entity maps to its own context's schema, and no foreign key crosses schemas (CLA-0007).
 
 ## Consequences
 

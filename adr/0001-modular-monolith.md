@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0002, CLA-0006), reviewer
+- **Enforced by:** architecture tests (CLA-0002; discovery by convention is proposed in CLA-0006), reviewer
 
 ## Context
 
@@ -13,8 +13,8 @@ Keeping operational complexity low is a second reason. These are single-owner, l
 
 ## Decision
 
-- The backend is one deployable .NET 10 application, with one Host project (`<Root>.Api.Host`) as the composition root.
-- Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project and a `<Root>.Modules.<Name>.Interfaces` project for its public contracts.
+- The backend is one deployable .NET 10 application, with one Host project (`<Root>.Api.Host`) as the composition root and one API project (`<Root>.Api`) for cross-cutting endpoints and concerns.
+- Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project, a `<Root>.Modules.<Name>.Interfaces` project for its public contracts, and the persistence projects of CLA-0007. The proposed CLA-0048 adds a Domain project.
 - **The boundary is the contract, not the transport.** Modules talk only through their Interfaces projects (CLA-0002). Behind a contract, a call may be:
   - an in-process method call, the default;
   - queued background work, through PostgreSQL queues;

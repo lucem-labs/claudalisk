@@ -99,3 +99,14 @@ test('a skill whose name differs from its folder fails', () => {
   files['skills/testing/SKILL.md'] = skill('tests', [line('CLA-0001', '0001-a.md')]);
   assert.match(check(files).join('\n'), /frontmatter name "tests" must equal the folder name/);
 });
+
+test('an accepted ADR that cites a proposed one without saying so fails', () => {
+  const files = valid();
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', '- Do it as in CLA-0002.');
+  files['adr/0002-b.md'] = adr('CLA-0002', 'proposed');
+  files['adr/README.md'] += row('CLA-0002', '0002-b.md', 'proposed') + '\n';
+  files['skills/testing/SKILL.md'] = skill('testing', [line('CLA-0001', '0001-a.md'), line('CLA-0002', '0002-b.md', 'proposed')]);
+  assert.match(check(files).join('\n'), /accepted ADR cites proposed CLA-0002 without saying it is proposed/);
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', '- Do it as in the proposed CLA-0002.');
+  assert.deepEqual(check(files), []);
+});

@@ -34,7 +34,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0024](0024-owner-merges.md) | Only the owner merges, in GitHub | accepted | workflow |
 | [CLA-0025](0025-stacked-pull-requests.md) | Stacked pull requests merge in order without closing children | proposed | workflow |
 | [CLA-0026](0026-no-real-data-or-secrets-in-git.md) | Real data and secrets never go into commits, pull requests or issues | accepted | workflow |
-| [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | environments |
+| [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | code-standards |
 | [CLA-0028](0028-app-agents-md-wins.md) | The app's AGENTS.md wins, and deviations cite ADR ids | accepted | workflow |
 | [CLA-0029](0029-dev-and-uat-environments.md) | Two local environments: dev for the agent, uat for the owner's real data | accepted | environments |
 | [CLA-0030](0030-cd-deploys-dev-and-uat.md) | CD deploys dev and uat together, backing up uat first | accepted | environments |
@@ -56,7 +56,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0046](0046-openapi-document.md) | The OpenAPI document groups endpoints by module, and frontend API types are generated from it | proposed | backend-architecture |
 | [CLA-0047](0047-modules-organized-by-feature.md) | A module's implementation is organized by feature folders | proposed | backend-architecture |
 | [CLA-0048](0048-aggregates-in-a-domain-project.md) | Aggregates live in a Domain project per module, and the stores map them | proposed | backend-architecture |
-| [CLA-0049](0049-features-go-through-the-dispatcher.md) | Every feature sends its request through the dispatcher | proposed | backend-architecture |
+| [CLA-0049](0049-features-go-through-the-dispatcher.md) | Every feature sends its commands and queries through the dispatcher | proposed | backend-architecture |
 | [CLA-0050](0050-module-dependencies-go-down-feature-first.md) | Inside a module, dependencies go down and code starts in its feature | proposed | backend-architecture |
 | [CLA-0051](0051-database-naming.md) | Database names are lowercase snake_case, set by convention | proposed | data-and-migrations |
 | [CLA-0052](0052-cqrs-naming.md) | Commands, queries, events and their handlers follow fixed naming patterns | proposed | backend-architecture |

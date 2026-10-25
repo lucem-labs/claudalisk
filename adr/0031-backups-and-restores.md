@@ -15,7 +15,7 @@
 
   A folder without a manifest is incomplete: it is ignored and never pruned.
 - **When backups are taken:**
-  - CD backs up uat before every uat deploy (CLA-0030);
+  - CD backs up uat before every uat deploy, except the first deploy to an empty database (CLA-0030);
   - the owner can also take one by hand;
   - the agent may take a read-only one, for example to refresh dev (CLA-0032).
 - **Restores.**

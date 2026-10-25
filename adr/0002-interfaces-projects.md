@@ -14,8 +14,8 @@ Without a hard rule, modules start reaching into each other's implementation typ
 - The API project and other modules reference only `*.Interfaces` projects, never another module's implementation project.
 - Only the Host (the composition root) and test projects reference implementation projects. The check reads `ProjectReference`s from the csproj files, so an unused reference also fails.
 - Implementation assemblies do not depend on other implementation assemblies.
-- Shared infrastructure projects that hold no module's code or data are the exception: `<Root>.Shared` (module registration) and `<Root>.Persistence` (the data source, the per-scope connection and the unit of work, CLA-0007). Modules and their persistence projects may reference them.
+- Shared infrastructure projects that hold no module's code or data are the exception: `<Root>.Shared` (module registration), `<Root>.Persistence` (the data source, the per-scope connection and the unit of work) and `<Root>.Persistence.Interfaces` (`IUnitOfWork`), all from CLA-0007. Modules and their persistence projects may reference them.
 
 ## Consequences
 
-- Adding a module means adding an implementation project and an Interfaces project, and registering the module in the Host.
+- Adding a module means adding its projects (CLA-0001, CLA-0007) and registering the module in the Host.

@@ -24,7 +24,7 @@ Two existing apps use the same registration code, which differs only in names. I
   - a shared module interface, through which a module lists its dependencies and registers its services;
   - an empty marker interface in each module's Interfaces project;
   - one public module class per implementation project, with everything it registers kept internal;
-  - the API project, which is a module itself and registers API-wide concerns such as exception filters;
+  - the API project (`<Root>.Api`), which is a module itself and registers API-wide concerns such as exception filters;
   - a Host that only lists module instances in one `Add<Root>Modules(...)` call.
 - **The registration call:**
   - it orders the modules by their declared dependencies;

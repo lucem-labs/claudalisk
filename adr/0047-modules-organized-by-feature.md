@@ -25,7 +25,7 @@ The .NET name for this is vertical slice architecture. Inside a modular monolith
   - **Plain CRUD on one resource is one feature**, named after the resource, such as `Features/OrderNotes/`. That covers create, read, update and delete of attributes with no rules of their own. When one of those operations gains a domain rule, it moves out into its own command feature.
 - **A feature folder holds the whole slice:**
   - one small controller, `<Feature>Controller`, with the feature's endpoint, or endpoints for a CRUD feature;
-  - the request and response DTOs;
+  - the HTTP request and response DTOs;
   - the command or query sent through the dispatcher, and its handler (CLA-0049), named as in CLA-0052;
   - the feature's mapping extension methods (CLA-0005);
   - its validation.

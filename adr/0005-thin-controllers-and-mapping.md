@@ -29,5 +29,5 @@ A feature's HTTP endpoints belong with the feature. One existing app let modules
 ## Consequences
 
 - A module's API, messages and rules change together, in one project.
-- A module's controllers call its services through the module's own contracts or internal services. They never call another module's internals (CLA-0002).
+- A module's controllers reach its behaviour only through the module's own code, and never call another module's internals (CLA-0002). Under the proposed CLA-0049 they only send commands and queries through the dispatcher.
 - A business rule found in a controller during review moves into the aggregate or the feature's handler.

@@ -17,7 +17,7 @@ The two environments were first called dev and prod. In practice the second one 
 - **uat** (`<app>.uat.localhost`) is the **owner's** environment. It holds real, hand-curated data that can't be recreated.
   - Its data volume is external and created by the owner, so Compose can never delete it.
   - It changes only through CD (CLA-0030). The agent never deploys, restarts or reconfigures it by hand.
-  - Its data changes only through the app, used by the owner, and through migrations deployed by CD (CLA-0012). The agent never writes SQL against uat, never runs scripts against its data, and never restores it.
+  - Its data changes only through the app, used by the owner, through migrations deployed by CD (CLA-0012), and through CD's restores (CLA-0030). The agent never writes SQL against uat and never restores it. The only script it may run against uat's data is the read-only backup (CLA-0031).
   - It shows a UAT badge.
 - **Compose files.** The files are `compose.base.yml` plus `compose.dev.yml` or `compose.uat.yml`. There is deliberately no `docker-compose.yml`.
 - **Never, on uat.** The agent never runs Compose commands against the uat project by hand. Neither the agent nor any script runs any of these against uat resources:

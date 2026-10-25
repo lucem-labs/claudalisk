@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-10-24
-- **Area:** environments
+- **Area:** code-standards
 - **Enforced by:** reviewer
 
 ## Context

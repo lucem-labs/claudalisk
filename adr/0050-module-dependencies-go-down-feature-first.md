@@ -12,7 +12,7 @@ This is the backend's version of Feature-Sliced Design's import rule and its "pa
 ## Decision
 
 - **Dependencies go down.** Within a module:
-  - features may use the module's `Shared` folder, its Domain project and its store contracts;
+  - features may use the module's `Shared` folder, its Domain project and its store contracts (the module's `Shared` folder is not the `<Root>.Shared` project);
   - `Shared` may use the Domain project;
   - nothing in the module references a feature.
 - **Features never reference each other.** A feature doesn't use another feature's request, handler, DTOs or mapping. When two features need the same thing, it moves down.
