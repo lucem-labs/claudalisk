@@ -17,7 +17,7 @@ The HTTP endpoints of a feature belong with the feature. One existing app let mo
 - **Controllers stay thin.** They handle only HTTP binding and status codes. Behaviour and business rules live in the module's handlers and aggregates. Proposed: one small controller per feature, which sends its request through the dispatcher (CLA-0047, CLA-0049).
 - **DTOs.**
   - Request and response DTOs live next to the controller that uses them: in the `Dtos` folder of the API project for cross-cutting endpoints, and in the feature's folder in a module (CLA-0047, proposed).
-  - They belong to the HTTP transport, so they can depend on ASP.NET Core MVC (for example binding and validation attributes).
+  - They belong to the HTTP transport, so they can depend on ASP.NET Core MVC (for example binding attributes). Under the proposed CLA-0057 they carry no validation attributes.
   - They never depend on EF Core, and they are never messages (CLA-0003).
 - **Mapping** at a boundary is internal extension methods in the consuming project. This covers:
   - DTOs to and from messages or a feature's requests, next to the controller;

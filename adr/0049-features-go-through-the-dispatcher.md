@@ -17,7 +17,7 @@ Claudalisk builds its own in-process dispatcher, a mediator-style package (CLA-0
 - **Handlers do the work.** A command handler loads the aggregate through its store, calls the aggregate's command method, and saves it. A query handler reads through a read store.
 - **Pipeline steps wrap every command and query in the same order:**
   1. logging
-  2. validation, which turns invalid input into `400` Problem Details (CLA-0045)
+  2. validation, which runs the FluentValidation validators and turns invalid input into `400` Problem Details (CLA-0045, CLA-0057)
   3. the unit of work, for commands (CLA-0007)
 
   Queries run without a unit of work.

@@ -63,6 +63,8 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0053](0053-shadcn-ui-design-system.md) | shadcn/ui is the design system, and its components live in `shared/ui` | proposed | frontend-conventions |
 | [CLA-0054](0054-tailwind-and-design-tokens.md) | Styling is Tailwind CSS v4, with design tokens as CSS variables | proposed | frontend-conventions |
 | [CLA-0055](0055-claudalisk-registry-and-ai-tooling.md) | Claudalisk ships a shadcn registry, and sets up shadcn's MCP server and skill | proposed | frontend-conventions |
+| [CLA-0056](0056-version-column-for-optimistic-concurrency.md) | Every aggregate root table has a version column for optimistic concurrency | proposed | data-and-migrations |
+| [CLA-0057](0057-validation-fluentvalidation-and-aggregates.md) | Input shape is checked by FluentValidation validators, and domain rules by the aggregate | proposed | backend-architecture |
 
 ## Format
 
