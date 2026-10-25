@@ -75,6 +75,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0065](0065-frontend-tooling.md) | The frontend uses React Router 7, oxlint, Vitest and generated OpenAPI types | proposed | frontend |
 | [CLA-0066](0066-environment-state-outside-the-checkout.md) | Environment files and backups live outside the checkout, per app and machine | proposed | environments |
 | [CLA-0067](0067-module-contracts-are-messages-only.md) | Module contracts are messages only, sent through the dispatcher | proposed | backend-architecture |
+| [CLA-0068](0068-events-fan-out-as-jobs.md) | Events fan out to every subscriber as a job after the commit | proposed | backend-architecture |
 
 ## Format
 
