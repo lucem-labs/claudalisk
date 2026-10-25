@@ -45,6 +45,17 @@ A **schema per module in one physical database** keeps the ownership and keeps a
   Without that interceptor, a save that sends several statements would try to start its own transaction.
 - **Things that break the shared connection.** Don't use `AddDbContextPool`, because each context needs its own scope's connection. Don't use `EnableRetryOnFailure` on module contexts, because EF Core's retries don't work with a transaction you control. Retry the whole `RunAsync` call instead.
 
+### Dispatching between modules
+
+Modules may call each other through an in-process dispatcher: claudalisk's own mediator-style package, which is still to be built. Whatever form it takes, it must keep the unit of work intact:
+
+- **Same scope.** Handlers are resolved from the caller's DI scope, never from the root provider or a new scope. A handler in another scope gets another connection and commits on its own, outside the unit of work.
+- **Scoped or transient handlers.** Handlers are never singletons, which would capture a scoped DbContext. The service provider validates scopes at startup.
+- **One handler at a time.** Notification handlers run sequentially. Running them in parallel on the shared connection fails, because neither a DbContext nor a connection can run two operations at once.
+- **A pipeline step may own the unit of work.** A step can wrap composition commands in `IUnitOfWork.RunAsync`. Requests those handlers send in turn join the same unit of work.
+- **Exceptions propagate.** The dispatcher and its handlers don't catch and swallow exceptions, so a failure reaches the unit of work and rolls everything back.
+- **No fire-and-forget.** Work dispatched to run later is queued in the owning module's queue table inside the unit of work. It never runs on a background thread from the request.
+
 ### Asynchronous work and separated modules: the queue as outbox
 
 - Work that may happen later is **queued, not called**: in the queue table of the module that will do it, inside the same unit of work. The queue row commits or rolls back with the data, so the queue is the outbox, with no separate outbox table. The handler must be idempotent.
@@ -71,6 +82,16 @@ A **schema per module in one physical database** keeps the ownership and keeps a
 - each schema has its own migrations history.
 
 Each test was checked to fail when the wiring is broken: without the interceptor, or with one connection per context. CI runs the tests on every push.
+
+The dispatching rules were checked with temporary tests that routed calls through MediatR 12.5 on the same spike. Those tests weren't kept, because claudalisk will build its own dispatcher. They showed that:
+
+- requests sent to two modules inside a unit of work roll back together;
+- a pipeline step that owns the unit of work rolls back the nested requests;
+- notification handlers run inside the unit of work;
+- a handler resolved in a new scope committed on its own;
+- publishing in parallel failed with "A second operation was started on this context instance".
+
+The dispatcher's own tests must cover the same cases.
 
 ## Consequences
 
