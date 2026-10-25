@@ -8,7 +8,7 @@
 
 ## Decision
 
-- The frontend is React, TypeScript and Vite, with plain CSS.
+- The frontend is React, TypeScript and Vite. Styling is plain CSS until the proposed CLA-0053 and CLA-0054 are accepted, then shadcn/ui on Tailwind CSS v4.
 - Every backend call goes through a typed API layer that holds the API types and the request helpers. Components never call `fetch` directly.
 - The layer is one HTTP client in `shared/api` and an `api` segment in each entity slice (CLA-0036, CLA-0037). Components use it through TanStack Query hooks (CLA-0038).
 - Proposed (#21): a lint rule that forbids `fetch` outside `shared/api`.
