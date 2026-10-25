@@ -19,7 +19,7 @@ Vibe-coding is fast but drifts. Claudalisk keeps the speed and adds the craft: y
 
 ## Standards
 
-The standards live once, as architecture decision records in [`adr/`](adr/README.md). Knowledge skills in [`skills/`](skills) index them by area: backend architecture, data and migrations, frontend, testing, workflow and environments. A skill loads automatically when Claude works with files in its area, and Claude opens an ADR only when the work needs it. An app's own `AGENTS.md` wins, and it lists each deviation by ADR id.
+The standards live once, as architecture decision records in [`adr/`](adr/README.md). Knowledge skills in [`skills/`](skills) index them by area: backend architecture, data and migrations, frontend, testing, workflow and environments, plus cross-cutting code standards that apply to every file. A skill loads automatically when Claude works with files in its area, and Claude opens an ADR only when the work needs it. An app's own `AGENTS.md` wins, and it lists each deviation by ADR id.
 
 ## Security
 

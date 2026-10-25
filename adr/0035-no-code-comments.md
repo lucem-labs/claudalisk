@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-10-25
-- **Area:** backend-architecture
+- **Area:** code-standards
 - **Enforced by:** reviewer subagent; the implementer brief
 
 ## Context
@@ -11,7 +11,7 @@ Comments drift away from the code they describe, and in an app built mostly by a
 
 ## Decision
 
-- **No comments in code.** Generated and agent-written code carries none: no line or block comments, no XML doc comments (`///`), and no comments in project files, Compose files, workflows or other config.
+- **No comments in any code.** This applies to everything generated or written by an agent, in every area and language: backend C#, frontend TypeScript and CSS, tests, scripts and SQL. It also covers project files, Compose files, Dockerfiles, CI and CD workflows and other config. That means no line or block comments, no XML doc comments (`///`), no JSDoc and no `#` or `<!-- -->` comments.
 - **Intent goes elsewhere:**
   - into names: types, methods, variables and test names that say what they do;
   - into small functions;

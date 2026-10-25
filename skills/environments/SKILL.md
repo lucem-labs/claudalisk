@@ -21,4 +21,3 @@ These are claudalisk's decisions for environments, CD and CI. The app's own `AGE
 - [CLA-0033](${CLAUDE_PLUGIN_ROOT}/adr/0033-shared-machine-infrastructure.md) (accepted): the proxy and the CI runners are shared by every app; never stop them or touch another app's resources.
 - [CLA-0034](${CLAUDE_PLUGIN_ROOT}/adr/0034-ci-workflow.md) (accepted): CI runs once per pushed commit, in parallel jobs, with a GitHub-hosted fallback.
 - [CLA-0027](${CLAUDE_PLUGIN_ROOT}/adr/0027-scripts-in-node.md) (accepted): scripts are Node.js, start processes with argument arrays, and send SQL on stdin.
-- [CLA-0035](${CLAUDE_PLUGIN_ROOT}/adr/0035-no-code-comments.md) (accepted): code carries no comments (no line, block or XML doc comments, none in config); intent goes into names, tests, commits and ADRs.
