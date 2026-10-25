@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-// Checks that the ADRs in adr/ and the knowledge-skill indexes in skills/ agree.
-// Usage: node tools/check-adrs.mjs [pluginRoot]
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ADR_FILE = /^(\d{4})-[a-z0-9-]+\.md$/;
 const STATUS = /^(proposed|accepted|superseded by CLA-\d{4})$/;
-// - [CLA-0001](${CLAUDE_PLUGIN_ROOT}/adr/0001-x.md) (accepted): decision.
 const SKILL_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\) \(([^)]+)\): \S/;
 const SKILL_LINK = /\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)\s`]+)/g;
-// | [CLA-0001](0001-x.md) | Title | accepted | area |
 const README_ROW = /^\| \[(CLA-\d{4})\]\(([^)]+)\) \| [^|]+ \| ([^|]+?) \| ([^|]+?) \|$/;
 
 const field = (text, name) => text.match(new RegExp(`^- \\*\\*${name}:\\*\\* (.+)$`, 'm'))?.[1].trim();
@@ -63,7 +59,6 @@ export function checkAdrs(root) {
   const ids = adrs.map((a) => a.id).filter(Boolean);
   for (const id of new Set(ids)) if (ids.filter((x) => x === id).length > 1) errors.push(`adr: ${id} is used by more than one file`);
 
-  // adr/README.md index
   const readmePath = join(root, 'adr', 'README.md');
   const indexed = new Set();
   if (!existsSync(readmePath)) errors.push('adr/README.md is missing');
@@ -82,7 +77,6 @@ export function checkAdrs(root) {
     for (const a of adrs) if (!indexed.has(a.file)) errors.push(`adr/README.md: ${a.id ?? a.file} has no row`);
   }
 
-  // skill indexes
   const skillsFor = new Map(adrs.map((a) => [a.file, new Set()]));
   for (const s of skills) {
     const where = `skills/${s.name}/SKILL.md`;

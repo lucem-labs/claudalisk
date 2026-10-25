@@ -13,7 +13,6 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
 {
     private sealed record Counts(int Orders, int Charges, int Queued);
 
-    /// <summary>Thrown by the tests' own composition logic, so no infrastructure error can pass for it.</summary>
     private sealed class CompositionFailed(string message) : Exception(message);
 
     private static async Task<Counts> CountAsync(IServiceProvider app)
@@ -59,7 +58,7 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
             await Assert.ThrowsAsync<DbUpdateException>(() => uow.RunAsync(async ct =>
             {
                 await orders.PlaceAsync(orderId, "A-1", ct);
-                await billing.ChargeAsync(orderId, -5m, ct); // violates the check constraint
+                await billing.ChargeAsync(orderId, -5m, ct);
             }));
         }
 
@@ -129,7 +128,7 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
             await Assert.ThrowsAsync<CompositionFailed>(() => uow.RunAsync(async ct =>
             {
                 await orders.PlaceAsync(orderId, "A-1", ct);
-                await uow.RunAsync(inner => billing.ChargeAsync(orderId, 10m, inner), ct); // must not commit on its own
+                await uow.RunAsync(inner => billing.ChargeAsync(orderId, 10m, inner), ct);
                 throw new CompositionFailed("outer work failed after the nested call");
             }));
         }
@@ -144,7 +143,7 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
         await using (var scope = app.CreateAsyncScope())
         {
             var (uow, orders, billing) = Resolve(scope.ServiceProvider);
-            Assert.Equal(0, await orders.CountAsync(CancellationToken.None)); // context created and used first
+            Assert.Equal(0, await orders.CountAsync(CancellationToken.None));
             Assert.Equal(0, await billing.CountChargesAsync(CancellationToken.None));
             var orderId = Guid.NewGuid();
             await Assert.ThrowsAsync<DbUpdateException>(() => uow.RunAsync(async ct =>
@@ -164,15 +163,15 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
         await using (var scope = app.CreateAsyncScope())
         {
             var (uow, orders, billing) = Resolve(scope.ServiceProvider);
-            await uow.RunAsync(ct => orders.PlaceAsync(Guid.NewGuid(), "A-1", ct));          // commits
-            await orders.PlaceAsync(Guid.NewGuid(), "A-2", CancellationToken.None);           // no unit of work
+            await uow.RunAsync(ct => orders.PlaceAsync(Guid.NewGuid(), "A-1", ct));
+            await orders.PlaceAsync(Guid.NewGuid(), "A-2", CancellationToken.None);
             var orderId = Guid.NewGuid();
-            await Assert.ThrowsAsync<DbUpdateException>(() => uow.RunAsync(async ct =>      // second unit of work fails
+            await Assert.ThrowsAsync<DbUpdateException>(() => uow.RunAsync(async ct =>
             {
                 await orders.PlaceAsync(orderId, "A-3", ct);
                 await billing.ChargeAsync(orderId, -5m, ct);
             }));
-            await uow.RunAsync(ct => orders.PlaceAsync(Guid.NewGuid(), "A-4", ct));          // and the scope still works
+            await uow.RunAsync(ct => orders.PlaceAsync(Guid.NewGuid(), "A-4", ct));
         }
 
         Assert.Equal(new Counts(3, 0, 0), await CountAsync(app));
@@ -215,8 +214,8 @@ public sealed class UnitOfWorkTests(PostgresFixture postgres)
         await uow.RunAsync(async ct =>
         {
             await orders.PlaceAsync(Guid.NewGuid(), "A-1", ct);
-            Assert.Equal(1, await orders.CountAsync(ct));                // visible inside the unit of work
-            Assert.Equal(0, (await CountAsync(app)).Orders);             // another scope: another connection
+            Assert.Equal(1, await orders.CountAsync(ct));
+            Assert.Equal(0, (await CountAsync(app)).Orders);
         });
 
         Assert.Equal(1, (await CountAsync(app)).Orders);

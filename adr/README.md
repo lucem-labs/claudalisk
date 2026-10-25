@@ -42,6 +42,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0032](0032-dev-refreshed-from-uat.md) | Dev is refreshed one way from uat | accepted | environments |
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
 | [CLA-0034](0034-ci-workflow.md) | CI runs once per pushed commit, fully parallel | accepted | environments |
+| [CLA-0035](0035-no-code-comments.md) | Code carries no comments | accepted | code-standards |
 
 ## Format
 
@@ -52,7 +53,7 @@ Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and never re
 
 - **Status:** proposed | accepted | superseded by CLA-NNNN
 - **Date:** YYYY-MM-DD
-- **Area:** backend-architecture | data-and-migrations | frontend-conventions | testing | workflow | environments
+- **Area:** backend-architecture | data-and-migrations | frontend-conventions | testing | workflow | environments | code-standards (cross-cutting)
 - **Enforced by:** hook | test | CI | reviewer | prompt only (be specific)
 - **Issue:** #n (optional)
 ```

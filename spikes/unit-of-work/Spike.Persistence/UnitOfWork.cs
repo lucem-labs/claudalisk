@@ -9,7 +9,6 @@ internal sealed class UnitOfWork(DbSession session) : IUnitOfWork
     {
         if (session.Transaction is not null)
         {
-            // Nested call: join the outer unit of work; it commits or rolls back once.
             return await work(cancellationToken);
         }
 
@@ -28,7 +27,6 @@ internal sealed class UnitOfWork(DbSession session) : IUnitOfWork
         }
         finally
         {
-            // Disposing a transaction that wasn't committed rolls it back.
             session.Transaction = null;
         }
     }

@@ -4,13 +4,10 @@ using Spike.Persistence;
 
 namespace Spike.Modules.Billing.Persistence;
 
-// In an app, IBillingStore lives in the module's Persistence.Interfaces project and takes messages.
 public interface IBillingStore
 {
-    /// <summary>Records a charge. A non-positive amount violates a database check constraint.</summary>
     Task ChargeAsync(Guid orderId, decimal amount, CancellationToken cancellationToken);
 
-    /// <summary>Queues follow-up work in the module's own queue table: the outbox, in the same transaction.</summary>
     Task EnqueueReceiptAsync(Guid orderId, CancellationToken cancellationToken);
 
     Task<int> CountChargesAsync(CancellationToken cancellationToken);

@@ -25,7 +25,6 @@ internal sealed class InitialBilling : Migration
                 table.CheckConstraint("CK_charges_amount_positive", "\"Amount\" > 0");
             });
 
-        // The module's work queue: rows written here commit or roll back with the module's data.
         migrationBuilder.Sql("""
             CREATE TABLE billing.jobs (
                 id bigserial PRIMARY KEY,

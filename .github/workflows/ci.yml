@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   adrs:
-    # claudalisk's own CI always runs on GitHub-hosted runners.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +26,6 @@ jobs:
         run: node --test tools/*.test.mjs
 
   unit-of-work-spike:
-    # Proves CLA-0007 against real PostgreSQL (Testcontainers needs Docker, which GitHub-hosted runners have).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
