@@ -16,7 +16,7 @@ A second reason is low operational complexity. These are single-owner, local-fir
 - The backend is one deployable .NET 10 application. One Host project (`<Root>.Api.Host`) is the composition root. One API project (`<Root>.Api`) holds cross-cutting endpoints and concerns.
 - Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project, a `<Root>.Modules.<Name>.Interfaces` project for its public contracts, and the persistence projects of CLA-0007. The proposed CLA-0048 adds a Domain project.
 - **The boundary is the contract, not the transport.** Modules talk only through their Interfaces projects (CLA-0002). Behind a contract, a call can be:
-  - an in-process method call (the default);
+  - an in-process call (the default), which the proposed CLA-0067 makes a message sent through the dispatcher;
   - queued background work, through jobs on PostgreSQL today (the proposed CLA-0058);
   - a network call, or a module with its own database, when the module needs it. By default a module owns a schema in the app's one database (CLA-0007).
 - The callers of a module do not change when its transport or data store changes.

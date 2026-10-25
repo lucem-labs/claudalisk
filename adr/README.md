@@ -74,6 +74,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0064](0064-repository-and-test-layout.md) | Every app has the same repository layout, with a test project per module | proposed | backend-architecture |
 | [CLA-0065](0065-frontend-tooling.md) | The frontend uses React Router 7, oxlint, Vitest and generated OpenAPI types | proposed | frontend |
 | [CLA-0066](0066-environment-state-outside-the-checkout.md) | Environment files and backups live outside the checkout, per app and machine | proposed | environments |
+| [CLA-0067](0067-module-contracts-are-messages-only.md) | Module contracts are messages only, sent through the dispatcher | proposed | backend-architecture |
 
 ## Format
 

@@ -18,7 +18,7 @@ Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but n
   - **PostgreSQL** (now): the jobs table is the queue. Workers claim a job with `FOR UPDATE SKIP LOCKED`, and `LISTEN`/`NOTIFY` wakes them, with polling as a fallback.
   - **AWS SQS** (later): the jobs table is the outbox. A relay publishes committed rows to SQS, and the consumer updates the job's row.
 - **Queueing joins the caller's transaction.** The job row is inserted on the scope's shared connection, inside the current unit of work. It commits or rolls back with the data that queued it, so no job runs for a rolled-back change.
-- **The queue stays behind the module's contract.** Another module asks for background work through a normal method on the target module's contract (CLA-0002), which returns a job reference. Only the target module queues its own jobs. The calling module never sees the jobs library.
+- **The queue stays behind the module's contract.** Another module asks for background work by sending a command from the target module's Interfaces project, whose result is a `JobReference` (CLA-0067). Only the target module queues its own jobs. The calling module never sees the jobs library.
 - **A worker runs each job in a fresh DI scope.**
   - A claim is a short transaction of its own. It sets the job to `running`, increments `attempts` and stamps the heartbeat.
   - The worker sends the command through the pipeline. The unit of work that runs the handler also marks the job `succeeded`, so the handler's writes and the job's completion commit together. Batch jobs commit per batch instead (CLA-0059).
