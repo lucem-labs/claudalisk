@@ -21,7 +21,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0011](0011-fresh-database-migrates.md) | A fresh, empty database migrates end to end | proposed | data-and-migrations |
 | [CLA-0012](0012-one-off-data-fixes.md) | Data fixes are EF Core migrations | accepted | data-and-migrations |
 | [CLA-0013](0013-external-data-on-explicit-trigger.md) | External data is refreshed only on an explicit trigger, and never from tests | proposed | data-and-migrations |
-| [CLA-0014](0014-frontend-stack-and-api-module.md) | React, TypeScript and Vite, with one typed API module | accepted | frontend-conventions |
+| [CLA-0014](0014-frontend-stack-and-api-module.md) | React, TypeScript and Vite, with every backend call through a typed API layer | accepted | frontend-conventions |
 | [CLA-0015](0015-ui-renders-api-values.md) | The UI renders what the API returns and never duplicates backend rules | accepted | frontend-conventions |
 | [CLA-0016](0016-every-change-ships-with-tests.md) | Every behaviour change ships with tests | accepted | testing |
 | [CLA-0017](0017-tests-run-on-throwaway-stacks.md) | Tests run on throwaway stacks | accepted | testing |
@@ -43,6 +43,11 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
 | [CLA-0034](0034-ci-workflow.md) | CI runs once per pushed commit, fully parallel | accepted | environments |
 | [CLA-0035](0035-no-code-comments.md) | Code carries no comments | accepted | code-standards |
+| [CLA-0036](0036-feature-sliced-design-pages-first.md) | The frontend follows Feature-Sliced Design, pages first | proposed | frontend-architecture |
+| [CLA-0037](0037-entities-mirror-backend-modules.md) | Frontend entities mirror backend modules | proposed | frontend-architecture |
+| [CLA-0038](0038-server-state-in-tanstack-query.md) | Server state lives in TanStack Query | proposed | frontend-architecture |
+| [CLA-0039](0039-client-state-in-zustand-stores.md) | Shared client state lives in Zustand stores that components only subscribe to | proposed | frontend-architecture |
+| [CLA-0040](0040-frontend-boundaries-linted.md) | Frontend layer boundaries are checked by Steiger in CI | proposed | frontend-architecture |
 
 ## Format
 
@@ -53,7 +58,7 @@ Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and never re
 
 - **Status:** proposed | accepted | superseded by CLA-NNNN
 - **Date:** YYYY-MM-DD
-- **Area:** backend-architecture | data-and-migrations | frontend-conventions | testing | workflow | environments | code-standards (cross-cutting)
+- **Area:** backend-architecture | data-and-migrations | frontend-architecture | frontend-conventions | testing | workflow | environments | code-standards (cross-cutting)
 - **Enforced by:** hook | test | CI | reviewer | prompt only (be specific)
 - **Issue:** #n (optional)
 ```
