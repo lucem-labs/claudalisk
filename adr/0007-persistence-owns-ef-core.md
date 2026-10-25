@@ -54,11 +54,11 @@ Modules can call each other through an in-process dispatcher: claudalisk's own m
 - **One handler at a time.** Notification handlers run sequentially. Parallel handlers on the shared connection fail, because a DbContext or a connection cannot run two operations at once.
 - **A pipeline step can own the unit of work.** A step can wrap commands in `IUnitOfWork.RunAsync`. The proposed CLA-0049 wraps every command. Commands and queries that those handlers send in turn join the same unit of work.
 - **Exceptions propagate.** The dispatcher and its handlers do not catch and swallow exceptions, so a failure reaches the unit of work and rolls everything back.
-- **No fire-and-forget.** Work dispatched to run later goes into the queue table of the owning module, inside the unit of work. It never runs on a background thread from the request.
+- **No fire-and-forget.** Work dispatched to run later goes into the jobs table of the owning module, inside the unit of work (the proposed CLA-0058). It never runs on a background thread from the request.
 
 ### Asynchronous work and separated modules: the queue as outbox
 
-- Work that can happen later is **queued, not called**. It goes in the queue table of the module that will do it, inside the same unit of work. The queue row commits or rolls back with the data, so the queue is the outbox, with no separate outbox table. The handler must be idempotent.
+- Work that can happen later is **queued, not called**. It goes in the jobs table of the module that will do it, inside the same unit of work. The job row commits or rolls back with the data, so the jobs table is the outbox, with no separate outbox table. The handler must be idempotent. The proposed CLA-0058 describes jobs and their transports.
 - A module that **moves to its own database** (CLA-0001) gets its own data source and leaves the unit of work. Its callers switch to queued work: an outbox in the caller's schema, delivered to the module, with an inbox on the module's side that records handled message IDs. The architecture test flags any unit of work that still includes such a module.
 
 ### Operations

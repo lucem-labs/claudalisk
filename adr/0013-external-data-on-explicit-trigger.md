@@ -8,7 +8,7 @@
 
 ## Decision
 
-- Pulling or backfilling data from a third-party API is an explicit, owner-triggered action: an API endpoint plus a script that asks for confirmation and backs up uat first. It never runs at startup.
+- Pulling or backfilling data from a third-party API is an explicit, owner-triggered action: an API endpoint plus a script that asks for confirmation and backs up uat first, or a schedule that the owner configured (CLA-0061). It never runs at startup.
 - Third-party clients batch requests, respect rate limits and `Retry-After`, and cache results locally.
 - Tests and CI never call live third-party APIs. They use recorded responses or a stub server. Only a smoke script that someone runs by hand calls the live API.
 

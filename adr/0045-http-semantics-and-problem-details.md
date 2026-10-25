@@ -10,7 +10,7 @@
 - **Success:**
   - `200` with the representation for a read, and for a write that returns the changed resource.
   - `201 Created` with a `Location` header for a new resource.
-  - `202 Accepted` with a `Location` header that points to a job resource for queued work (CLA-0001, CLA-0043). The job resource has its own state and a link to the result when there is one.
+  - `202 Accepted` with a `Location` header that points to a job resource for queued work (CLA-0001, CLA-0043, CLA-0060). The job resource has its own state and a link to the result when there is one.
   - `204 No Content` for a write with nothing to return.
 - **Failure:**
   - `400` for a request that fails validation, as ASP.NET Core's `ValidationProblemDetails`.

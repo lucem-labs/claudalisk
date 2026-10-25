@@ -18,7 +18,7 @@ Claudalisk builds its own in-process dispatcher, a mediator-style package (CLA-0
 - **Pipeline steps wrap every command and query in the same order:**
   1. logging
   2. validation, which runs the FluentValidation validators and turns invalid input into `400` Problem Details (CLA-0045, CLA-0057)
-  3. the unit of work, for commands (CLA-0007)
+  3. the unit of work, for commands (CLA-0007), except batch jobs, which the jobs library commits one batch at a time (CLA-0059)
 
   Queries run without a unit of work.
 - **Calls between modules use the same dispatcher.** They use commands and queries that the Interfaces project of the target module declares (CLA-0002, CLA-0003). A handler never sends a command or query to another feature of its own module (CLA-0050).

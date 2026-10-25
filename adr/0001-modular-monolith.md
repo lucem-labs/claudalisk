@@ -17,7 +17,7 @@ A second reason is low operational complexity. These are single-owner, local-fir
 - Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project, a `<Root>.Modules.<Name>.Interfaces` project for its public contracts, and the persistence projects of CLA-0007. The proposed CLA-0048 adds a Domain project.
 - **The boundary is the contract, not the transport.** Modules talk only through their Interfaces projects (CLA-0002). Behind a contract, a call can be:
   - an in-process method call (the default);
-  - queued background work, through PostgreSQL queues;
+  - queued background work, through jobs on PostgreSQL today (the proposed CLA-0058);
   - a network call, or a module with its own database, when the module needs it. By default a module owns a schema in the app's one database (CLA-0007).
 - The callers of a module do not change when its transport or data store changes.
 

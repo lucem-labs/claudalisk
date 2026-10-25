@@ -65,6 +65,11 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0055](0055-claudalisk-registry-and-ai-tooling.md) | Claudalisk ships a shadcn registry, and sets up shadcn's MCP server and skill | proposed | frontend-conventions |
 | [CLA-0056](0056-version-column-for-optimistic-concurrency.md) | Every aggregate root table has a version column for optimistic concurrency | proposed | data-and-migrations |
 | [CLA-0057](0057-validation-fluentvalidation-and-aggregates.md) | Input shape is checked by FluentValidation validators, and domain rules by the aggregate | proposed | backend-architecture |
+| [CLA-0058](0058-queued-work-jobs-library.md) | Queued work runs as jobs through the claudalisk jobs library, with a swappable transport | proposed | backend-architecture |
+| [CLA-0059](0059-batch-jobs.md) | Long jobs are batch jobs that the library commits one batch at a time | proposed | backend-architecture |
+| [CLA-0060](0060-jobs-router-and-job-resource.md) | The UI starts jobs through module endpoints and follows them through the jobs router | proposed | backend-architecture |
+| [CLA-0061](0061-scheduler-module.md) | Recurring work comes from the claudalisk scheduler module, configured per command and module | proposed | backend-architecture |
+| [CLA-0062](0062-claudalisk-nuget-packages.md) | Reusable backend infrastructure ships as claudalisk NuGet packages | proposed | backend-architecture |
 
 ## Format
 
