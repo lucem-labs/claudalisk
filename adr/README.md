@@ -53,7 +53,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0043](0043-state-changes-are-domain-commands.md) | State changes are domain commands, posted to a sub-resource named after the command | proposed | backend-architecture |
 | [CLA-0044](0044-hypermedia-links-and-actions.md) | Representations carry links and the commands available now; the UI shows only those | proposed | backend-architecture |
 | [CLA-0045](0045-http-semantics-and-problem-details.md) | The API uses HTTP's own semantics: status codes, Problem Details and conditional writes | proposed | backend-architecture |
-| [CLA-0046](0046-frontend-types-from-openapi.md) | Frontend API types are generated from the backend's OpenAPI document | proposed | backend-architecture |
+| [CLA-0046](0046-openapi-document.md) | The OpenAPI document groups endpoints by module, and frontend API types are generated from it | proposed | backend-architecture |
 
 ## Format
 

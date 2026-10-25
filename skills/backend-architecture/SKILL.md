@@ -24,4 +24,4 @@ These are claudalisk's decisions for backend code. The app's own `AGENTS.md` win
 - [CLA-0043](${CLAUDE_PLUGIN_ROOT}/adr/0043-state-changes-are-domain-commands.md) (proposed): state changes are POSTs to a sub-resource named after the domain command, such as `/cancel`; status fields are never written directly.
 - [CLA-0044](${CLAUDE_PLUGIN_ROOT}/adr/0044-hypermedia-links-and-actions.md) (proposed): representations carry HAL-style `_links` and the `_actions` the aggregate allows now; the UI shows only those actions.
 - [CLA-0045](${CLAUDE_PLUGIN_ROOT}/adr/0045-http-semantics-and-problem-details.md) (proposed): standard status codes, RFC 9457 Problem Details with a `type` per domain error, and ETag with If-Match on writes.
-- [CLA-0046](${CLAUDE_PLUGIN_ROOT}/adr/0046-frontend-types-from-openapi.md) (proposed): frontend API types are generated from the backend's OpenAPI document and checked in CI.
+- [CLA-0046](${CLAUDE_PLUGIN_ROOT}/adr/0046-openapi-document.md) (proposed): the OpenAPI document groups endpoints by module through a registration convention, and frontend API types are generated from it and checked in CI.
