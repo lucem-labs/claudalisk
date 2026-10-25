@@ -19,3 +19,4 @@ These are claudalisk's decisions for tests. The app's `AGENTS.md` wins where it 
 - [CLA-0020](${CLAUDE_PLUGIN_ROOT}/adr/0020-no-wall-clock-assertions.md) (proposed): inject `TimeProvider`, and assert order and counts, not durations.
 - [CLA-0011](${CLAUDE_PLUGIN_ROOT}/adr/0011-fresh-database-migrates.md) (proposed): a fresh, empty database migrates end to end.
 - [CLA-0013](${CLAUDE_PLUGIN_ROOT}/adr/0013-external-data-on-explicit-trigger.md) (proposed): tests never call live third-party APIs. They use recorded responses or a stub server.
+- [CLA-0064](${CLAUDE_PLUGIN_ROOT}/adr/0064-repository-and-test-layout.md) (proposed): one test project per module, mirroring its features; frontend unit tests sit next to their code as `*.test.ts`.

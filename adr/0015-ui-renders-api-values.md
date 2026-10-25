@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-10-24
-- **Area:** frontend-conventions
+- **Area:** frontend
 - **Enforced by:** reviewer
 
 ## Decision

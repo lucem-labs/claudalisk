@@ -12,7 +12,7 @@ In two existing apps, the architecture tests listed module assemblies by hand ("
 
 ## Decision
 
-- Architecture tests find modules by naming convention. A module is an assembly named `<Root>.Modules.<Name>` with no further suffix. Its other projects are found by suffix: `.Interfaces`, `.Persistence`, `.Persistence.Interfaces` and, under the proposed CLA-0048, `.Domain`. Every module must have an `.Interfaces` project.
+- Architecture tests find modules by naming convention. A module is an assembly named `<Root>.Modules.<Name>` with no further suffix. Test projects, which end in `.Tests`, are not modules (the proposed CLA-0064). Its other projects are found by suffix: `.Interfaces`, `.Persistence`, `.Persistence.Interfaces` and, under the proposed CLA-0048, `.Domain`. Every module must have an `.Interfaces` project.
 - A safety test asserts that the number of modules found equals the number of module implementation csproj files.
 - The generated rules cover CLA-0002 and CLA-0003 (including the message rules). They also assert that:
   - controllers live only in the API project (`<Root>.Api`) or a module implementation project;

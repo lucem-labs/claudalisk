@@ -2,7 +2,7 @@
 
 - **Status:** proposed
 - **Date:** 2026-10-25
-- **Area:** frontend-conventions
+- **Area:** frontend
 - **Enforced by:** reviewer; Steiger (CLA-0040)
 
 ## Context

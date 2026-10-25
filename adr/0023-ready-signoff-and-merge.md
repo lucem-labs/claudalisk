@@ -12,7 +12,7 @@ Draft pull requests added a step. Someone had to click "Ready for review" before
 ## Decision
 
 - **No draft pull requests.**
-- **While working,** the agent pushes the issue branch. CI runs on every push (CLA-0034). The agent deploys to dev by hand and verifies there.
+- **While working,** the agent pushes the issue branch. CI runs on every push (CLA-0034). The agent deploys to dev by hand and verifies there. CD also deploys to dev (CLA-0030), so before the agent reports a dev verification, it checks that dev's `deployedSha` is the commit it verified. If CD replaced it, the agent deploys again and checks again.
 - **Open when ready.** The agent opens the pull request only when CI is green on the branch head and the change is verified on dev.
 - **CD puts it on uat.** Opening the pull request makes CD deploy its head to dev and uat (CLA-0030). The agent then tells the owner which pull request and commit uat runs, and what to check.
 - **The owner reviews on uat** with real data. When satisfied, the owner merges the pull request in GitHub (CLA-0024).

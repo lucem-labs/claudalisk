@@ -9,7 +9,7 @@
 
 These never appear in commits, pull requests, issues or comments:
 
-- `.env.dev` and `.env.uat`
+- env files with real values, such as `dev.env` and `uat.env` (proposed to live outside the checkout in CLA-0066)
 - backups, dumps and `*.local.json` files
 - database contents and screenshots of real data
 

@@ -29,7 +29,7 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
   - the command or query that goes through the dispatcher, and its handler (CLA-0049), named as in CLA-0052
   - the feature's mapping extension methods (CLA-0005)
   - the validators of its commands and queries (CLA-0057)
-- **Tests mirror features.** The tests of a feature are in a matching folder of the test project, such as `Modules/Orders/Features/CancelOrder/`.
+- **Tests mirror features.** The tests of a feature are in a matching folder of the module's test project (CLA-0064), such as `Features/CancelOrder/` in `<Root>.Modules.Orders.Tests`.
 
 ```
 <Root>.Modules.Orders/

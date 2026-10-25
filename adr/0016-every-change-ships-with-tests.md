@@ -11,6 +11,7 @@
   - backend regression tests
   - architecture tests when boundaries change
   - a Playwright end-to-end test when the UI changes
+  - a Vitest unit test when store or helper logic in the frontend changes (proposed in CLA-0065)
 - Run the tests before you report the work as done.
 - Report a test that cannot be added or run. Never skip it silently.
 

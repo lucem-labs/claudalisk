@@ -16,7 +16,7 @@
   - Each tag has a description of what the bounded context covers (CLA-0041).
 - **Frontend API types are generated from the document.**
   - The types go into `shared/api`, and the `api` segment of each entity uses them (CLA-0014, CLA-0037).
-  - Nobody edits the generated file by hand.
+  - `openapi-typescript` generates them (CLA-0065). Nobody edits the generated file by hand.
   - CI regenerates the types and fails when they differ from the committed ones. A backend change that breaks the frontend then shows as a type error in the same pull request.
 
 ## Consequences

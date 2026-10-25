@@ -2,7 +2,7 @@
 
 - **Status:** proposed
 - **Date:** 2026-10-25
-- **Area:** frontend-architecture
+- **Area:** frontend
 - **Enforced by:** CI
 
 ## Decision
