@@ -13,7 +13,7 @@ The HTTP endpoints of a feature belong with the feature. One existing app let mo
 
 - **Who owns controllers.** Endpoints use attribute-routed ASP.NET Core controllers.
   - A module can expose and register its own API. Its controllers live in its implementation project, and module registration adds them.
-  - The API project holds only cross-cutting endpoints and concerns, such as health and exception filters.
+  - The API project holds only cross-cutting endpoints and concerns, such as health and the exception handler (the proposed CLA-0063).
 - **Controllers stay thin.** They handle only HTTP binding and status codes. Behaviour and business rules live in the module's handlers and aggregates. Proposed: one small controller per feature, which sends its request through the dispatcher (CLA-0047, CLA-0049).
 - **DTOs.**
   - Request and response DTOs live next to the controller that uses them: in the `Dtos` folder of the API project for cross-cutting endpoints, and in the feature's folder in a module (CLA-0047, proposed).

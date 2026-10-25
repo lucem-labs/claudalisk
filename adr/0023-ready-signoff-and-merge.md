@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** workflow
-- **Enforced by:** CD (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024)
+- **Enforced by:** CD (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024); guardrail hook on `gh pr create` (CI must be green on the head, #11)
 
 ## Context
 

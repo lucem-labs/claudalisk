@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** testing
-- **Enforced by:** reviewer; Stop gate (planned)
+- **Enforced by:** reviewer; CI
 
 ## Decision
 

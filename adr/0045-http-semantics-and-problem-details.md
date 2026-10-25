@@ -19,7 +19,7 @@
   - `412 Precondition Failed` when `If-Match` does not match the current version.
   - `428 Precondition Required` when a write that needs `If-Match` does not send it.
 - **Every error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details.** Each domain error has its own `type` URI in the module's language, such as `/problems/orders/already-shipped`. It also has a `title` and a `detail` that the UI can show as is. The frontend branches on `type`, never on the text.
-- One place in each module turns domain errors into Problem Details. Controller actions do not do it.
+- One API-wide exception handler turns every error into Problem Details (CLA-0063). Modules and controller actions do not do it.
 - **Writes are conditional.** A `GET` of an aggregate returns an `ETag` built from its version (CLA-0048, CLA-0056). `PUT`, `PATCH`, `DELETE` and commands on an existing aggregate require `If-Match`. A stale version gets `412`, and the client reloads before it tries again.
 - Methods keep their HTTP meaning. `GET` changes nothing. `PUT` and `DELETE` are idempotent. `POST` creates resources and sends commands.
 

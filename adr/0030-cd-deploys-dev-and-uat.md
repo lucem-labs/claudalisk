@@ -32,6 +32,7 @@ Treating the second environment as production needed heavyweight guards on every
   5. Start the new version.
   6. Check health.
   7. Record the deployment as a GitHub deployment for that environment.
+- **Changed migrations.** CD refuses to deploy a commit that changes a migration uat has already applied (CLA-0010).
 - **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit to deploy lacks a migration that uat has already applied, the deploy does two things:
   1. It restores uat from the latest backup taken before that migration was applied (CLA-0031). This may be the pre-deploy backup of the pull request that introduced the migration.
   2. It then deploys.

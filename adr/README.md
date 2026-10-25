@@ -70,6 +70,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0060](0060-jobs-router-and-job-resource.md) | The UI starts jobs through module endpoints and follows them through the jobs router | proposed | backend-architecture |
 | [CLA-0061](0061-scheduler-module.md) | Recurring work comes from the claudalisk scheduler module, configured per command and module | proposed | backend-architecture |
 | [CLA-0062](0062-claudalisk-nuget-packages.md) | Reusable backend infrastructure ships as claudalisk NuGet packages | proposed | backend-architecture |
+| [CLA-0063](0063-domain-exceptions-and-one-problem-handler.md) | Domain errors are `DomainException`s, and one API-wide handler turns every error into Problem Details | proposed | backend-architecture |
 
 ## Format
 

@@ -18,11 +18,11 @@ In two existing apps, real-database tests skipped themselves when a connection v
   - The fixture applies the migrations once to a template database. Each test gets its own database cloned from that template (CLA-0019).
   - The container is removed when the run ends.
   - There is no connection-string variable to set, so nothing to forget.
-- **No Docker means a failure, not a skip.** If the fixture cannot start a container, the database tests fail with a message that says Docker is needed. This applies locally, in CI and under the Stop gate.
+- **No Docker means a failure, not a skip.** If the fixture cannot start a container, the database tests fail with a message that says Docker is needed. This applies locally and in CI.
 - **Skips are tracked.** `Skip` needs a tracked reason.
 
 ## Consequences
 
 - A green run means the database tests ran.
-- `dotnet test` works the same on a developer machine, in CI and in the Stop gate, if Docker is running. CI no longer needs its own PostgreSQL service for the backend tests, because the containerised runners provide Docker.
+- `dotnet test` works the same on a developer machine and in CI, if Docker is running. CI no longer needs its own PostgreSQL service for the backend tests, because the containerised runners provide Docker.
 - The two existing apps used a connection-string variable and a database that someone started by hand. To adopt this ADR, they must switch their fixtures to Testcontainers.

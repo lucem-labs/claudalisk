@@ -9,6 +9,7 @@
 ## Decision
 
 - Infrastructure that every app needs, and that has no business meaning, is built, tested and versioned in the claudalisk repository as NuGet packages. Apps reference the packages and do not copy the code:
+  - `Claudalisk.Domain`: `DomainException` (CLA-0063), the only package that Domain projects may reference (CLA-0048);
   - `Claudalisk.Dispatching.Abstractions`: commands, queries and handler interfaces, the only package that Interfaces projects may reference (CLA-0003);
   - `Claudalisk.Dispatching`: the dispatcher and its pipeline (CLA-0049);
   - `Claudalisk.Jobs`: jobs, workers, batch jobs and the jobs router (CLA-0058, CLA-0059, CLA-0060);

@@ -8,7 +8,7 @@
 
 ## Context
 
-Throwaway test stacks, CI and the Stop gate all start from an empty database. A migration that works only on a database with history breaks all of them, and test workarounds can hide the problem.
+Throwaway test stacks and CI start from an empty database. A migration that works only on a database with history breaks all of them, and test workarounds can hide the problem.
 
 ## Decision
 
