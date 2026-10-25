@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared persistence infrastructure: the data source, one connection per scope, the unit of work.
+       It holds no module's data. Module persistence projects reference it, like <Root>.Shared. -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Spike.Persistence.Interfaces\Spike.Persistence.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

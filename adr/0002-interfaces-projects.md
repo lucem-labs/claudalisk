@@ -14,6 +14,7 @@ Without a hard rule, modules start reaching into each other's implementation typ
 - The API project and other modules reference only `*.Interfaces` projects, never another module's implementation project.
 - Only the Host (the composition root) and test projects reference implementation projects. The check reads `ProjectReference`s from the csproj files, so an unused reference also fails.
 - Implementation assemblies do not depend on other implementation assemblies.
+- Shared infrastructure projects that hold no module's code or data are the exception: `<Root>.Shared` (module registration) and `<Root>.Persistence` (the data source, the per-scope connection and the unit of work, CLA-0007). Modules and their persistence projects may reference them.
 
 ## Consequences
 

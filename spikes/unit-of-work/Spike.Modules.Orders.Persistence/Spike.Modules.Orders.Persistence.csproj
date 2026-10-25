@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Spike.Persistence\Spike.Persistence.csproj" />
+  </ItemGroup>
+</Project>

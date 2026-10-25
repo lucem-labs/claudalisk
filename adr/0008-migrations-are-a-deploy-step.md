@@ -11,7 +11,7 @@ Migrating at startup mutates prod on every restart and races the pre-deploy back
 
 ## Decision
 
-- The Host has an `--initialize-databases` mode that applies migrations and exits.
+- The Host has an `--initialize-databases` mode that applies every module DbContext's migrations and exits (CLA-0007).
 - Deploys run that mode as a separate step: a `migrate` Compose service using the same image, after the pre-deploy backup and before the new API starts.
 - Otherwise, the API refuses to start while migrations are pending.
 - `Migrate`, `MigrateAsync` and `EnsureCreated` are not called anywhere else.
