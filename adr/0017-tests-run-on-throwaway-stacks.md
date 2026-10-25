@@ -8,7 +8,7 @@
 ## Decision
 
 - Each test run starts its own PostgreSQL and, for end-to-end tests, its own API and web servers. Backend tests start PostgreSQL through Testcontainers (CLA-0018).
-- Tests and CI never use the dev or prod Compose projects, databases or volumes.
+- Tests and CI never use the dev or uat Compose projects, databases or volumes.
 
 ## Consequences
 

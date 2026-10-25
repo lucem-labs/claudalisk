@@ -8,7 +8,7 @@
 ## Decision
 
 - An app's own `AGENTS.md` overrides claudalisk defaults where they differ.
-- `AGENTS.md` holds app facts only: domain, commands, URLs, ports, and a short prod-safety paragraph.
+- `AGENTS.md` holds app facts only: domain, commands, URLs, ports, and a short uat data-safety paragraph.
 - It has a "Deviations" section listing each deliberate difference by ADR id, for example "Deviates from CLA-0009: a daily import job writes reference data, because …".
 - `CLAUDE.md` is a one-line `@AGENTS.md` shim.
 - Generic workflow, safety and architecture rules are not copied into the app. They live in these ADRs.

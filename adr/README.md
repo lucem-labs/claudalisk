@@ -30,16 +30,16 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0020](0020-no-wall-clock-assertions.md) | No wall-clock assertions in tests | proposed | testing |
 | [CLA-0021](0021-issue-driven-work.md) | All work is issue-driven | accepted | workflow |
 | [CLA-0022](0022-bugs-found-become-issues.md) | Bugs found along the way become new issues | accepted | workflow |
-| [CLA-0023](0023-ready-signoff-and-merge.md) | Ready means CI green and verified; the owner signs off on prod | accepted | workflow |
-| [CLA-0024](0024-owner-merges.md) | The owner merges; the agent runs the merge check | proposed | workflow |
+| [CLA-0023](0023-ready-signoff-and-merge.md) | Ready means CI green and verified on dev; the owner reviews on uat and merges | accepted | workflow |
+| [CLA-0024](0024-owner-merges.md) | Only the owner merges, in GitHub | accepted | workflow |
 | [CLA-0025](0025-stacked-pull-requests.md) | Stacked pull requests merge in order without closing children | proposed | workflow |
 | [CLA-0026](0026-no-real-data-or-secrets-in-git.md) | Real data and secrets never go into commits, pull requests or issues | accepted | workflow |
 | [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | environments |
 | [CLA-0028](0028-app-agents-md-wins.md) | The app's AGENTS.md wins, and deviations cite ADR ids | accepted | workflow |
-| [CLA-0029](0029-dev-and-prod-environments.md) | Two local environments: dev for the agent, prod for real data | accepted | environments |
-| [CLA-0030](0030-guarded-prod-deploys.md) | Prod deploys are guarded and back up first | accepted | environments |
-| [CLA-0031](0031-backups-and-restores.md) | Prod backups are versioned; restores are verified and swapped in | accepted | environments |
-| [CLA-0032](0032-dev-refreshed-from-prod.md) | Dev is refreshed one way from prod | accepted | environments |
+| [CLA-0029](0029-dev-and-uat-environments.md) | Two local environments: dev for the agent, uat for the owner's real data | accepted | environments |
+| [CLA-0030](0030-cd-deploys-dev-and-uat.md) | CD deploys dev and uat together, backing up uat first | accepted | environments |
+| [CLA-0031](0031-backups-and-restores.md) | Uat backups are versioned; restores are verified and swapped in | accepted | environments |
+| [CLA-0032](0032-dev-refreshed-from-uat.md) | Dev is refreshed one way from uat | accepted | environments |
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
 | [CLA-0034](0034-ci-workflow.md) | CI runs once per pushed commit, fully parallel | accepted | environments |
 

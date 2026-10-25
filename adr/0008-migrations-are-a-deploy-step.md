@@ -7,7 +7,7 @@
 
 ## Context
 
-Migrating at startup mutates prod on every restart and races the pre-deploy backup.
+Migrating at startup mutates uat on every restart and races the pre-deploy backup.
 
 ## Decision
 

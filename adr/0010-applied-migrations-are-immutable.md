@@ -14,7 +14,7 @@
 
 ## Context for the exception
 
-An existing app renamed a table in a migration but kept the old primary-key index name. Prod worked only because of a manual fix, while every fresh database failed. The correct fix was an owner-approved edit of the applied migration.
+An existing app renamed a table in a migration but kept the old primary-key index name. The environment with real data worked only because of a manual fix, while every fresh database failed. The correct fix was an owner-approved edit of the applied migration.
 
 ## Consequences
 

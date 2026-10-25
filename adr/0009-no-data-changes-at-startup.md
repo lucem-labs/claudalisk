@@ -7,7 +7,7 @@
 
 ## Context
 
-An existing app seeded fixtures at startup. The fixtures reappeared after cleanups, sample rows mixed with real data, and "what changed prod?" became hard to answer.
+An existing app seeded fixtures at startup. The fixtures reappeared after cleanups, sample rows mixed with real data, and "what changed the real data?" became hard to answer.
 
 ## Decision
 
