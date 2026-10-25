@@ -19,3 +19,4 @@ These are claudalisk's decisions for tests. The app's own `AGENTS.md` wins where
 - [CLA-0020](${CLAUDE_PLUGIN_ROOT}/adr/0020-no-wall-clock-assertions.md) (proposed): inject `TimeProvider`; assert order and counts, not durations.
 - [CLA-0011](${CLAUDE_PLUGIN_ROOT}/adr/0011-fresh-database-migrates.md) (proposed): a fresh, empty database migrates end to end.
 - [CLA-0013](${CLAUDE_PLUGIN_ROOT}/adr/0013-external-data-on-explicit-trigger.md) (proposed): tests never call live third-party APIs; use recorded responses or a stub server.
+- [CLA-0035](${CLAUDE_PLUGIN_ROOT}/adr/0035-no-code-comments.md) (accepted): code carries no comments (no line, block or XML doc comments, none in config); intent goes into names, tests, commits and ADRs.

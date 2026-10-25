@@ -4,12 +4,10 @@ using Spike.Persistence;
 
 namespace Spike.Modules.Orders.Persistence;
 
-// In an app, IOrderStore lives in the module's Persistence.Interfaces project and takes messages.
 public interface IOrderStore
 {
     Task PlaceAsync(Guid id, string reference, CancellationToken cancellationToken);
 
-    /// <summary>Saves several orders in one SaveChanges, which EF Core runs in a transaction of its own when none is active.</summary>
     Task PlaceManyAsync(IReadOnlyList<(Guid Id, string Reference)> orders, CancellationToken cancellationToken);
 
     Task<int> CountAsync(CancellationToken cancellationToken);

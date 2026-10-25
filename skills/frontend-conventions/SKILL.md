@@ -13,3 +13,4 @@ These are claudalisk's decisions for frontend code. The app's own `AGENTS.md` wi
 - [CLA-0014](${CLAUDE_PLUGIN_ROOT}/adr/0014-frontend-stack-and-api-module.md) (accepted): React, TypeScript and Vite; every backend call goes through one typed API module.
 - [CLA-0015](${CLAUDE_PLUGIN_ROOT}/adr/0015-ui-renders-api-values.md) (accepted): the UI renders what the API returns and never re-implements business rules.
 - [CLA-0016](${CLAUDE_PLUGIN_ROOT}/adr/0016-every-change-ships-with-tests.md) (accepted): a UI change comes with a Playwright end-to-end test.
+- [CLA-0035](${CLAUDE_PLUGIN_ROOT}/adr/0035-no-code-comments.md) (accepted): code carries no comments (no line, block or XML doc comments, none in config); intent goes into names, tests, commits and ADRs.

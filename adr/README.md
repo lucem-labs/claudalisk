@@ -42,6 +42,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0032](0032-dev-refreshed-from-uat.md) | Dev is refreshed one way from uat | accepted | environments |
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
 | [CLA-0034](0034-ci-workflow.md) | CI runs once per pushed commit, fully parallel | accepted | environments |
+| [CLA-0035](0035-no-code-comments.md) | Code carries no comments | accepted | backend-architecture |
 
 ## Format
 

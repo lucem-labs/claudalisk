@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Spike.Tests;
 
-/// <summary>One PostgreSQL container per test run; every test gets its own, freshly migrated database.</summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer container = new PostgreSqlBuilder("postgres:17-alpine").Build();
@@ -17,7 +16,6 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public Task DisposeAsync() => container.DisposeAsync().AsTask();
 
-    /// <summary>Creates an empty database, builds the app's services against it and migrates both modules.</summary>
     public async Task<ServiceProvider> CreateAppAsync()
     {
         var name = "t_" + Guid.NewGuid().ToString("N");
@@ -35,7 +33,6 @@ public sealed class PostgresFixture : IAsyncLifetime
             .AddBillingPersistence()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
 
-        // Each module migrates independently, as the deploy step's migrate service would.
         await using var scope = app.CreateAsyncScope();
         await scope.ServiceProvider.MigrateOrdersAsync(CancellationToken.None);
         await scope.ServiceProvider.MigrateBillingAsync(CancellationToken.None);
