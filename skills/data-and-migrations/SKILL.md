@@ -16,6 +16,6 @@ These are claudalisk's decisions for schema and data. The app's own `AGENTS.md` 
 - [CLA-0009](${CLAUDE_PLUGIN_ROOT}/adr/0009-no-data-changes-at-startup.md) (accepted): no seeding or other data changes at startup; default rows come from idempotent migrations.
 - [CLA-0010](${CLAUDE_PLUGIN_ROOT}/adr/0010-applied-migrations-are-immutable.md) (accepted): a migration tracked on `origin/main` is never edited; fix forward.
 - [CLA-0011](${CLAUDE_PLUGIN_ROOT}/adr/0011-fresh-database-migrates.md) (proposed): a test migrates a fresh, empty database end to end, then down and up again.
-- [CLA-0012](${CLAUDE_PLUGIN_ROOT}/adr/0012-one-off-data-fixes.md) (accepted): cleanups and backfills are EF Core migrations using raw SQL (never the DbContext), ordered between schema steps and tried on dev with prod data first.
+- [CLA-0012](${CLAUDE_PLUGIN_ROOT}/adr/0012-one-off-data-fixes.md) (accepted): cleanups and backfills are EF Core migrations using raw SQL (never the DbContext), ordered between schema steps and tried on dev with uat data first.
 - [CLA-0013](${CLAUDE_PLUGIN_ROOT}/adr/0013-external-data-on-explicit-trigger.md) (proposed): third-party data is refreshed only on an explicit owner trigger, and never from tests.
-- [CLA-0031](${CLAUDE_PLUGIN_ROOT}/adr/0031-backups-and-restores.md) (accepted): prod backups are versioned; restores are verified and swapped in.
+- [CLA-0031](${CLAUDE_PLUGIN_ROOT}/adr/0031-backups-and-restores.md) (accepted): uat backups are versioned with a manifest written last; restores are verified and swapped in, and only CD or the owner restores uat.

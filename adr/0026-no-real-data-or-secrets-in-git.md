@@ -9,7 +9,7 @@
 
 These never appear in commits, pull requests, issues or comments:
 
-- `.env.dev` and `.env.prod`
+- `.env.dev` and `.env.uat`
 - backups, dumps and `*.local.json` files
 - database contents, and screenshots of real data
 

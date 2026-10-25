@@ -1,25 +1,23 @@
-# CLA-0024: The owner merges; the agent runs the merge check
+# CLA-0024: Only the owner merges, in GitHub
 
-- **Status:** proposed
-- **Date:** 2026-10-24
+- **Status:** accepted
+- **Date:** 2026-10-25
 - **Area:** workflow
-- **Enforced by:** guardrail hook (deny merge commands to the agent); merge-pr skill
-- **Issue:** #3, #4
+- **Enforced by:** guardrail hook (deny merge commands to the agent); deny-list backstop
 
 ## Context
 
-GitHub doesn't enforce rulesets on private repositories on the free plan, so a script gate was built. An approval switch typed by the agent once merged a pull request without sign-off. The permission classifier also blocks agent merges inconsistently, and in practice the owner merged in the GitHub UI.
+GitHub doesn't enforce rulesets on private repositories on the free plan. A script gate was built, and an approval switch the agent typed once merged a pull request without sign-off. The permission classifier also blocked agent merges inconsistently, and in practice the owner merged in the GitHub UI anyway.
 
 ## Decision
 
-- The agent runs a read-only merge check that reports a verdict with reasons:
-  - the pull request is open, not a draft, and mergeable;
-  - the latest run of each check succeeded;
-  - prod runs the head.
-- The owner merges.
-- The agent never runs `gh pr merge` or the merge API.
-- Owner approval comes from a permission prompt or the owner's own text, never from a switch the agent types.
+- **Only the owner merges**, straight from GitHub, after reviewing the pull request on uat (CLA-0023).
+- **The agent never merges.** That rules out `gh pr merge`, the merge API (`gh api …/merge`), merge scripts, and pushing to `main`.
+- **No merge-check script.** The evidence the owner needs is already in GitHub:
+  - the CI check on the head commit;
+  - the `uat` deployment of that commit, recorded by CD (CLA-0030).
 
 ## Consequences
 
 - No merge happens without a human action.
+- There is no merge script to maintain, and no approval switch for the agent to get wrong.
