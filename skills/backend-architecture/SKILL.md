@@ -1,6 +1,6 @@
 ---
 name: backend-architecture
-description: Claudalisk backend architecture decisions (ADRs) for the .NET modular monolith - modules and their Interfaces projects, the Host composition root, module registration, module-owned APIs and thin controllers, DTOs and mapping. Use when writing, reviewing or restructuring backend C# code or project references in a claudalisk app.
+description: Claudalisk backend architecture decisions (ADRs) for the .NET modular monolith - modules and their Interfaces projects, the Host composition root, module registration, module-owned APIs and thin controllers, DTOs and mapping, and RESTful API design: bounded contexts, aggregates as resources, domain commands, hypermedia links and actions, HTTP semantics and Problem Details. Use when writing, reviewing or restructuring backend C# code or project references in a claudalisk app.
 paths:
   - "backend/**/*.cs"
   - "backend/**/*.csproj"
@@ -19,3 +19,9 @@ These are claudalisk's decisions for backend code. The app's own `AGENTS.md` win
 - [CLA-0005](${CLAUDE_PLUGIN_ROOT}/adr/0005-thin-controllers-and-mapping.md) (accepted): a module may expose its own controllers; controllers do HTTP only; DTOs live in a `Dtos` folder, may use MVC but never EF Core; mapping is internal extension methods.
 - [CLA-0006](${CLAUDE_PLUGIN_ROOT}/adr/0006-architecture-tests-by-convention.md) (proposed): architecture tests find modules by naming convention, not hand-kept lists.
 - [CLA-0007](${CLAUDE_PLUGIN_ROOT}/adr/0007-persistence-owns-ef-core.md) (accepted): each module owns a schema in one database, with its own DbContext, migrations and store contracts, and nothing crosses schemas; atomic cross-module work goes through a composition module's `IUnitOfWork`, later work through the owning module's queue.
+- [CLA-0041](${CLAUDE_PLUGIN_ROOT}/adr/0041-module-api-is-a-bounded-context.md) (proposed): a module's API is its bounded context: names come from its ubiquitous language, a resource belongs to one module, and the API changes by addition without versions.
+- [CLA-0042](${CLAUDE_PLUGIN_ROOT}/adr/0042-resources-are-aggregates.md) (proposed): aggregate roots are resources with one URL, child entities live under their root, plain edits use PUT or PATCH, and read models are their own GET resources.
+- [CLA-0043](${CLAUDE_PLUGIN_ROOT}/adr/0043-state-changes-are-domain-commands.md) (proposed): state changes are POSTs to a sub-resource named after the domain command, such as `/cancel`; status fields are never written directly.
+- [CLA-0044](${CLAUDE_PLUGIN_ROOT}/adr/0044-hypermedia-links-and-actions.md) (proposed): representations carry HAL-style `_links` and the `_actions` the aggregate allows now; the UI shows only those actions.
+- [CLA-0045](${CLAUDE_PLUGIN_ROOT}/adr/0045-http-semantics-and-problem-details.md) (proposed): standard status codes, RFC 9457 Problem Details with a `type` per domain error, and ETag with If-Match on writes.
+- [CLA-0046](${CLAUDE_PLUGIN_ROOT}/adr/0046-frontend-types-from-openapi.md) (proposed): frontend API types are generated from the backend's OpenAPI document and checked in CI.

@@ -48,6 +48,12 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0038](0038-server-state-in-tanstack-query.md) | Server state lives in TanStack Query | proposed | frontend-architecture |
 | [CLA-0039](0039-client-state-in-zustand-stores.md) | Shared client state lives in Zustand stores that components only subscribe to | proposed | frontend-architecture |
 | [CLA-0040](0040-frontend-boundaries-linted.md) | Frontend layer boundaries are checked by Steiger in CI | proposed | frontend-architecture |
+| [CLA-0041](0041-module-api-is-a-bounded-context.md) | A module's API is a bounded context that speaks its ubiquitous language | proposed | backend-architecture |
+| [CLA-0042](0042-resources-are-aggregates.md) | Resources are aggregates, and read models are their own resources | proposed | backend-architecture |
+| [CLA-0043](0043-state-changes-are-domain-commands.md) | State changes are domain commands, posted to a sub-resource named after the command | proposed | backend-architecture |
+| [CLA-0044](0044-hypermedia-links-and-actions.md) | Representations carry links and the commands available now; the UI shows only those | proposed | backend-architecture |
+| [CLA-0045](0045-http-semantics-and-problem-details.md) | The API uses HTTP's own semantics: status codes, Problem Details and conditional writes | proposed | backend-architecture |
+| [CLA-0046](0046-frontend-types-from-openapi.md) | Frontend API types are generated from the backend's OpenAPI document | proposed | backend-architecture |
 
 ## Format
 

@@ -1,6 +1,6 @@
 ---
 name: frontend-architecture
-description: Claudalisk frontend architecture decisions (ADRs) - Feature-Sliced Design layers and slices, pages first, entities that mirror backend modules, server state in TanStack Query, shared client state in Zustand stores, and Steiger boundary checks. Use when writing, reviewing or restructuring frontend code, folders, imports or state in a claudalisk app.
+description: Claudalisk frontend architecture decisions (ADRs) - Feature-Sliced Design layers and slices, pages first, entities that mirror backend modules, server state in TanStack Query, shared client state in Zustand stores, Steiger boundary checks, and consuming the API: hypermedia actions, Problem Details and generated API types. Use when writing, reviewing or restructuring frontend code, folders, imports or state in a claudalisk app.
 paths:
   - "frontend/src/**"
   - "frontend/steiger.config.*"
@@ -17,3 +17,6 @@ These are claudalisk's decisions for how frontend code is structured and where i
 - [CLA-0039](${CLAUDE_PLUGIN_ROOT}/adr/0039-client-state-in-zustand-stores.md) (proposed): shared client state lives in Zustand stores in a slice's `model` segment; components subscribe through selectors and change it only through actions.
 - [CLA-0040](${CLAUDE_PLUGIN_ROOT}/adr/0040-frontend-boundaries-linted.md) (proposed): Steiger checks the layer boundaries in CI.
 - [CLA-0014](${CLAUDE_PLUGIN_ROOT}/adr/0014-frontend-stack-and-api-module.md) (accepted): every backend call goes through a typed API layer: one client in `shared/api` and an `api` segment per entity.
+- [CLA-0044](${CLAUDE_PLUGIN_ROOT}/adr/0044-hypermedia-links-and-actions.md) (proposed): representations carry HAL-style `_links` and the `_actions` the aggregate allows now; the UI shows only those actions.
+- [CLA-0045](${CLAUDE_PLUGIN_ROOT}/adr/0045-http-semantics-and-problem-details.md) (proposed): standard status codes, RFC 9457 Problem Details with a `type` per domain error, and ETag with If-Match on writes.
+- [CLA-0046](${CLAUDE_PLUGIN_ROOT}/adr/0046-frontend-types-from-openapi.md) (proposed): frontend API types are generated from the backend's OpenAPI document and checked in CI.
