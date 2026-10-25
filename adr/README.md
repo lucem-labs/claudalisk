@@ -32,7 +32,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0022](0022-bugs-found-become-issues.md) | Bugs found along the way become new issues | accepted | workflow |
 | [CLA-0023](0023-ready-signoff-and-merge.md) | Open the pull request when CI is green and dev is verified; the owner reviews on uat and merges | accepted | workflow |
 | [CLA-0024](0024-owner-merges.md) | Only the owner merges, in GitHub | accepted | workflow |
-| [CLA-0025](0025-stacked-pull-requests.md) | Stacked pull requests merge in order without closing children | proposed | workflow |
+| [CLA-0025](0025-stacked-pull-requests.md) | Stacked pull requests merge without closing children, whatever the merge method | proposed | workflow |
 | [CLA-0026](0026-no-real-data-or-secrets-in-git.md) | Real data and secrets never go into commits, pull requests or issues | accepted | workflow |
 | [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | code-standards |
 | [CLA-0028](0028-app-agents-md-wins.md) | The app's AGENTS.md wins, and deviations cite ADR ids | accepted | workflow |

@@ -16,7 +16,7 @@ This is the backend version of the import rule and the "pages first" rule of Fea
   - `Shared` can use the Domain project
   - nothing in the module references a feature
 - **Features never reference each other.** A feature does not use the request, handler, DTOs or mapping of another feature. When two features need the same thing, it moves down.
-- **Only a module's contracts are public to other modules.** Everything in the implementation and Persistence projects is `internal`, except the module class and what module registration needs. Only the module's projects itself reference the Domain and Persistence.Interfaces projects (CLA-0048). Other modules see only the Interfaces project (CLA-0002).
+- **Only a module's contracts are public to other modules.** Everything in the implementation and Persistence projects is `internal`, except the module class, the feature controllers, and what module registration needs. Controllers are `public` because ASP.NET Core discovers only public controllers. Only the module's projects itself reference the Domain and Persistence.Interfaces projects (CLA-0048). Other modules see only the Interfaces project (CLA-0002).
 - **Domain rules start in the aggregate.** An invariant, or a rule about which commands are allowed, belongs in the aggregate from the start (CLA-0048), even when only one feature uses it.
 - **All other code starts in the feature that needs it.** It moves down only on its second use:
   - a technical helper, such as a parser or a formatter, moves to the module's `Shared` folder

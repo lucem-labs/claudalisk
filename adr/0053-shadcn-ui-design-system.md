@@ -31,7 +31,7 @@ Alternatives considered:
   - A screen uses a `shared/ui` component where one exists, instead of a styled raw HTML element.
   - Add a new variant to the component, such as a `cva` variant. Do not override it with classes at the call site.
 - **Tables and charts use recipes.** Tables use the shadcn data table recipe on TanStack Table. Charts use the shadcn chart components on Recharts.
-- **Copied components belong to the app.** They follow the app's rules, including no comments (CLA-0035). When an agent touches a component, it checks for upstream fixes with `shadcn diff` and applies them as a normal change.
+- **Copied components belong to the app.** They follow the app's rules, including no comments (CLA-0035). shadcn's components ship without comments. If an upstream update brings one in, the agent removes it. When an agent touches a component, it checks for upstream fixes with `shadcn diff` and applies them as a normal change.
 
 ## Consequences
 

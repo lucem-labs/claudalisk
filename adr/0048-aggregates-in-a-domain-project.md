@@ -18,7 +18,7 @@ The aggregate decides which commands are allowed and which `_actions` a represen
 - **The Persistence project maps the aggregates.**
   - The store contracts in `<Root>.Modules.<Name>.Persistence.Interfaces` load and save aggregates.
   - The stores in `<Root>.Modules.<Name>.Persistence` map EF Core entities to and from aggregates. EF Core entities never leave the Persistence project.
-  - Read stores, which query features use, can return read models instead of aggregates (CLA-0047).
+  - Read stores return read models, and serve only read-model resources (CLA-0042, CLA-0047). A `GET` of an aggregate or a collection page loads the aggregates.
 - The projects of a module reference each other in one direction:
 
   | Project | References |

@@ -21,7 +21,7 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
   The aggregates are in the module's Domain project (CLA-0048). Persistence is in its Persistence project (CLA-0007).
 - **A feature is one use case**, named after it in the module's ubiquitous language (CLA-0041):
   - **A command** gets its own feature, named after the command, such as `Features/CancelOrder/` (CLA-0043).
-  - **A query** gets its own feature, named after what it reads, such as `Features/GetOrderSummary/` (CLA-0042). Its handler can read through a read store that projects straight to the response, without a load of the aggregate.
+  - **A query** gets its own feature, named after what it reads, such as `Features/GetOrderSummary/` (CLA-0042). A query for an aggregate or a page of a collection loads the aggregates, so that each item has its `version` and `_actions` (CLA-0044, CLA-0056). A query for a read model reads through a read store that projects straight to the response.
   - **Plain CRUD on one resource is one feature**, named after the resource, such as `Features/OrderNotes/`. This covers create, read, update and delete of attributes that have no rules of their own. When one of these operations gets a domain rule, it moves out into its own command feature.
 - **A feature folder holds the whole slice:**
   - one small controller, `<Feature>Controller`, with the feature's endpoint (or the endpoints, for a CRUD feature)

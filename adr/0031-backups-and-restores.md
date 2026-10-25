@@ -14,6 +14,7 @@
   - a `manifest.json`, written last, with the checksums, the deployed commit and the applied migrations
 
   A folder without a manifest is incomplete. Tools ignore it and never prune it.
+- **Pruning keeps the restore points CD needs.** Retention by count never deletes the newest backup taken before any migration that uat has applied but `main` does not have yet (CLA-0030).
 - **When backups are taken:**
   - CD backs up uat before every uat deploy, except the first deploy to an empty database (CLA-0030).
   - The owner can also take one by hand.
