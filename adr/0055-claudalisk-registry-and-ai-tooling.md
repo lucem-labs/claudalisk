@@ -4,6 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** frontend-conventions
 - **Enforced by:** the scaffold; `claude plugin validate`; reviewer
+- **Issue:** #38
 
 ## Decision
 
@@ -26,4 +27,4 @@
 - A new app starts with claudalisk's look and the pieces that connect the UI to the API conventions, instead of rebuilding them.
 - The registry's items have tests and versions in this repository, like the rest of claudalisk.
 - An update to a registry item reaches an existing app only when it runs `shadcn add` or `shadcn diff` again, which the app does as a normal change.
-- Building the registry and its CI job is follow-up work, tracked in its own issue.
+- Building the registry, its CI job and the plugin's MCP configuration is tracked in #38.
