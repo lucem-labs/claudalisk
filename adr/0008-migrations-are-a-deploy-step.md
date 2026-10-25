@@ -7,15 +7,15 @@
 
 ## Context
 
-Migrating at startup mutates uat on every restart and races the pre-deploy backup.
+A migration at startup changes uat on every restart and races the pre-deploy backup.
 
 ## Decision
 
-- The Host has an `--initialize-databases` mode that applies every module DbContext's migrations and exits (CLA-0007).
-- Deploys run that mode as a separate step: a `migrate` Compose service using the same image, after the pre-deploy backup and before the new API starts.
+- The Host has an `--initialize-databases` mode that applies every module's migrations DbContext and exits (CLA-0007).
+- Deploys run that mode as a separate step: a `migrate` Compose service that uses the same image. It runs after the pre-deploy backup and before the new API starts.
 - Otherwise, the API refuses to start while migrations are pending.
-- `Migrate`, `MigrateAsync` and `EnsureCreated` are not called anywhere else.
+- The application calls `Migrate`, `MigrateAsync` and `EnsureCreated` nowhere else. Test fixtures migrate their databases through the same initializer code (the proposed CLA-0011 and CLA-0018).
 
 ## Consequences
 
-- A failed migration stops the deploy with the old API still running.
+- A failed migration stops the deploy, and the old API keeps running.

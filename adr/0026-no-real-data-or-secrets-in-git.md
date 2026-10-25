@@ -9,11 +9,11 @@
 
 These never appear in commits, pull requests, issues or comments:
 
-- `.env.dev` and `.env.uat`
+- env files with real values, such as `dev.env` and `uat.env` (proposed to live outside the checkout in CLA-0066)
 - backups, dumps and `*.local.json` files
-- database contents, and screenshots of real data
+- database contents and screenshots of real data
 
-Test fixtures are fine. Example env files carry placeholders that cannot work, never a usable password.
+Test fixtures are allowed. Example env files hold placeholders that cannot work, never a usable password.
 
 ## Consequences
 

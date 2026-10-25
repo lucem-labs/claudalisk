@@ -7,11 +7,11 @@
 
 ## Decision
 
-- When work needs real data, dev is restored from the latest uat backup, or from a fresh, read-only uat backup.
+- When work needs real data, restore dev from the latest uat backup, or from a fresh, read-only uat backup.
 - Data never flows from dev to uat.
-- After the restore, dev is migrated. Dev code can be ahead of uat's schema, and the API refuses to start with pending migrations (CLA-0008).
+- After the restore, migrate dev. Dev code can be ahead of the uat schema, and the API refuses to start with pending migrations (CLA-0008).
 
 ## Consequences
 
-- Dev can be verified against realistic data without risking uat.
-- Data fixes (CLA-0012) are tried on dev with uat's data before they reach uat.
+- Dev can be verified against realistic data without risk to uat.
+- Data fixes (CLA-0012) are tried on dev with uat data before they reach uat.

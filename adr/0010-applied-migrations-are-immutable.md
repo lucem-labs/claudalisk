@@ -3,18 +3,19 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** guardrail hook (deny edits); CI check (proposed in #7)
+- **Enforced by:** guardrail hook (deny edits); CD (refuses a deploy whose uat-applied migration changed); CI check (proposed in #7)
 - **Issue:** #7
 
 ## Decision
 
-- A migration that has run anywhere is never edited, renamed or removed. Mistakes are fixed forward with a new migration.
-- "Has run" is decided from git: the migration file is tracked on `origin/main`. The model snapshot is always editable.
+- Never edit, rename or remove a migration that has run anywhere. Fix mistakes forward with a new migration.
+- A migration "has run" once CD applied it to uat, or once its file is tracked on `origin/main`. CD applies an open pull request's migrations to uat (CLA-0030), so a migration freezes when its pull request opens. Before that it has run only on dev, and the agent may still edit it. The model snapshot is always editable.
+- CD records a hash of each migration it applies to uat. A deploy is refused when an applied migration's file no longer matches its hash, and the message tells the agent to add a new migration instead.
 - Rare exceptions need the owner's approval. They are listed in an `approved-migration-edits.txt` file that only the owner edits (proposed in #7).
 
 ## Context for the exception
 
-An existing app renamed a table in a migration but kept the old primary-key index name. The environment with real data worked only because of a manual fix, while every fresh database failed. The correct fix was an owner-approved edit of the applied migration.
+An existing app renamed a table in a migration but kept the old primary-key index name. The environment with real data worked only because of a manual fix, and every fresh database failed. The correct fix was an edit of the applied migration, approved by the owner.
 
 ## Consequences
 

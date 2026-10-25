@@ -20,6 +20,7 @@ export function readAdrs(root) {
       const text = readFileSync(join(dir, file), 'utf8').replace(/\r\n/g, '\n');
       return {
         file,
+        text,
         number: file.match(ADR_FILE)?.[1],
         id: text.match(/^# (CLA-\d{4}): \S/m)?.[1],
         status: field(text, 'Status'),
@@ -55,6 +56,16 @@ export function checkAdrs(root) {
     if (!a.date || !/^\d{4}-\d{2}-\d{2}$/.test(a.date)) errors.push(`adr/${a.file}: Date must be YYYY-MM-DD`);
     if (!a.area) errors.push(`adr/${a.file}: Area is missing`);
     else if (!skillNames.has(a.area)) errors.push(`adr/${a.file}: Area "${a.area}" is not a skill in skills/`);
+  }
+  const statusById = new Map(adrs.map((a) => [a.id, a.status]));
+  for (const a of adrs) {
+    if (a.status !== 'accepted') continue;
+    for (const line of a.text.split('\n')) {
+      if (/proposed/i.test(line)) continue;
+      for (const [cited] of line.matchAll(/CLA-\d{4}/g)) {
+        if (cited !== a.id && statusById.get(cited) === 'proposed') errors.push(`adr/${a.file}: accepted ADR cites proposed ${cited} without saying it is proposed: ${line.trim()}`);
+      }
+    }
   }
   const ids = adrs.map((a) => a.id).filter(Boolean);
   for (const id of new Set(ids)) if (ids.filter((x) => x === id).length > 1) errors.push(`adr: ${id} is used by more than one file`);

@@ -8,11 +8,11 @@
 
 ## Context
 
-Throwaway test stacks, CI and the Stop gate all start from an empty database. A migration that only works on a database with history breaks all of them, and test workarounds can hide the problem.
+Throwaway test stacks and CI start from an empty database. A migration that works only on a database with history breaks all of them, and test workarounds can hide the problem.
 
 ## Decision
 
-- A test migrates a fresh, empty PostgreSQL database to the latest migration of every module's DbContext, then down and up again.
+- A test migrates a fresh, empty PostgreSQL database to every module's latest migration DbContext, then down and up again.
 - Test fixtures never patch the schema to work around a migration.
 
 ## Consequences

@@ -8,20 +8,20 @@
 
 ## Decision
 
-- **What's backed up.** Only uat is backed up. Backups go to a directory outside the repository, with retention by count.
-- **Backup contents.** Each backup is a folder holding:
-  - a `pg_dump -Fc` dump of the app's database, with every module's schema in one consistent snapshot (CLA-0007), plus one per separate database if a module has moved out;
-  - a `manifest.json`, written last, with the checksums, the deployed commit and the applied migrations.
+- **What is backed up.** Only uat. Backups go to a directory outside the repository, with retention by count.
+- **Backup contents.** Each backup is a folder that holds:
+  - a `pg_dump -Fc` dump of the app's database, with every module's schema in one consistent snapshot (CLA-0007), plus one dump per separate database if a module has moved out
+  - a `manifest.json`, written last, with the checksums, the deployed commit and the applied migrations
 
-  A folder without a manifest is incomplete: it is ignored and never pruned.
+  A folder without a manifest is incomplete. Tools ignore it and never prune it.
 - **When backups are taken:**
-  - CD backs up uat before every uat deploy (CLA-0030);
-  - the owner can also take one by hand;
-  - the agent may take a read-only one, for example to refresh dev (CLA-0032).
+  - CD backs up uat before every uat deploy, except the first deploy to an empty database (CLA-0030).
+  - The owner can also take one by hand.
+  - The agent may take a read-only one, for example to refresh dev (CLA-0032).
 - **Restores.**
   - A restore verifies the checksums, restores into a temporary database and swaps it in by rename. `pg_restore --clean` alone leaves extra tables behind.
-  - Restoring uat first backs up uat's current data.
-  - **Who restores uat:** CD, automatically, when a deploy must undo another pull request's migrations (CLA-0030); otherwise only the owner. The agent never restores uat.
+  - Restoring uat first backs up the current uat data.
+  - **Who restores uat:** CD, automatically, when a deploy must undo another pull request's migrations (CLA-0030). Otherwise only the owner. The agent never restores uat.
 - **Deleting backups** is the owner's decision.
 
 ## Consequences
