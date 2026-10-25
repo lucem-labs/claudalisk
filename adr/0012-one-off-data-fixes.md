@@ -23,7 +23,7 @@ Data cleanups in an existing app were first done with SQL by hand. They were not
 - **Large tables.** A big `DELETE` or `UPDATE` can hold locks and hit the command timeout. Batch it, or raise the migration command timeout for that deploy. A fix that would take longer than a deploy should is a design question: file a `needs-design-review` issue (CLA-0022). It never becomes a startup task (CLA-0009).
 - **One-way is acceptable.** `Down()` undoes the schema change but can't bring deleted rows back. When the data matters, the migration first copies the affected rows to a backup table. Otherwise the pre-deploy backup (CLA-0031) is the way back.
 - **Safe on an empty database.** The fix's SQL is a no-op on an empty database, so the fresh-database test (CLA-0011) still passes.
-- **Try it on real data first.** Refresh dev from uat (CLA-0032), deploy dev, which runs the migration, and check the result before marking the pull request ready. Cleanup SQL is where surprises in real data show up.
+- **Try it on real data first.** Refresh dev from uat (CLA-0032), deploy dev, which runs the migration, and check the result before opening the pull request. Cleanup SQL is where surprises in real data show up.
 - **Not migrations:** changes that need C# logic or calls to other services. They become an explicit, owner-triggered action (like CLA-0013), with its own design issue.
 
 ## Consequences

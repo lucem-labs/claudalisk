@@ -12,10 +12,10 @@ Treating the second environment as production needed heavyweight guards on every
 ## Decision
 
 - **What CD deploys, and when:**
-  - **The head of a pull request that is ready for review**, once CI has succeeded on that commit. The owner then reviews it on uat.
+  - **The head of an open pull request**, once CI has succeeded on that commit. Pull requests are opened only when ready for review and are never drafts (CLA-0023). The owner then reviews the head on uat.
   - **`main`**, after the owner merges.
 
-  Draft pull requests don't deploy. The agent deploys dev by hand for those.
+  A branch without a pull request doesn't deploy. The agent deploys dev by hand while it works.
 - **One commit, both environments.** CD deploys the same commit to dev and uat, using the same image.
 - **Where CD runs.** It runs on a **deploy runner**: a self-hosted runner with the host's Docker socket and a `deploy` label, used only by CD jobs of private repositories (CLA-0033). CI keeps running on the Docker-in-Docker runners, which can't reach the host's Docker.
 - **Steps, per environment:**
@@ -26,7 +26,7 @@ Treating the second environment as production needed heavyweight guards on every
   5. start the new version;
   6. check health;
   7. record the deployment as a GitHub deployment for that environment.
-- **Migrations from other pull requests.** A ready pull request's migrations reach uat before it merges. If the commit being deployed lacks a migration that uat has already applied, the deploy:
+- **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit being deployed lacks a migration that uat has already applied, the deploy:
   1. restores uat from the latest backup taken before that migration was applied (CLA-0031), which may be the pre-deploy backup of the pull request that introduced it;
   2. then deploys.
 
@@ -36,7 +36,7 @@ Treating the second environment as production needed heavyweight guards on every
 
 ## Consequences
 
-- No more confirmation tokens, clean-tree checks or sign-off and post-merge deploy modes for the agent to get right. Pushing and marking ready is enough.
+- No more confirmation tokens, clean-tree checks or sign-off and post-merge deploy modes for the agent to get right. Opening the pull request is enough.
 - uat always runs a reviewed commit: either the pull request the owner is about to review or merged `main`. Its data is backed up before every change.
 - An abandoned pull request's schema changes are undone on uat automatically. The cost is losing data entered after its backup, and CD reports that loss.
-- uat shows the most recently readied pull request. Readying a second pull request replaces the first on uat.
+- uat shows the most recently opened or updated pull request. Opening or updating a second pull request replaces the first on uat.

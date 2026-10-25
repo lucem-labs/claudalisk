@@ -30,7 +30,7 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0020](0020-no-wall-clock-assertions.md) | No wall-clock assertions in tests | proposed | testing |
 | [CLA-0021](0021-issue-driven-work.md) | All work is issue-driven | accepted | workflow |
 | [CLA-0022](0022-bugs-found-become-issues.md) | Bugs found along the way become new issues | accepted | workflow |
-| [CLA-0023](0023-ready-signoff-and-merge.md) | Ready means CI green and verified on dev; the owner reviews on uat and merges | accepted | workflow |
+| [CLA-0023](0023-ready-signoff-and-merge.md) | Open the pull request when CI is green and dev is verified; the owner reviews on uat and merges | accepted | workflow |
 | [CLA-0024](0024-owner-merges.md) | Only the owner merges, in GitHub | accepted | workflow |
 | [CLA-0025](0025-stacked-pull-requests.md) | Stacked pull requests merge in order without closing children | proposed | workflow |
 | [CLA-0026](0026-no-real-data-or-secrets-in-git.md) | Real data and secrets never go into commits, pull requests or issues | accepted | workflow |
