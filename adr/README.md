@@ -60,6 +60,9 @@ An app's own `AGENTS.md` wins where it differs. It lists each deliberate deviati
 | [CLA-0050](0050-module-dependencies-go-down-feature-first.md) | Inside a module, dependencies go down and code starts in its feature | proposed | backend-architecture |
 | [CLA-0051](0051-database-naming.md) | Database names are lowercase snake_case, set by convention | proposed | data-and-migrations |
 | [CLA-0052](0052-cqrs-naming.md) | Commands, queries, events and their handlers follow fixed naming patterns | proposed | backend-architecture |
+| [CLA-0053](0053-shadcn-ui-design-system.md) | shadcn/ui is the design system, and its components live in `shared/ui` | proposed | frontend-conventions |
+| [CLA-0054](0054-tailwind-and-design-tokens.md) | Styling is Tailwind CSS v4, with design tokens as CSS variables | proposed | frontend-conventions |
+| [CLA-0055](0055-claudalisk-registry-and-ai-tooling.md) | Claudalisk ships a shadcn registry, and sets up shadcn's MCP server and skill | proposed | frontend-conventions |
 
 ## Format
 
