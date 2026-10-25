@@ -4,6 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (controllers depend only on the dispatcher and their feature's types), reviewer
+- **Issue:** #34
 
 ## Context
 
