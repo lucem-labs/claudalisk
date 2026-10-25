@@ -37,6 +37,6 @@ The UI never re-implements business rules (CLA-0015). Without hypermedia, it sti
 ## Consequences
 
 - The aggregate answers "Can the user do this now?" once, so the UI cannot disagree with the server.
-- An end-to-end test that checks a hidden button checks a server rule, which a backend test also covers.
+- An end-to-end test that checks that a button is hidden checks a server rule, which a backend test also covers.
 - Adding a command or link is a backward-compatible change (CLA-0041).
 - Representations are slightly larger, and every resource needs a way to build its links. That code lives in the module's mapping extension methods (CLA-0005).
