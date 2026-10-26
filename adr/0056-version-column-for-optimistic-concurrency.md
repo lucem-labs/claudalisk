@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** data-and-migrations
-- **Enforced by:** architecture tests (every aggregate root entity maps a `version` concurrency token); integration tests (a stale write fails)
+- **Enforced by:** architecture tests (every aggregate root entity maps a `version` concurrency token); Feature tests (a stale save fails) and API tests (`412` and `428`) (CLA-0070)
 
 ## Context
 
