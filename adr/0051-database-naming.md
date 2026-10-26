@@ -1,13 +1,13 @@
 # CLA-0051: Database names are lowercase snake_case, set by convention
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** data-and-migrations
 - **Enforced by:** the naming convention on every module context; architecture tests (identifier length, column suffixes); reviewer
 
 ## Context
 
-The existing apps used EF Core's default names. PostgreSQL stores these as quoted PascalCase identifiers, such as `"OrderLines"` and `"CreatedAtUtc"`. PostgreSQL folds unquoted names to lowercase, so every hand-written query and every migration SQL (CLA-0012) must quote them. Table names drifted between plural and singular. PostgreSQL cut one generated foreign key name short with a `~` because it passed the 63-byte limit.
+EF Core's default names become quoted PascalCase identifiers in PostgreSQL, such as `"OrderLines"` and `"CreatedAtUtc"`. PostgreSQL folds unquoted names to lowercase, so every hand-written query and every migration SQL (CLA-0012) must quote them. Without a rule, table names drift between plural and singular, and PostgreSQL cuts a long generated foreign key name short with a `~` at its 63-byte limit.
 
 ## Decision
 
@@ -31,4 +31,4 @@ The existing apps used EF Core's default names. PostgreSQL stores these as quote
 
 - SQL in migrations, data fixes and ad hoc queries never needs quotes. The same name reads the same way in C#, SQL and the API.
 - C# property names set column names. A property `CanceledTimestamp` becomes `canceled_timestamp`, so the suffix rules apply to entity properties too.
-- Existing apps keep their names and list this ADR as a deviation in their `AGENTS.md` (CLA-0028). A rename of an existing table or column is a migration of its own.
+- A rename of an existing table or column is a migration of its own.

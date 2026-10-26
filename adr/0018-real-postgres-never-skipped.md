@@ -1,6 +1,6 @@
 # CLA-0018: Persistence tests use real PostgreSQL and never skip silently
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** testing
 - **Enforced by:** generated test fixture
@@ -8,7 +8,7 @@
 
 ## Context
 
-In two existing apps, real-database tests skipped themselves when a connection variable was unset. A local `dotnet test` passed with every such test skipped. Fakes also hid EF Core translation bugs that only real PostgreSQL caught.
+Real-database tests that skip themselves when a connection variable is unset let a local `dotnet test` pass with every such test skipped. Fakes also hide EF Core translation bugs that only real PostgreSQL catches.
 
 ## Decision
 
@@ -25,4 +25,3 @@ In two existing apps, real-database tests skipped themselves when a connection v
 
 - A green run means the database tests ran.
 - `dotnet test` works the same on a developer machine and in CI, if Docker is running. CI no longer needs its own PostgreSQL service for the backend tests, because the containerised runners provide Docker.
-- The two existing apps used a connection-string variable and a database that someone started by hand. To adopt this ADR, they must switch their fixtures to Testcontainers.

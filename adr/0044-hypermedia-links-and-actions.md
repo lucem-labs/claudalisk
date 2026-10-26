@@ -1,6 +1,6 @@
 # CLA-0044: Representations carry links and the commands available now; the UI shows only those
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** reviewer; end-to-end tests

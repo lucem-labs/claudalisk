@@ -1,13 +1,13 @@
 # CLA-0047: A module's implementation is organized by feature folders
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (CLA-0006), reviewer
 
 ## Context
 
-The frontend groups code by what it does for the user, not by its technical kind (CLA-0036). The backend modules did not. In the existing apps, one module splits its code into `Services/`, `Controllers/`, `Contracts/`, `Data/` and `Mapping/` folders, so one change touches four folders. Another module has "god services" split across partial files, one file for each use case. In both cases each use case needs its own home.
+The frontend groups code by what it does for the user, not by its technical kind (CLA-0036). Backend modules split by technical kind, into `Services/`, `Controllers/`, `Contracts/`, `Data/` and `Mapping/` folders, make one change touch four folders. "God services" split across partial files, one file per use case, show the same need: each use case needs its own home.
 
 The .NET name for this is vertical slice architecture. In a modular monolith, the module is the outer boundary (CLA-0001) and the slices are inside it.
 

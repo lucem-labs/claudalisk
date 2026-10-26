@@ -1,6 +1,6 @@
 # CLA-0055: Claudalisk ships a shadcn registry, and sets up shadcn's MCP server and skill
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; `claude plugin validate`; reviewer
@@ -26,5 +26,5 @@
 
 - A new app starts with the look of claudalisk and the pieces that connect the UI to the API conventions. It does not rebuild them.
 - The items of the registry have tests and versions in this repository, like the rest of claudalisk.
-- An update to a registry item reaches an existing app only when the app runs `shadcn add` or `shadcn diff` again. The app does this as a normal change.
+- An update to a registry item reaches an app only when the app runs `shadcn add` or `shadcn diff` again. The app does this as a normal change.
 - #38 tracks the registry's build, its CI job and the MCP configuration of the plugin.

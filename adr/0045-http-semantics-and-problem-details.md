@@ -1,6 +1,6 @@
 # CLA-0045: The API uses HTTP's own semantics: status codes, Problem Details and conditional writes
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** reviewer; integration tests

@@ -1,6 +1,6 @@
 # CLA-0011: A fresh, empty database migrates end to end
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
 - **Enforced by:** generated test, run by the add-migration skill

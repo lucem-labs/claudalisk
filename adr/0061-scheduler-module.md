@@ -1,13 +1,13 @@
 # CLA-0061: Recurring work comes from the claudalisk scheduler module, configured per command and module
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the scheduler library and its tests; reviewer
 
 ## Context
 
-Both existing apps have recurring workers on timers, written separately in each app. Recurring work needs one shared, tested way to run.
+Recurring workers on timers, written separately in each app, repeat the same code with its own bugs. Recurring work needs one shared, tested way to run.
 
 ## Decision
 

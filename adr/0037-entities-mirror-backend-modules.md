@@ -1,6 +1,6 @@
 # CLA-0037: Frontend entities mirror backend modules
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** reviewer

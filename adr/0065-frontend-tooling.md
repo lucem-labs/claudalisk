@@ -1,6 +1,6 @@
 # CLA-0065: The frontend uses React Router 7, oxlint, Vitest and generated OpenAPI types
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; CI (lint, unit tests, generated types)
@@ -14,6 +14,5 @@
 
 ## Consequences
 
-- Both existing apps already use React Router 7 and oxlint, so they add only Vitest and the generated types.
 - Store logic can be tested without a browser.
 - A backend change that breaks the frontend fails `tsc` on the generated types.

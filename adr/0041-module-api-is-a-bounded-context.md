@@ -1,6 +1,6 @@
 # CLA-0041: A module's API is a bounded context that speaks its ubiquitous language
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** reviewer

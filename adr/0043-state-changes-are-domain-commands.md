@@ -1,6 +1,6 @@
 # CLA-0043: State changes are domain commands, posted to a sub-resource named after the command
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** reviewer

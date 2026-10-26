@@ -1,13 +1,13 @@
 # CLA-0038: Server state lives in TanStack Query
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** reviewer; lint rule against `fetch` outside `shared/api` (CLA-0014)
 
 ## Context
 
-The UI renders what the API returns (CLA-0015), so most frontend state is a copy of server data. In the existing apps, each component loads that copy in a `useEffect`, with its own loading flags and error handling. One app has about 40 lines of hand-written polling. Two components that show the same data each fetch it and can disagree.
+The UI renders what the API returns (CLA-0015), so most frontend state is a copy of server data. When each component loads that copy in a `useEffect`, it needs its own loading flags, error handling and hand-written polling, and two components that show the same data each fetch it and can disagree.
 
 ## Decision
 

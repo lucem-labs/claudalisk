@@ -15,7 +15,7 @@
 
 ## Context
 
-A second app copied generic rules into its `AGENTS.md`. A safety rule added after an incident was lost, and the testing guide shrank from 178 to 17 lines.
+When an app copies generic rules into its `AGENTS.md`, the copies drift: a safety rule added later never reaches them, and shortened guides lose detail.
 
 ## Consequences
 

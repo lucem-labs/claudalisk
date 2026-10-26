@@ -7,12 +7,12 @@
 
 ## Context
 
-Two existing apps used PowerShell scripts. This caused several problems:
+PowerShell scripts cause several problems:
 
-- Windows PowerShell 5.1 strips double quotes from native arguments, so SQL had to go through stdin.
+- Windows PowerShell 5.1 strips double quotes from native arguments, so SQL has to go through stdin.
 - It treats redirected native stderr as an error.
 - It converts JSON dates differently from PowerShell 7.
-- The agent sandbox could not run PowerShell from the Microsoft Store.
+- The agent sandbox cannot run PowerShell from the Microsoft Store.
 
 ## Decision
 

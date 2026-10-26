@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected resources from a machine-wide registry, proposed in #8)
+- **Enforced by:** guardrail hook (protected resources from a machine-wide registry, planned in #8)
 - **Issue:** #8, #19, #20
 
 ## Decision

@@ -1,6 +1,6 @@
 # CLA-0054: Styling is Tailwind CSS v4, with design tokens as CSS variables
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** reviewer

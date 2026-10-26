@@ -1,6 +1,6 @@
 # CLA-0020: No wall-clock assertions in tests
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** testing
 - **Enforced by:** generated test that scans test assemblies (with an allowlist); reviewer
@@ -8,7 +8,7 @@
 
 ## Context
 
-In an existing app, a rate-limiter test asserted real elapsed time with tight bounds. It flaked under parallel load.
+A test that asserts real elapsed time with tight bounds, such as for a rate limiter, flakes under parallel load.
 
 ## Decision
 

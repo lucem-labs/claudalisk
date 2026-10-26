@@ -1,6 +1,6 @@
 # CLA-0056: Every aggregate root table has a version column for optimistic concurrency
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** data-and-migrations
 - **Enforced by:** architecture tests (every aggregate root entity maps a `version` concurrency token); integration tests (a stale write fails)
@@ -23,4 +23,4 @@ Writes are conditional on the aggregate's version (CLA-0045), so two browser tab
 - One rule covers every resource, so the frontend handles `412` and `428` the same way everywhere.
 - A command sent from a list view has the version it needs without another `GET`.
 - The aggregate's version is a plain value in the Domain project (CLA-0048), so domain tests can check it without a database.
-- Existing apps add the column in a migration per aggregate, or list this ADR as a deviation in their `AGENTS.md` (CLA-0028).
+- A table created before this rule gets the column in a migration of its own.

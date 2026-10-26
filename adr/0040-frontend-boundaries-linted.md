@@ -1,6 +1,6 @@
 # CLA-0040: Frontend layer boundaries are checked by Steiger in CI
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** CI

@@ -1,6 +1,6 @@
 # CLA-0050: Inside a module, dependencies go down and code starts in its feature
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (CLA-0006), reviewer

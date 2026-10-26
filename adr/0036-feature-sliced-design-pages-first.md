@@ -1,13 +1,13 @@
 # CLA-0036: The frontend follows Feature-Sliced Design, pages first
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** Steiger in CI (CLA-0040), reviewer
 
 ## Context
 
-The backend is a modular monolith so that a vibe-coded app does not turn into spaghetti (CLA-0001). The frontend had no matching rule. In the existing apps, each component fetches its own data and every backend call sits in one API file of 800 to 950 lines. One app keeps all its components flat in `src/`.
+The backend is a modular monolith so that a vibe-coded app does not turn into spaghetti (CLA-0001). The frontend had no matching rule. Without one, each component fetches its own data, every backend call ends up in one API file of hundreds of lines, and components pile up flat in `src/`.
 
 [Feature-Sliced Design](https://feature-sliced.design) (FSD) gives the frontend the same kind of boundaries: layers that import only downward, and slices with a public API. Applied mechanically, it is heavy for small apps because a small change can touch five layers. "Pages first" keeps the boundaries and removes that cost.
 
@@ -31,4 +31,4 @@ The backend is a modular monolith so that a vibe-coded app does not turn into sp
 - Every piece of frontend code has a place to live, and the place shows who may use it.
 - Small apps stay mostly `app`, `pages`, `entities` and `shared`. `widgets` and `features` appear only when code is reused.
 - Moving code down a layer is a normal refactor that comes with the second use. Do not plan it in advance.
-- This structure replaces the flat `pages/`, `components/` and `lib/` layout proposed in #21.
+- This structure replaces the flat `pages/`, `components/` and `lib/` layout that #21 first suggested.

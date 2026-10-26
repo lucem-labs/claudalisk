@@ -1,25 +1,27 @@
-# CLA-0062: Reusable backend infrastructure ships as claudalisk NuGet packages
+# CLA-0062: Infrastructure ships as claudalisk NuGet packages
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** the packages' own CI; reviewer
-- **Issue:** lucem-labs/claudalisk-dotnet#1
+- **Enforced by:** reviewer (no copied infrastructure in an app); package CI in lucem-labs/claudalisk-dotnet
 
 ## Decision
 
-- Infrastructure that every app needs, and that has no business meaning, is built, tested and versioned as NuGet packages in a separate repository, [lucem-labs/claudalisk-dotnet](https://github.com/lucem-labs/claudalisk-dotnet), so that this repository stays focused on the plugin and its AI tooling. The packages are published to nuget.org. Apps reference the packages and do not copy the code:
-  - `Claudalisk.Domain`: `DomainException` (CLA-0063), the only package that Domain projects may reference (CLA-0048);
-  - `Claudalisk.Dispatching.Abstractions`: commands, queries and handler interfaces, the only package that Interfaces projects may reference (CLA-0003);
-  - `Claudalisk.Dispatching`: the dispatcher and its pipeline (CLA-0049);
-  - `Claudalisk.Jobs`: jobs, workers, batch jobs and the jobs router (CLA-0058, CLA-0059, CLA-0060);
-  - `Claudalisk.Jobs.PostgreSql`: the PostgreSQL transport, and later `Claudalisk.Jobs.Sqs` for AWS SQS;
-  - `Claudalisk.Scheduling`: the scheduler module (CLA-0061).
+- **Infrastructure that every app needs, and that has no business meaning, is a claudalisk NuGet package.** It is never a project in the app or a copy of another app's code. This covers the plumbing that the backend ADRs describe, such as:
+  - domain errors and the Problem Details handler (CLA-0063);
+  - module registration (CLA-0004);
+  - the data source, the per-scope connection and the unit of work (CLA-0007);
+  - the dispatcher and its pipeline (CLA-0049);
+  - jobs, their transports and the jobs router (CLA-0058, CLA-0059, CLA-0060);
+  - the scheduler (CLA-0061);
+  - endpoints that every app has, such as health (CLA-0001).
+- **The packages live in [lucem-labs/claudalisk-dotnet](https://github.com/lucem-labs/claudalisk-dotnet)**, separate from this repository, so that this one stays focused on the plugin and its AI tooling. They are published to nuget.org.
+- **Package names and boundaries are decided in that repository** and can change as the packages are built. Its README lists the current packages. Where an ADR needs a package by name, as `Claudalisk.Domain` for Domain projects (CLA-0048), the ADR names it.
 - An app pins exact package versions. A fix reaches an app as a version bump in a normal pull request.
 - Each package has its own tests, including Testcontainers tests against real PostgreSQL (CLA-0018). The CI of claudalisk-dotnet runs them.
 
 ## Consequences
 
-- One implementation of the dispatcher, jobs and scheduler serves every app.
-- An app cannot change the packages' behaviour by editing their code. It adds pipeline steps or options, or lists a deviation in its `AGENTS.md` (CLA-0028).
-- The exact interface names are decided in lucem-labs/claudalisk-dotnet#1. The build of each package is tracked in that repository.
+- One implementation of the plumbing serves every app.
+- An app cannot change the packages' behaviour by editing their code. It adds pipeline steps or options, or asks for a change in claudalisk-dotnet.
+- The ADRs state what the infrastructure must do. The packages decide how.

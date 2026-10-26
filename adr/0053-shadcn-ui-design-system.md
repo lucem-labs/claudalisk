@@ -1,13 +1,13 @@
 # CLA-0053: shadcn/ui is the design system, and its components live in `shared/ui`
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** reviewer; Steiger (CLA-0040)
 
 ## Context
 
-The existing apps styled every screen by hand in plain CSS, so each new screen invented its own buttons, forms and tables. Agents build most claudalisk apps. The design system must be one that an agent can use correctly without guessing.
+When every screen is styled by hand in plain CSS, each new screen invents its own buttons, forms and tables. Agents build most claudalisk apps. The design system must be one that an agent can use correctly without guessing.
 
 [shadcn/ui](https://ui.shadcn.com) is the React design system with the most complete AI tooling:
 - an official MCP server to find and install components
@@ -38,4 +38,3 @@ Alternatives considered:
 - Every claudalisk app looks and behaves alike, and an agent finds every component the same way.
 - Accessibility comes from the Radix primitives. Nobody rebuilds it for each screen.
 - The app maintains its copied components. Upstream fixes arrive through `shadcn diff`, not through a version bump.
-- Existing apps move screen by screen. They list this ADR as a deviation in their `AGENTS.md` until they finish (CLA-0028).
