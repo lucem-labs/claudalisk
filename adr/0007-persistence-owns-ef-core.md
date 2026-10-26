@@ -51,7 +51,7 @@ Modules can call each other through an in-process dispatcher: claudalisk's own m
 
 - **Same scope.** Resolve handlers from the caller's DI scope, never from the root provider or a new scope. A handler in another scope gets another connection and commits on its own, outside the unit of work.
 - **Scoped or transient handlers.** Handlers are never singletons, because a singleton captures a scoped DbContext. The service provider validates scopes at startup.
-- **One handler at a time.** Notification handlers run sequentially. Parallel handlers on the shared connection fail, because a DbContext or a connection cannot run two operations at once.
+- **One handler at a time.** Handlers in one scope run sequentially. Event handlers never run inside the publisher's unit of work: under the proposed CLA-0068, publishing writes one job per subscriber. Parallel handlers on the shared connection fail, because a DbContext or a connection cannot run two operations at once.
 - **A pipeline step can own the unit of work.** A step can wrap commands in `IUnitOfWork.RunAsync`. The proposed CLA-0049 wraps every command. Commands and queries that those handlers send in turn join the same unit of work.
 - **Exceptions propagate.** The dispatcher and its handlers do not catch and swallow exceptions, so a failure reaches the unit of work and rolls everything back.
 - **No fire-and-forget.** Work dispatched to run later goes into the jobs table of the owning module, inside the unit of work (the proposed CLA-0058). It never runs on a background thread from the request.

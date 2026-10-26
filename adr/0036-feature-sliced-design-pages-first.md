@@ -23,7 +23,7 @@ The backend is a modular monolith so that a vibe-coded app does not turn into sp
 - Each slice is split into segments by purpose: `ui`, `api`, `model` and `lib`. A slice creates only the segments it needs.
 - **Imports go only downward.** Code may import from layers below its own, never from its own layer or above. Slices on the same layer do not import each other. The one exception is between entities, through an explicit `@x` cross-reference, such as `entities/order/@x/customer.ts`.
 - **Each slice has a public API.** Other slices import only from its `index.ts`, never from files inside it.
-- **Pages first.** New code starts in the page that needs it. It moves down to a widget, feature or entity only when a second page needs it. Never create a slice for code used in only one place.
+- **Pages first.** New code starts in the page that needs it. It moves down to a widget, feature or entity only when a second page needs it. Never create a slice for code used in only one place. Entity slices are the exception: an entity slice exists from the first use of its backend module, because it mirrors that module (CLA-0037).
 - `app` and `shared` have no slices, and their segments may import each other.
 
 ## Consequences

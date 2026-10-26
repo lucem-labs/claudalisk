@@ -13,7 +13,7 @@ Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but n
 
 - **A job is a command that runs later.** It is a command (CLA-0052) with one handler, sent through the dispatcher's pipeline (CLA-0049) by a worker instead of by a controller.
 - **The code is the claudalisk jobs library** (CLA-0062). Apps do not write their own queueing.
-- **A jobs table only where it is needed.** A module that accepts background work says so in its module registration (CLA-0004). It then has a `jobs` table in its own schema (CLA-0007), created by its migrations, and a worker. A module without background work has no jobs table.
+- **A jobs table only where it is needed.** A module that accepts background work, or subscribes to an event (CLA-0068), says so in its module registration (CLA-0004). It then has a `jobs` table in its own schema (CLA-0007), created by its migrations, and a worker. A module without background work has no jobs table.
 - **The transport is swappable.** The jobs table always holds each job's status, attempts, progress, checkpoint, result link and last error. A transport only moves jobs from the table to a worker:
   - **PostgreSQL** (now): the jobs table is the queue. Workers claim a job with `FOR UPDATE SKIP LOCKED`, and `LISTEN`/`NOTIFY` wakes them, with polling as a fallback.
   - **AWS SQS** (later): the jobs table is the outbox. A relay publishes committed rows to SQS, and the consumer updates the job's row.

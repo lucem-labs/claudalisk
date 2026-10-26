@@ -12,7 +12,7 @@ An existing app's CI ran up to three times per change: on push, on ready-for-rev
 
 ## Decision
 
-- **Triggers.** CI runs on every push, including to `main`, and on manual dispatch. Checks belong to the commit, so pull request events do not re-run them. The run on `main` tests the squash commit that CD deploys after a merge.
+- **Triggers.** CI runs on every push, including to `main`, and on manual dispatch. Checks belong to the commit, so pull request events do not re-run them. The run on `main` tests the merged commit that CD deploys.
 - **Superseded runs.** Per-ref `concurrency` cancels them.
 - **Runners.** `runs-on` reads a repository variable. When the machine is off, the repo can fall back to GitHub-hosted runners.
 - **Pins.** The Playwright version is pinned exactly to the browsers in the runner image. Line endings are LF (`.gitattributes`).
