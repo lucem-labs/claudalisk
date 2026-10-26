@@ -1,6 +1,6 @@
 # CLA-0067: Module contracts are messages only, sent through the dispatcher
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (Interfaces projects hold only messages and the module marker); reviewer
@@ -11,11 +11,11 @@ Every feature sends its commands and queries through the dispatcher (CLA-0049). 
 
 ## Decision
 
-- **An Interfaces project holds only messages and the module marker:** commands, queries, their results, events, and the module's marker interface (CLA-0004). It has no service interfaces.
+- **An Interfaces project holds only messages and the module marker:** commands, queries, their results, events, and the module's empty marker class (CLA-0004). It has no service interfaces, and it references no package (CLA-0003).
 - **A module calls another module only by sending that module's commands and queries through the dispatcher.** The call goes through the same pipeline as any other: logging, validation, and the caller's unit of work (CLA-0007, CLA-0049).
 - **Now or later is part of the contract.** `SendAsync` always runs the target's handler and waits for it.
-  - A query or command whose result is the answer, such as `GetOrderSummaryQuery : IQuery<OrderSummaryResult>`, runs to completion.
-  - A command whose result is a `JobReference`, such as `RequestReindexCommand : ICommand<JobReference>`, means "accepted, runs later". Its handler queues an internal job (CLA-0058) and returns at once. The job's own command is internal to the module and never appears in its Interfaces project.
+  - A query or command whose result is the answer, such as `GetOrderSummaryQuery` sent as `SendAsync<OrderSummaryResult>`, runs to completion.
+  - A command whose result is a `JobReference`, such as `RequestReindexCommand` sent as `SendAsync<JobReference>`, means "accepted, runs later". Its handler queues an internal job (CLA-0058) and returns at once. The job's own command is internal to the module and never appears in its Interfaces project.
   - Moving an operation from immediate to background changes its result type, so callers see the change.
 - **Local or remote is the Host's choice.** Each message belongs to one module, through its Interfaces assembly. Module registration records where each module runs, in-process by default. A module that moves out of process (CLA-0001) is registered with a remote transport, and the dispatcher routes its messages there. Callers do not change. The design of remote transports is left for a later ADR.
 

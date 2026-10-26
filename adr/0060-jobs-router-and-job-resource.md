@@ -1,6 +1,6 @@
 # CLA-0060: The UI starts jobs through module endpoints and follows them through the jobs router
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the jobs library and its tests; end-to-end tests; reviewer

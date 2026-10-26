@@ -1,6 +1,6 @@
 # CLA-0059: Long jobs are batch jobs that the library commits one batch at a time
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the jobs library and its tests; reviewer

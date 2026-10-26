@@ -1,6 +1,6 @@
 # CLA-0013: External data is refreshed only on an explicit trigger, and never from tests
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
 - **Enforced by:** reviewer; test stubs

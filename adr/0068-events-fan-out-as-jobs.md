@@ -1,6 +1,6 @@
 # CLA-0068: Events fan out to every subscriber as a job after the commit
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the dispatching and jobs packages and their tests (CLA-0062); architecture tests (no event handler runs inside the publisher's unit of work); reviewer

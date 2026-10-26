@@ -1,6 +1,6 @@
 # CLA-0052: Commands, queries, events and their handlers follow fixed naming patterns
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (suffixes match the dispatcher's interfaces), reviewer

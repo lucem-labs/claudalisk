@@ -1,6 +1,6 @@
 # CLA-0048: Aggregates live in a Domain project per module, and the stores map them
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (CLA-0006), reviewer
@@ -25,7 +25,7 @@ The aggregate decides which commands are allowed and which `_actions` a represen
   |---|---|
   | `.Domain` | `<Root>.Shared`, `Claudalisk.Domain` (CLA-0062) |
   | `.Persistence.Interfaces` | `.Domain` |
-  | `.Persistence` | `.Persistence.Interfaces`, `.Domain`, `<Root>.Persistence` |
+  | `.Persistence` | `.Persistence.Interfaces`, `.Domain`, the claudalisk persistence package (CLA-0007) |
   | the implementation project | `.Domain`, `.Persistence.Interfaces`, its own `.Interfaces`, other modules' `.Interfaces` |
 
 - The implementation project maps aggregates to the messages for other modules (CLA-0003). An aggregate is never a message.

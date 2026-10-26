@@ -1,6 +1,6 @@
 # CLA-0057: Input shape is checked by FluentValidation validators, and domain rules by the aggregate
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (validators live next to their message; request DTOs have no validation attributes); reviewer

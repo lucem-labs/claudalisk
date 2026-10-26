@@ -1,6 +1,6 @@
 # CLA-0049: Every feature sends its commands and queries through the dispatcher
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (controllers depend only on the dispatcher and their feature's types), reviewer
@@ -28,4 +28,4 @@ Claudalisk builds its own in-process dispatcher, a mediator-style package (CLA-0
 
 - Every use case has the same shape, so a reader or an agent knows where each piece goes.
 - Cross-cutting behaviour is added once, as a pipeline step, not in each controller.
-- The dispatcher is in use from the first feature. It must exist before a new app is scaffolded, so the team must build it before this ADR is accepted.
+- The dispatcher is in use from the first feature, so it must be published before a new app is scaffolded (CLA-0062).

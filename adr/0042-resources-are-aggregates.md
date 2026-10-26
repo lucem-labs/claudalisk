@@ -1,6 +1,6 @@
 # CLA-0042: Resources are aggregates, and read models are their own resources
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** reviewer

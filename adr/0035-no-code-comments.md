@@ -25,4 +25,4 @@ Comments drift away from the code they describe. In an app built mostly by agent
 ## Consequences
 
 - The reviewer rejects added comments like any other rule break. It suggests a better name, test or ADR instead.
-- A decision that needs an explanation gets an ADR or a line in the app's `AGENTS.md`. There it cannot drift silently away from the code.
+- A decision that needs an explanation gets an ADR. There it cannot drift silently away from the code.

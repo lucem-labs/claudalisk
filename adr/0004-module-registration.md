@@ -7,44 +7,44 @@
 
 ## Context
 
-Two existing apps use the same registration code, which differs only in names. It keeps the Host down to a list of modules. Each module stays responsible for its own wiring, including its controllers if it exposes an API (CLA-0005).
+The Host should be only a list of modules. Each module stays responsible for its own wiring, including its controllers if it exposes an API (CLA-0005).
 
 ## Decision
 
-- Each module implements the app's module interface and registers its own internal implementations.
-- A module declares the module contracts it depends on, as marker interfaces from Interfaces projects. It never declares implementation types.
+- Each module implements the module interface from the claudalisk module registration package (CLA-0062) and registers its own internal implementations.
+- A module declares the modules it depends on by their marker classes from Interfaces projects. It never declares implementation types.
 - Registration resolves modules in dependency order. It rejects missing, ambiguous and circular dependencies before any module registers a service.
-- It adds the controllers from each module's assembly.
 - It is idempotent: registering a module twice is a no-op.
 - Each module can be composed in isolation, with only its declared dependencies.
 
-## How the two apps implement it
+## Implementation
 
 - **The pieces:**
-  - a shared module interface, through which a module lists its dependencies and registers its services;
-  - an empty marker interface in each module's Interfaces project;
+  - the module interface, through which a module lists its dependencies and registers its services;
+  - an empty, sealed marker class in each module's Interfaces project, such as `OrdersContract`, which needs no package (CLA-0003);
   - one public module class per implementation project, with everything it registers kept internal;
-  - the API project (`<Root>.Api`), which is a module itself and registers API-wide concerns such as the exception handler (the proposed CLA-0063);
-  - a Host that only lists module instances in one `Add<Root>Modules(...)` call.
+  - a Host (`<Root>.Api`, CLA-0001) that lists module instances in one `AddModules(...)` call, and registers the app-wide concerns from the claudalisk packages, such as the Problem Details handler (CLA-0063).
 - **The registration call:**
   - it orders the modules by their declared dependencies;
   - it validates the whole set first, and fails with a message that names the missing, ambiguous or circular dependency;
-  - it then registers each new module once and adds its controllers.
+  - it then registers each new module once.
 
   Its state lives in the service collection, so separate collections (for example in tests) do not affect each other.
+- **Controllers come in as application parts.** ASP.NET Core finds controllers only in the assemblies its `ApplicationPartManager` knows about, which by default is the entry assembly. Registration calls `AddControllers().AddApplicationPart(module.GetType().Assembly)` for each module that exposes an API, so its controllers are discovered although the Host never references their types. Controllers stay public, because ASP.NET Core ignores internal ones (CLA-0050).
 - **Tests cover:**
   - the dependency failures;
   - registration order;
   - repeated calls and reuse of earlier registrations;
   - each module composing in isolation;
-  - the full module list of the Host resolving every service.
+  - the full module list of the Host resolving every service;
+  - each module's controllers being discovered.
 
 ## Consequences
 
 - To add a module, write:
-  - its marker interface;
+  - its marker class;
   - its module class with its declared dependencies;
   - one line in the Host;
   - a dependency on its marker in each module that consumes it.
 - If a module forgets to declare a dependency, startup fails with a message that names the missing marker.
-- new-app generates the module interface, the registration call and its tests.
+- new-app references the module registration package and generates the registration tests.

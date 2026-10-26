@@ -7,7 +7,7 @@
 
 ## Context
 
-In an existing app, data cleanups were first done with SQL by hand. Nobody reviewed them, backed them up first, or tried them on dev. Separate one-off scripts would add a second path for data changes, with its own ordering, tracking and deploy step. Migrations already have all of that. They are reviewed, versioned, run once per database and ordered with the schema changes around them. The deploy step runs them after the pre-deploy backup (CLA-0008).
+Data cleanups done with SQL by hand are not reviewed, backed up first, or tried on dev. Separate one-off scripts would add a second path for data changes, with its own ordering, tracking and deploy step. Migrations already have all of that. They are reviewed, versioned, run once per database and ordered with the schema changes around them. The deploy step runs them after the pre-deploy backup (CLA-0008).
 
 ## Decision
 
@@ -22,9 +22,9 @@ In an existing app, data cleanups were first done with SQL by hand. Nobody revie
 - **Transactions.** A migration's SQL runs in the same transaction as the rest of the migration. A statement that cannot run in a transaction, such as PostgreSQL's `CREATE INDEX CONCURRENTLY` or `VACUUM`, uses `migrationBuilder.Sql(..., suppressTransaction: true)`.
 - **Large tables.** A big `DELETE` or `UPDATE` can hold locks and hit the command timeout. Batch it, or raise the migration command timeout for that deploy. A fix that takes longer than a deploy should is a design question. File a `needs-design-review` issue (CLA-0022). It never becomes a startup task (CLA-0009).
 - **One-way is acceptable.** `Down()` undoes the schema change but cannot bring deleted rows back. When the data matters, the migration first copies the affected rows to a backup table. Otherwise the pre-deploy backup (CLA-0031) is the way back.
-- **Safe on an empty database.** The SQL of the fix is a no-op on an empty database, so the fresh-database test (CLA-0011, proposed) still passes.
+- **Safe on an empty database.** The SQL of the fix is a no-op on an empty database, so the fresh-database test (CLA-0011) still passes.
 - **Try it on real data first.** Refresh dev from uat (CLA-0032) and deploy dev, which runs the migration. Check the result before you open the pull request. Real data often shows surprises in cleanup SQL.
-- **Not migrations:** changes that need C# logic or calls to other services. They become an explicit, owner-triggered action (like the proposed CLA-0013), with their own design issue.
+- **Not migrations:** changes that need C# logic or calls to other services. They become an explicit, owner-triggered action (like CLA-0013), with their own design issue.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
 # CLA-0039: Shared client state lives in Zustand stores that components only subscribe to
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** reviewer

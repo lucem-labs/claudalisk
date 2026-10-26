@@ -1,6 +1,6 @@
 # CLA-0046: The OpenAPI document groups endpoints by module, and frontend API types are generated from it
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture test (every operation has its module's tag); CI (generated types are current)
@@ -12,7 +12,7 @@
 - **Endpoints are grouped by module.**
   - Every operation is tagged with the name of the module that owns it, such as `Orders` for `<Root>.Modules.Orders`. The API reference UI, such as Swagger UI, shows one group for each module.
   - The tag comes from module registration (CLA-0004). A convention tags every controller in a module's assembly. Controllers do not set tags by hand.
-  - The API project's own cross-cutting endpoints, such as health, have the tag `Host`.
+  - The Host's endpoints, such as health, have the tag `Host`.
   - Each tag has a description of what the bounded context covers (CLA-0041).
 - **Frontend API types are generated from the document.**
   - The types go into `shared/api`, and the `api` segment of each entity uses them (CLA-0014, CLA-0037).

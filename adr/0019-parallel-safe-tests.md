@@ -1,6 +1,6 @@
 # CLA-0019: Tests are parallel-safe
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** testing
 - **Enforced by:** generated test infrastructure; reviewer
@@ -8,7 +8,7 @@
 
 ## Context
 
-In an existing app, one test class took most of the backend suite's time because it built a database per test. Fixed ports made two CI runs on one machine collide.
+A test class that builds a database per test can take most of the backend suite's time. Fixed ports make two CI runs on one machine collide.
 
 ## Decision
 

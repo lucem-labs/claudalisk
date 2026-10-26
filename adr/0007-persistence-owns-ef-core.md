@@ -21,16 +21,16 @@ A **schema per module in one physical database** keeps the ownership and keeps a
 - Each module owns a **schema** named after it. Its `<Root>.Modules.<Name>.Persistence` project holds:
   - the module's DbContext, with `HasDefaultSchema("<name>")`;
   - its migrations, with the migrations history table in its own schema;
-  - its stores, which map EF Core entities to messages (CLA-0003), or to the module's aggregates under the proposed CLA-0048.
+  - its stores, which map EF Core entities to messages (CLA-0003), or to the module's aggregates under CLA-0048.
 
   The store contracts live in `<Root>.Modules.<Name>.Persistence.Interfaces`. Only the module uses them.
 - **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to the data of other modules by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema.
-- **`<Root>.Persistence` is shared infrastructure** and holds no data of a module. It contains:
+- **The claudalisk persistence package is the shared infrastructure** (CLA-0062). It holds no data of a module. It provides:
   - the app's single `NpgsqlDataSource`;
   - one connection per DI scope (a request or a background job), which every module DbContext in that scope shares;
   - the unit of work.
 
-  Module persistence projects reference it, like `<Root>.Shared` (CLA-0002). `IUnitOfWork` lives in `<Root>.Persistence.Interfaces`, which has no EF Core or Npgsql types.
+  Module persistence projects reference it (CLA-0002). `IUnitOfWork` comes from a separate abstractions package, which has no EF Core or Npgsql types.
 
 ### Atomic work across modules: the unit of work
 
@@ -47,23 +47,23 @@ A **schema per module in one physical database** keeps the ownership and keeps a
 
 ### Dispatching between modules
 
-Modules can call each other through an in-process dispatcher: claudalisk's own mediator-style package, which is still to be built. Whatever form it takes, it must keep the unit of work intact:
+Modules call each other through claudalisk's in-process dispatcher, a mediator-style package (CLA-0049, CLA-0062). It must keep the unit of work intact:
 
 - **Same scope.** Resolve handlers from the caller's DI scope, never from the root provider or a new scope. A handler in another scope gets another connection and commits on its own, outside the unit of work.
 - **Scoped or transient handlers.** Handlers are never singletons, because a singleton captures a scoped DbContext. The service provider validates scopes at startup.
-- **One handler at a time.** Handlers in one scope run sequentially. Event handlers never run inside the publisher's unit of work: under the proposed CLA-0068, publishing writes one job per subscriber. Parallel handlers on the shared connection fail, because a DbContext or a connection cannot run two operations at once.
-- **A pipeline step can own the unit of work.** A step can wrap commands in `IUnitOfWork.RunAsync`. The proposed CLA-0049 wraps every command. Commands and queries that those handlers send in turn join the same unit of work.
+- **One handler at a time.** Handlers in one scope run sequentially. Event handlers never run inside the publisher's unit of work: publishing writes one job per subscriber (CLA-0068). Parallel handlers on the shared connection fail, because a DbContext or a connection cannot run two operations at once.
+- **A pipeline step can own the unit of work.** A step can wrap commands in `IUnitOfWork.RunAsync`, and CLA-0049 wraps every command. Commands and queries that those handlers send in turn join the same unit of work.
 - **Exceptions propagate.** The dispatcher and its handlers do not catch and swallow exceptions, so a failure reaches the unit of work and rolls everything back.
-- **No fire-and-forget.** Work dispatched to run later goes into the jobs table of the owning module, inside the unit of work (the proposed CLA-0058). It never runs on a background thread from the request.
+- **No fire-and-forget.** Work dispatched to run later goes into the jobs table of the owning module, inside the unit of work (CLA-0058). It never runs on a background thread from the request.
 
 ### Asynchronous work and separated modules: the queue as outbox
 
-- Work that can happen later is **queued, not called**. It goes in the jobs table of the module that will do it, inside the same unit of work. The job row commits or rolls back with the data, so the jobs table is the outbox, with no separate outbox table. The handler must be idempotent. The proposed CLA-0058 describes jobs and their transports.
+- Work that can happen later is **queued, not called**. It goes in the jobs table of the module that will do it, inside the same unit of work. The job row commits or rolls back with the data, so the jobs table is the outbox, with no separate outbox table. The handler must be idempotent. CLA-0058 describes jobs and their transports.
 - A module that **moves to its own database** (CLA-0001) gets its own data source and leaves the unit of work. Its callers switch to queued work: an outbox in the caller's schema, delivered to the module, with an inbox on the module's side that records handled message IDs. The architecture test flags any unit of work that still includes such a module.
 
 ### Operations
 
-- One database means one migrate step, which migrates every module DbContext (CLA-0008). It also means one backup and restore unit, which is consistent across modules at a single point in time (CLA-0031). The fresh-database test migrates every module DbContext (CLA-0011, proposed).
+- One database means one migrate step, which migrates every module DbContext (CLA-0008). It also means one backup and restore unit, which is consistent across modules at a single point in time (CLA-0031). The fresh-database test migrates every module DbContext (CLA-0011).
 - A module that moves to its own database adds that database to the app config by role (#8), to the migrate step, to the backups and to the fresh-database test.
 
 ## Proof
@@ -83,7 +83,7 @@ Modules can call each other through an in-process dispatcher: claudalisk's own m
 
 Each test was checked to fail when the wiring is broken: without the interceptor, or with one connection per context. CI runs the tests on every push.
 
-Temporary tests checked the dispatching rules. They routed calls through MediatR 12.5 on the same spike. The tests were not kept, because claudalisk will build its own dispatcher. They showed that:
+Temporary tests checked the dispatching rules. They routed calls through MediatR 12.5 on the same spike. The tests were not kept, because claudalisk builds its own dispatcher. They showed that:
 
 - requests sent to two modules inside a unit of work roll back together;
 - a pipeline step that owns the unit of work rolls back the nested requests;
@@ -91,7 +91,7 @@ Temporary tests checked the dispatching rules. They routed calls through MediatR
 - a handler resolved in a new scope committed on its own;
 - publishing in parallel failed with "A second operation was started on this context instance".
 
-The tests of the dispatcher must cover the same cases.
+The tests of the dispatcher and persistence packages must cover the same cases, and the spike's tests move into the persistence package.
 
 ## Consequences
 

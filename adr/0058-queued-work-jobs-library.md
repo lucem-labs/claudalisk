@@ -1,13 +1,13 @@
 # CLA-0058: Queued work runs as jobs through the claudalisk jobs library, with a swappable transport
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the jobs library and its tests; architecture tests (only modules that accept background work have a jobs table; no module references another module's jobs); reviewer
 
 ## Context
 
-Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but none decided how it works. One existing app has a jobs table that workers claim with `FOR UPDATE SKIP LOCKED`, woken by `NOTIFY`, with lanes, heartbeats, progress, cancel requests and a dedupe key. It has no retries, and it queues jobs on its own connection, outside the unit of work. The apps run on PostgreSQL today, but a production deployment may use an AWS queue.
+Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but none decided how it works. A hand-written jobs table can have workers that claim rows with `FOR UPDATE SKIP LOCKED`, woken by `NOTIFY`, with lanes, heartbeats, progress, cancel requests and a dedupe key, and still lack retries and queue jobs on its own connection, outside the unit of work. The apps run on PostgreSQL today, but a production deployment may use an AWS queue.
 
 ## Decision
 

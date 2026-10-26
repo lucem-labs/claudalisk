@@ -1,13 +1,13 @@
 # CLA-0063: Domain errors are `DomainException`s, and one API-wide handler turns every error into Problem Details
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** architecture tests (no exception filters or `ProblemDetails` construction in modules); integration tests (each problem `type` and status); reviewer
 
 ## Context
 
-One existing app had an exception filter for each module in the API project, each a long `switch` from error codes to a status and a title. Exceptions must reach the unit of work so that it rolls back (CLA-0007), so errors stay exceptions and do not become result types.
+An exception filter for each module, each a long `switch` from error codes to a status and a title, repeats the same mapping in every module. Exceptions must reach the unit of work so that it rolls back (CLA-0007), so errors stay exceptions and do not become result types.
 
 ## Decision
 
@@ -17,7 +17,7 @@ One existing app had an exception filter for each module in the API project, eac
   - a title that the UI can show as it is;
   - a kind: `Conflict` (409), `NotFound` (404) or `Forbidden` (403);
   - optional extension members, such as the number of items still available.
-- **One `IExceptionHandler` in `<Root>.Api` turns every error into Problem Details** (CLA-0045), using ASP.NET Core's `AddProblemDetails`:
+- **One `IExceptionHandler` turns every error into Problem Details** (CLA-0045), using ASP.NET Core's `AddProblemDetails`. It comes from the claudalisk web package, not from `Claudalisk.Domain`, because Domain projects never reference ASP.NET Core (CLA-0048). The Host registers it (CLA-0001):
   - a `DomainException` becomes its kind's status with `type: /problems/<module>/<slug>`;
   - a validation failure from the pipeline becomes `400` `ValidationProblemDetails` (CLA-0057);
   - an EF Core concurrency failure becomes `412` (CLA-0056);

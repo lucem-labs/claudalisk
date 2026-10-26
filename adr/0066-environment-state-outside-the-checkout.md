@@ -1,6 +1,6 @@
 # CLA-0066: Environment files and backups live outside the checkout, per app and machine
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** the environment scripts; guardrail hook (no env files in the checkout); CD
@@ -8,7 +8,7 @@
 
 ## Context
 
-Env files and deployment records were untracked files in the checkout. A worktree for an issue, and a CD job's fresh checkout, did not have them. One app's scripts then fell back to the committed example file, so the environment with real data could run with an example password.
+Env files and deployment records were untracked files in the checkout. A worktree for an issue, and a CD job's fresh checkout, did not have them. Scripts that then fall back to the committed example file let the environment with real data run with an example password.
 
 ## Decision
 
