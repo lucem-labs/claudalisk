@@ -1,6 +1,6 @@
 ---
 name: environments
-description: Claudalisk environment decisions (ADRs). Covers the dev and uat environments, CD to dev and uat, uat backups and restores, refreshing dev from uat, the machine-wide proxy and CI runners, the CI workflow, and Node.js scripts. Use when deploying, backing up, restoring, touching Compose files, environment scripts or CI workflows, or running Docker commands in a claudalisk app.
+description: Claudalisk environment decisions (ADRs). Covers the dev and uat environments, CD to dev and uat, uat backups and restores, refreshing dev from uat, the machine-wide proxy and CI runners, the CI workflow, security scans, and Node.js scripts. Use when deploying, backing up, restoring, touching Compose files, environment scripts or CI workflows, or running Docker commands in a claudalisk app.
 paths:
   - "compose*.yml"
   - "scripts/**"
@@ -22,3 +22,4 @@ These are claudalisk's decisions for environments, CD and CI. The app's `AGENTS.
 - [CLA-0034](${CLAUDE_PLUGIN_ROOT}/adr/0034-ci-workflow.md) (accepted): CI runs once per pushed commit, in parallel jobs, with a GitHub-hosted fallback.
 - [CLA-0027](${CLAUDE_PLUGIN_ROOT}/adr/0027-scripts-in-node.md) (accepted): scripts are Node.js, start processes with argument arrays and send SQL on stdin.
 - [CLA-0066](${CLAUDE_PLUGIN_ROOT}/adr/0066-environment-state-outside-the-checkout.md) (accepted): env files and uat backups live in `~/.claudalisk/apps/<app>/`, never in the checkout; the deploy runner mounts them; uat never falls back to an example file.
+- [CLA-0071](${CLAUDE_PLUGIN_ROOT}/adr/0071-security-scans.md) (accepted): every push runs gitleaks, a forbidden-file check, `lucem-labs/nuget-audit-action`, OSV-Scanner, .NET analyzers with Semgrep CE, zizmor and Trivy config; weekly runs rescan dependencies, scan images with Trivy and run a ZAP baseline against dev; every suppression expires within 90 days.
