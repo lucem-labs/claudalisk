@@ -76,6 +76,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0067](0067-module-contracts-are-messages-only.md) | Module contracts are messages only, sent through the dispatcher | accepted | backend-architecture |
 | [CLA-0068](0068-events-fan-out-as-jobs.md) | Events fan out to every subscriber as a job after the commit | accepted | backend-architecture |
 | [CLA-0069](0069-hand-written-mapping.md) | Mapping is hand-written, with no AutoMapper or other mapping library | accepted | backend-architecture |
+| [CLA-0070](0070-testing-layers.md) | Each rule is tested at the lowest layer that can see it | accepted | testing |
 
 ## Format
 

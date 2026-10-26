@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** reviewer; integration tests
+- **Enforced by:** reviewer; API tests (CLA-0070)
 
 ## Decision
 

@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (no exception filters or `ProblemDetails` construction in modules); integration tests (each problem `type` and status); reviewer
+- **Enforced by:** architecture tests (no exception filters or `ProblemDetails` construction in modules); API tests (each problem `type` and status, CLA-0070); reviewer
 
 ## Context
 
