@@ -1,0 +1,29 @@
+{
+  "name": "claudalisk-registry-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tanstack/react-query": "^5",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router": "^7",
+    "tailwindcss": "^4"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "jsdom": "^30",
+    "typescript": "~6.0.2",
+    "vite": "^8",
+    "vitest": "^5"
+  }
+}

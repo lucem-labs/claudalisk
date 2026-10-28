@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "app-shell",
+  "title": "App shell",
+  "description": "The app's layout: a sidebar with navigation links for React Router, a header and the main content.",
+  "dependencies": [
+    "react-router@^7"
+  ],
+  "registryDependencies": [
+    "sidebar",
+    "separator",
+    "tooltip"
+  ],
+  "files": [
+    {
+      "path": "ui/app-shell.tsx",
+      "content": "import * as React from \"react\"\nimport { NavLink } from \"react-router\"\n\nimport { Separator } from \"@/components/ui/separator\"\nimport {\n  Sidebar,\n  SidebarContent,\n  SidebarGroup,\n  SidebarGroupContent,\n  SidebarHeader,\n  SidebarInset,\n  SidebarMenu,\n  SidebarMenuButton,\n  SidebarMenuItem,\n  SidebarProvider,\n  SidebarTrigger,\n} from \"@/components/ui/sidebar\"\nimport { TooltipProvider } from \"@/components/ui/tooltip\"\n\ntype NavigationItem = {\n  to: string\n  label: string\n  icon?: React.ComponentType\n  end?: boolean\n}\n\ntype AppShellProps = {\n  title: React.ReactNode\n  navigation: NavigationItem[]\n  header?: React.ReactNode\n  children: React.ReactNode\n}\n\nfunction AppShell({ title, navigation, header, children }: AppShellProps) {\n  return (\n    <TooltipProvider>\n      <SidebarProvider>\n        <Sidebar>\n          <SidebarHeader className=\"px-4 py-3 font-heading text-base font-semibold\">\n            {title}\n          </SidebarHeader>\n          <SidebarContent>\n            <SidebarGroup>\n              <SidebarGroupContent>\n                <SidebarMenu>\n                  {navigation.map((item) => (\n                    <AppShellLink key={item.to} item={item} />\n                  ))}\n                </SidebarMenu>\n              </SidebarGroupContent>\n            </SidebarGroup>\n          </SidebarContent>\n        </Sidebar>\n        <SidebarInset>\n          <header className=\"flex h-12 shrink-0 items-center gap-2 border-b px-4\">\n            <SidebarTrigger className=\"-ml-1\" />\n            <Separator orientation=\"vertical\" className=\"mr-2 h-4\" />\n            {header}\n          </header>\n          <main className=\"flex flex-1 flex-col gap-4 p-4\">{children}</main>\n        </SidebarInset>\n      </SidebarProvider>\n    </TooltipProvider>\n  )\n}\n\nfunction AppShellLink({ item }: { item: NavigationItem }) {\n  const Icon = item.icon\n  return (\n    <SidebarMenuItem>\n      <NavLink to={item.to} end={item.end}>\n        {({ isActive }) => (\n          <SidebarMenuButton isActive={isActive} tabIndex={-1}>\n            {Icon ? <Icon /> : null}\n            <span>{item.label}</span>\n          </SidebarMenuButton>\n        )}\n      </NavLink>\n    </SidebarMenuItem>\n  )\n}\n\nexport { AppShell }\nexport type { NavigationItem }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

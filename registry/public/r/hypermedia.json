@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hypermedia",
+  "title": "Hypermedia",
+  "description": "Types for _links and _actions, and the shared/api helpers that follow a link and send an action with If-Match.",
+  "registryDependencies": [
+    "@claudalisk/problem-details"
+  ],
+  "files": [
+    {
+      "path": "lib/hypermedia.ts",
+      "content": "export type Link = {\n  href: string\n}\n\nexport type Action = {\n  href: string\n  method: string\n}\n\nexport type Links = Record<string, Link | undefined>\n\nexport type Actions = Record<string, Action | undefined>\n\nexport type Representation = {\n  _links?: Links\n  _actions?: Actions\n}\n\nexport function actionOf(representation: Representation | undefined, name: string): Action | undefined {\n  return representation?._actions?.[name]\n}\n\nexport function linkOf(representation: Representation | undefined, relation: string): Link | undefined {\n  return representation?._links?.[relation]\n}\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "api/hypermedia.ts",
+      "content": "import { isProblemDetails, ProblemError } from \"@/lib/problem-details\"\nimport type { Action, Link } from \"@/lib/hypermedia\"\n\nexport type ActionRequest = {\n  body?: unknown\n  ifMatch?: string\n}\n\nexport type ActionResponse<T> = {\n  status: number\n  data: T | undefined\n  etag: string | undefined\n  location: string | undefined\n}\n\nexport async function followLink<T>(link: Link, init?: { signal?: AbortSignal }): Promise<T> {\n  const response = await fetch(link.href, {\n    headers: { Accept: \"application/json\" },\n    signal: init?.signal,\n  })\n  const { data } = await readResponse<T>(response)\n  return data as T\n}\n\nexport async function sendAction<T = unknown>(\n  action: Action,\n  request: ActionRequest = {}\n): Promise<ActionResponse<T>> {\n  const headers: Record<string, string> = { Accept: \"application/json\" }\n  if (request.body !== undefined) headers[\"Content-Type\"] = \"application/json\"\n  if (request.ifMatch !== undefined) headers[\"If-Match\"] = request.ifMatch\n  const response = await fetch(action.href, {\n    method: action.method,\n    headers,\n    body: request.body === undefined ? undefined : JSON.stringify(request.body),\n  })\n  return readResponse<T>(response)\n}\n\nasync function readResponse<T>(response: Response): Promise<ActionResponse<T>> {\n  const body = parseBody(await response.text())\n  if (!response.ok) {\n    throw new ProblemError(\n      isProblemDetails(body) ? body : { status: response.status, title: response.statusText }\n    )\n  }\n  return {\n    status: response.status,\n    data: body as T | undefined,\n    etag: response.headers.get(\"ETag\") ?? undefined,\n    location: response.headers.get(\"Location\") ?? undefined,\n  }\n}\n\nfunction parseBody(text: string): unknown {\n  if (text.length === 0) return undefined\n  try {\n    return JSON.parse(text)\n  } catch {\n    return undefined\n  }\n}\n",
+      "type": "registry:file",
+      "target": "src/shared/api/hypermedia.ts"
+    }
+  ],
+  "type": "registry:lib"
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "base",
+  "title": "Base",
+  "description": "Everything a new claudalisk app starts with: the theme and every base component.",
+  "registryDependencies": [
+    "@claudalisk/theme",
+    "@claudalisk/problem-details",
+    "@claudalisk/hypermedia",
+    "@claudalisk/problem-field",
+    "@claudalisk/problem-alert",
+    "@claudalisk/action-button",
+    "@claudalisk/paged-table",
+    "@claudalisk/query-state",
+    "@claudalisk/app-shell"
+  ],
+  "type": "registry:item"
+}

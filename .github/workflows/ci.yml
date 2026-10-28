@@ -25,6 +25,20 @@ jobs:
       - name: Tool tests
         run: node --test tools/*.test.mjs
 
+  registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Plugin manifest and MCP configuration
+        run: npx --yes @anthropic-ai/claude-code@2.1.299 plugin validate .
+      - name: Registry build, install and tests
+        run: node tools/check-registry.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
   unit-of-work-spike:
     runs-on: ubuntu-latest
     steps:
