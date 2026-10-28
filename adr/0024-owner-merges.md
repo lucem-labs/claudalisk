@@ -14,7 +14,7 @@ GitHub does not enforce rulesets on private repositories on the free plan. A scr
 - **Only the owner merges**, straight from GitHub, after the owner reviews the pull request on uat (CLA-0023).
 - **The agent never merges.** This rules out `gh pr merge`, the merge API (`gh api …/merge`), merge scripts, and pushing to `main`.
 - **No merge-check script.** GitHub already holds the evidence the owner needs:
-  - the CI check on the head commit
+  - the CI check and the `up to date with main` status on the head commit (CLA-0034)
   - the `uat` deployment of that commit, recorded by CD (CLA-0030)
 
 ## Consequences

@@ -24,7 +24,7 @@ The security scans report a vulnerable package or an outdated base image, but so
   - When CI fails on a Dependabot pull request, the agent pushes the fix to that branch, such as a changed API call or an updated test.
   - After that push, Dependabot stops rebasing the branch, so the agent merges `origin/main` into it when needed.
   - For a major version that needs more than a small fix, the agent opens an issue instead (CLA-0022).
-- **CD deploys Dependabot pull requests like any other,** so the owner can try an update on uat before the merge (CLA-0030). Workflows that Dependabot starts get a read-only token and only Dependabot secrets. CD needs no repository secret for a deploy, because the runner mounts the env files (CLA-0066). Any secret that CD does need is also added as a Dependabot secret.
+- **CD does not deploy Dependabot pull requests** (CLA-0030): it deploys only pull requests that the owner's account opened. CI is their gate. To try an update on uat, the agent opens its own pull request with it.
 
 ## Consequences
 
