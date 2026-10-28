@@ -36,7 +36,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | code-standards |
 | [CLA-0028](0028-app-agents-md-wins.md) | The app's AGENTS.md wins, and deviations cite ADR ids | accepted | workflow |
 | [CLA-0029](0029-dev-and-uat-environments.md) | Two local environments: dev for the agent, uat for the owner's real data | accepted | environments |
-| [CLA-0030](0030-cd-deploys-dev-and-uat.md) | CD deploys dev and uat together, backing up uat first | accepted | environments |
+| [CLA-0030](0030-cd-deploys-pull-requests-to-uat.md) | CD deploys pull requests to uat, backing uat up first | accepted | environments |
 | [CLA-0031](0031-backups-and-restores.md) | Uat backups are versioned; restores are verified and swapped in | accepted | environments |
 | [CLA-0032](0032-dev-refreshed-from-uat.md) | Dev is refreshed one way from uat | accepted | environments |
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |

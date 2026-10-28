@@ -25,5 +25,5 @@ CI that triggers on push, on ready-for-review and on merge runs up to three time
 
 ## Consequences
 
-- CD waits for one green run before it deploys (CLA-0030). For a merge commit, that is the run of the merged pull request's head with the same tree. When the trees differ (a branch merged while behind `main`), CD dispatches CI on `main` first. The owner sees the run and the `up to date with main` status next to the Merge button (CLA-0024).
+- CD deploys only pull request heads whose CI succeeded, never `main` (CLA-0030). Because a pull request merges only from a branch that contains `main`, what the owner reviews on uat is what the merge produces. The owner sees the run and the `up to date with main` status next to the Merge button (CLA-0024).
 - CD is a separate workflow. CLA-0030 describes it.

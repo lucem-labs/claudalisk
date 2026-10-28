@@ -12,7 +12,7 @@ The two environments were first called dev and prod. The second one is not produ
 ## Decision
 
 - **dev** (`<app>.dev.localhost`) is the **agent's** environment.
-  - The agent deploys, resets and refreshes it freely, by hand or through CD.
+  - The agent deploys, resets and refreshes it freely, by hand. CD never deploys it (CLA-0030).
   - It shows a DEV badge.
 - **uat** (`<app>.uat.localhost`) is the **owner's** environment. It holds real, hand-curated data that cannot be recreated.
   - Its data volume is external and the owner creates it, so Compose can never delete it.
