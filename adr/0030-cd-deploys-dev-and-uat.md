@@ -18,9 +18,10 @@ Treating the second environment as production needed heavyweight guards on every
   A branch without a pull request does not deploy. The agent deploys dev by hand while it works.
 
 - **The workflow.** CD is its own workflow, `cd.yml`, separate from CI (CLA-0034):
-  - Two triggers start it: CI completion (`workflow_run`) and a pull request that is opened or reopened (`pull_request_target: opened, reopened`).
-  - Both triggers run the workflow file and scripts from the default branch, never a pull request's own copy. The commit of the pull request is only what to build and deploy.
-  - It deploys a commit only when CI succeeded on it and the commit is `main` or the head of an open pull request.
+  - Three triggers start it: CI completion (`workflow_run`), a pull request that is opened or reopened (`pull_request_target: opened, reopened`), and a push to `main`.
+  - Every trigger runs the workflow file and scripts from the default branch, never a pull request's own copy. The commit of the pull request is only what to build and deploy.
+  - It deploys a commit only when it is `main` or the head of an open pull request, and CI succeeded on it.
+  - CI does not run on `main` (CLA-0034). For a merge commit with no run of its own, CD uses the run of the merged pull request's head (`commits/<sha>/pulls`) when its tree equals the merge commit's tree. When the trees differ, CD dispatches CI on `main` (`workflow_dispatch`), and its completion starts CD again.
   - Deploys queue one at a time. CD never cancels a deploy midway.
 - **One commit, both environments.** CD deploys the same commit and the same image to dev and uat.
 - **Where CD runs.** It runs on a **deploy runner**: a self-hosted runner with the host's Docker socket and a `deploy` label. Only CD jobs of private repositories use it (CLA-0033). CI keeps running on the Docker-in-Docker runners, which cannot reach the host's Docker.
