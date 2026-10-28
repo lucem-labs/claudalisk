@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "paged-table",
+  "title": "Paged table",
+  "description": "A data table on TanStack Table for a page of a collection, paged by following its next and prev links.",
+  "dependencies": [
+    "@tanstack/react-table@^8"
+  ],
+  "registryDependencies": [
+    "table",
+    "button",
+    "@claudalisk/hypermedia"
+  ],
+  "files": [
+    {
+      "path": "ui/paged-table.tsx",
+      "content": "import * as React from \"react\"\nimport {\n  flexRender,\n  getCoreRowModel,\n  useReactTable,\n  type ColumnDef,\n} from \"@tanstack/react-table\"\n\nimport { Button } from \"@/components/ui/button\"\nimport {\n  Table,\n  TableBody,\n  TableCell,\n  TableHead,\n  TableHeader,\n  TableRow,\n} from \"@/components/ui/table\"\nimport type { Links } from \"@/lib/hypermedia\"\n\ntype PagedTableProps<T> = {\n  columns: ColumnDef<T>[]\n  items: T[]\n  links: Links | undefined\n  onNavigate: (href: string) => void\n  getRowId?: (item: T, index: number) => string\n  empty?: React.ReactNode\n}\n\nfunction PagedTable<T>({\n  columns,\n  items,\n  links,\n  onNavigate,\n  getRowId,\n  empty = \"No results.\",\n}: PagedTableProps<T>) {\n  const table = useReactTable({\n    data: items,\n    columns,\n    getCoreRowModel: getCoreRowModel(),\n    getRowId,\n  })\n  const prev = links?.prev\n  const next = links?.next\n  const rows = table.getRowModel().rows\n\n  return (\n    <div className=\"flex flex-col gap-4\">\n      <div className=\"overflow-hidden rounded-md border\">\n        <Table>\n          <TableHeader>\n            {table.getHeaderGroups().map((headerGroup) => (\n              <TableRow key={headerGroup.id}>\n                {headerGroup.headers.map((header) => (\n                  <TableHead key={header.id}>\n                    {header.isPlaceholder\n                      ? null\n                      : flexRender(header.column.columnDef.header, header.getContext())}\n                  </TableHead>\n                ))}\n              </TableRow>\n            ))}\n          </TableHeader>\n          <TableBody>\n            {rows.length > 0 ? (\n              rows.map((row) => (\n                <TableRow key={row.id}>\n                  {row.getVisibleCells().map((cell) => (\n                    <TableCell key={cell.id}>\n                      {flexRender(cell.column.columnDef.cell, cell.getContext())}\n                    </TableCell>\n                  ))}\n                </TableRow>\n              ))\n            ) : (\n              <TableRow>\n                <TableCell colSpan={columns.length} className=\"h-24 text-center text-muted-foreground\">\n                  {empty}\n                </TableCell>\n              </TableRow>\n            )}\n          </TableBody>\n        </Table>\n      </div>\n      {prev || next ? (\n        <nav aria-label=\"Pages\" className=\"flex items-center justify-end gap-2\">\n          <Button\n            variant=\"outline\"\n            size=\"sm\"\n            disabled={!prev}\n            onClick={() => prev && onNavigate(prev.href)}\n          >\n            Previous\n          </Button>\n          <Button\n            variant=\"outline\"\n            size=\"sm\"\n            disabled={!next}\n            onClick={() => next && onNavigate(next.href)}\n          >\n            Next\n          </Button>\n        </nav>\n      ) : null}\n    </div>\n  )\n}\n\nexport { PagedTable }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

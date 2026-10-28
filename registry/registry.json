@@ -1,0 +1,158 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "claudalisk",
+  "homepage": "https://github.com/lucem-labs/claudalisk",
+  "items": [
+    {
+      "name": "theme",
+      "type": "registry:file",
+      "title": "Theme",
+      "description": "The claudalisk design tokens as CSS variables, light and dark, mapped to Tailwind utilities.",
+      "dependencies": [
+        "shadcn@4.21.5",
+        "tw-animate-css@^1",
+        "@fontsource-variable/geist@^5",
+        "class-variance-authority@^0.7",
+        "radix-ui@^1",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "theme/theme.css",
+          "type": "registry:file",
+          "target": "src/app/styles/theme.css"
+        }
+      ]
+    },
+    {
+      "name": "problem-details",
+      "type": "registry:lib",
+      "title": "Problem Details",
+      "description": "RFC 9457 Problem Details types, the ProblemError thrown for a failed request, and lookups for validation errors by field.",
+      "files": [
+        {
+          "path": "lib/problem-details.ts",
+          "type": "registry:lib"
+        }
+      ]
+    },
+    {
+      "name": "hypermedia",
+      "type": "registry:lib",
+      "title": "Hypermedia",
+      "description": "Types for _links and _actions, and the shared/api helpers that follow a link and send an action with If-Match.",
+      "registryDependencies": ["@claudalisk/problem-details"],
+      "files": [
+        {
+          "path": "lib/hypermedia.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "api/hypermedia.ts",
+          "type": "registry:file",
+          "target": "src/shared/api/hypermedia.ts"
+        }
+      ]
+    },
+    {
+      "name": "problem-field",
+      "type": "registry:ui",
+      "title": "Problem field",
+      "description": "A labelled form field that shows the validation errors a Problem Details response gives for its name.",
+      "registryDependencies": ["field", "@claudalisk/problem-details"],
+      "files": [
+        {
+          "path": "ui/problem-field.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "problem-alert",
+      "type": "registry:ui",
+      "title": "Problem alert",
+      "description": "An alert that shows a Problem Details title and detail, and any validation errors no field shows.",
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["alert", "@claudalisk/problem-details"],
+      "files": [
+        {
+          "path": "ui/problem-alert.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "action-button",
+      "type": "registry:ui",
+      "title": "Action button",
+      "description": "A button that renders only when its action is in a representation's _actions, and sends the action's method to its href.",
+      "dependencies": ["@tanstack/react-query@^5"],
+      "registryDependencies": ["button", "spinner", "@claudalisk/hypermedia"],
+      "files": [
+        {
+          "path": "ui/action-button.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "paged-table",
+      "type": "registry:ui",
+      "title": "Paged table",
+      "description": "A data table on TanStack Table for a page of a collection, paged by following its next and prev links.",
+      "dependencies": ["@tanstack/react-table@^8"],
+      "registryDependencies": ["table", "button", "@claudalisk/hypermedia"],
+      "files": [
+        {
+          "path": "ui/paged-table.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "query-state",
+      "type": "registry:ui",
+      "title": "Query state",
+      "description": "Loading, error and empty states for a TanStack Query result, with the data rendered once it is there.",
+      "dependencies": ["@tanstack/react-query@^5"],
+      "registryDependencies": ["button", "empty", "skeleton", "@claudalisk/problem-alert"],
+      "files": [
+        {
+          "path": "ui/query-state.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "app-shell",
+      "type": "registry:ui",
+      "title": "App shell",
+      "description": "The app's layout: a sidebar with navigation links for React Router, a header and the main content.",
+      "dependencies": ["react-router@^7"],
+      "registryDependencies": ["sidebar", "separator", "tooltip"],
+      "files": [
+        {
+          "path": "ui/app-shell.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "base",
+      "type": "registry:item",
+      "title": "Base",
+      "description": "Everything a new claudalisk app starts with: the theme and every base component.",
+      "registryDependencies": [
+        "@claudalisk/theme",
+        "@claudalisk/problem-details",
+        "@claudalisk/hypermedia",
+        "@claudalisk/problem-field",
+        "@claudalisk/problem-alert",
+        "@claudalisk/action-button",
+        "@claudalisk/paged-table",
+        "@claudalisk/query-state",
+        "@claudalisk/app-shell"
+      ]
+    }
+  ]
+}

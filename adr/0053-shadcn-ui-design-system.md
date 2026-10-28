@@ -26,7 +26,7 @@ Alternatives considered:
 
 - The design system is shadcn/ui, on Tailwind CSS v4 (CLA-0054), with Radix primitives.
 - **Add components only through the shadcn CLI or its MCP server**, from the claudalisk registry first and the shadcn registry second (CLA-0055). Never copy them by hand from a website.
-- **Components live in `shared/ui`** (CLA-0036). `components.json` points the CLI's aliases there, and `cn` and other helpers go in `shared/lib`.
+- **Components live in `shared/ui`** (CLA-0036). `components.json` points the CLI's aliases there, and helpers go in `shared/lib`.
 - **Pages and features compose components. They do not restyle them.**
   - A screen uses a `shared/ui` component where one exists, instead of a styled raw HTML element.
   - Add a new variant to the component, such as a `cva` variant. Do not override it with classes at the call site.

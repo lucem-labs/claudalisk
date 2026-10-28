@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "problem-alert",
+  "title": "Problem alert",
+  "description": "An alert that shows a Problem Details title and detail, and any validation errors no field shows.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "alert",
+    "@claudalisk/problem-details"
+  ],
+  "files": [
+    {
+      "path": "ui/problem-alert.tsx",
+      "content": "import * as React from \"react\"\nimport { CircleAlert } from \"lucide-react\"\n\nimport { Alert, AlertDescription, AlertTitle } from \"@/components/ui/alert\"\nimport { problemOf, unmatchedFieldErrors } from \"@/lib/problem-details\"\n\ntype ProblemAlertProps = {\n  error: unknown\n  fields?: readonly string[]\n  action?: React.ReactNode\n}\n\nfunction ProblemAlert({ error, fields, action }: ProblemAlertProps) {\n  if (!error) return null\n  const problem = problemOf(error)\n  const title = problem?.title ?? \"Something went wrong\"\n  const detail = problem?.detail ?? (problem ? undefined : errorMessage(error))\n  const extra = fields ? unmatchedFieldErrors(error, fields) : []\n\n  return (\n    <Alert variant=\"destructive\" data-problem-type={problem?.type}>\n      <CircleAlert />\n      <AlertTitle>{title}</AlertTitle>\n      <AlertDescription>\n        {detail ? <p>{detail}</p> : null}\n        {extra.length > 0 ? (\n          <ul className=\"list-inside list-disc\">\n            {extra.map((message) => (\n              <li key={message}>{message}</li>\n            ))}\n          </ul>\n        ) : null}\n        {action}\n      </AlertDescription>\n    </Alert>\n  )\n}\n\nfunction errorMessage(error: unknown) {\n  return error instanceof Error ? error.message : undefined\n}\n\nexport { ProblemAlert }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

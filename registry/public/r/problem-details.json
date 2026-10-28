@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "problem-details",
+  "title": "Problem Details",
+  "description": "RFC 9457 Problem Details types, the ProblemError thrown for a failed request, and lookups for validation errors by field.",
+  "files": [
+    {
+      "path": "lib/problem-details.ts",
+      "content": "export type ProblemDetails = {\n  type?: string\n  title?: string\n  status?: number\n  detail?: string\n  instance?: string\n  errors?: Record<string, string[]>\n}\n\nexport class ProblemError extends Error {\n  readonly problem: ProblemDetails\n\n  constructor(problem: ProblemDetails) {\n    super(problem.detail ?? problem.title ?? \"The request failed.\")\n    this.name = \"ProblemError\"\n    this.problem = problem\n  }\n}\n\nexport function isProblemDetails(value: unknown): value is ProblemDetails {\n  if (typeof value !== \"object\" || value === null) return false\n  const candidate = value as Record<string, unknown>\n  return (\n    typeof candidate.title === \"string\" ||\n    typeof candidate.type === \"string\" ||\n    typeof candidate.status === \"number\"\n  )\n}\n\nexport function problemOf(error: unknown): ProblemDetails | undefined {\n  if (error instanceof ProblemError) return error.problem\n  if (isProblemDetails(error)) return error\n  return undefined\n}\n\nexport function fieldErrors(error: unknown, field: string): string[] {\n  const errors = problemOf(error)?.errors\n  if (!errors) return []\n  const wanted = field.toLowerCase()\n  return Object.entries(errors)\n    .filter(([key]) => key.toLowerCase() === wanted)\n    .flatMap(([, messages]) => messages)\n}\n\nexport function unmatchedFieldErrors(error: unknown, fields: readonly string[]): string[] {\n  const errors = problemOf(error)?.errors\n  if (!errors) return []\n  const known = new Set(fields.map((field) => field.toLowerCase()))\n  return Object.entries(errors)\n    .filter(([key]) => !known.has(key.toLowerCase()))\n    .flatMap(([, messages]) => messages)\n}\n",
+      "type": "registry:lib"
+    }
+  ],
+  "type": "registry:lib"
+}

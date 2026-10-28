@@ -14,7 +14,7 @@
   - Components use the token utilities, such as `bg-primary` and `text-muted-foreground`. They never use raw colour values such as `bg-[#1d4ed8]` or `text-blue-700`.
 - **Dark mode** redefines the same variables under a `.dark` class. Components do not add their own `dark:` colours.
 - **The theme file is the only hand-written CSS.** It holds the tokens and the few global element rules. There are no per-component CSS files, CSS modules or inline `style` attributes for static styling.
-- Combine class names with `cn` from `shared/lib`. Do not build class strings with string concatenation.
+- Combine class names with `cn` from shadcn's `cn` package, which shadcn's components import. Do not build class strings with string concatenation.
 
 ## Consequences
 
