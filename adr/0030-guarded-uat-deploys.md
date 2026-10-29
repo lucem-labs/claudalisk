@@ -20,7 +20,7 @@ An earlier version of this ADR had CD deploy uat from a workflow on a **deploy r
 - **Who deploys uat:** the agent, with the app's deploy script (`node scripts/deploy.mjs --environment uat`), and only as a **review deploy**: when it opens a pull request, or when the head of an open pull request changes. There is no CD workflow and no deploy runner.
 - **What may be deployed.** The script refuses before it builds or changes anything unless:
   - the confirmation names the exact commit (`--confirm 'deploy uat <sha7>'`);
-  - the working tree is clean, and the commit is pushed;
+  - the working tree is clean, and the commit contains the latest `main` (a branch that fell behind after its CI passed is refused, so a migration merged in the meantime is never taken for one the commit lacks);
   - the commit is the head of an open pull request into `main`, opened by the account the agent and the owner use. A pull request opened by a bot, such as Dependabot (CLA-0072), or by anyone else is never deployed;
   - every CI job succeeded on the commit, including the `up to date with main` check (CLA-0034).
 - **What is never deployed:**
@@ -30,12 +30,12 @@ An earlier version of this ADR had CD deploy uat from a workflow on a **deploy r
   1. Build the images from the commit.
   2. Start the database, and compare the migrations uat has applied with the commit's migration files.
   3. **Refuse a changed migration** that uat has applied (CLA-0010), with nothing changed.
-  4. Take a uat backup (CLA-0031). Skip it on the very first deploy, while the database is empty.
-  5. **Undo migrations from other pull requests** (below).
-  6. Migrate with the same image (CLA-0008).
+  4. **Refuse migrations the commit lacks** (below), with nothing changed.
+  5. Take a uat backup (CLA-0031). Skip it on the very first deploy, while the database is empty.
+  6. Migrate with the same image (CLA-0008), and record the applied migrations' fingerprints right away, even if a later step fails.
   7. Start the new version, and check health.
-  8. Record the migrations' fingerprints, and the deployment as a GitHub deployment for `uat`.
-- **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit to deploy lacks a migration that uat has already applied, the deploy restores uat from the newest backup taken before that migration was applied (CLA-0031). The pre-deploy backup keeps the replaced data. The output and the GitHub deployment name the restore point and the data entered after it, which is replaced. With no such backup, the deploy refuses and the owner decides. This happens when a pull request is abandoned, or when another pull request replaces it on uat.
+  8. Record the deployment as a GitHub deployment for `uat`.
+- **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit to deploy lacks a migration that uat has already applied, the deploy **refuses** and changes nothing. It names the newest backup that holds none of those migrations and only migrations the commit knows, and prints the owner's restore command for it (CLA-0031). The deploy never restores uat: replacing real data is the owner's decision. This happens when a pull request is abandoned, or when another pull request replaced it on uat. Removals the owner approved, such as a retired migration history, are listed in `approved-migration-edits.txt` and are not missing.
 - **Nothing else changes uat.** The agent never runs Compose commands against uat, restores it, or writes SQL against it by hand. The guardrail hook denies those, and the deploy script is the only way to change uat.
 - **Failures.** A failed migration stops the deploy, and the old version keeps running on uat. The script prints the pre-deploy backup, and the owner decides whether to restore it.
 - **Unattended deploys.** An app that needs deploys without an agent session can add CD on a deploy runner as described in the earlier version of this ADR (#64). It is a deviation until an ADR describes it again.
@@ -44,6 +44,6 @@ An earlier version of this ADR had CD deploy uat from a workflow on a **deploy r
 
 - uat always runs a pull request the owner is reviewing or has just merged, and its data is backed up before every change.
 - dev never changes under the agent: what it verified stays deployed until it deploys something else.
-- uat automatically undoes the schema changes of an abandoned pull request. The cost is the loss of data entered after its backup, which the deploy reports.
+- An abandoned pull request's migrations block the next deploy until the owner restores uat, which loses the data entered after the backup the deploy names. That is rare, and a refused deploy costs less than an automatic restore over real data.
 - uat shows the most recently deployed pull request. A second pull request replaces the first on uat, and the agent tells the owner.
 - No runner can reach the host's Docker. The only code that changes uat is the agent's deploy script, run on the owner's machine.
