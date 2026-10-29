@@ -7,7 +7,7 @@
 
 ## Context
 
-Agents add packages, workflows and Dockerfiles quickly. A vulnerable package, a leaked key or an unsafe workflow trigger can reach `main` without anyone reading for it. CD also runs on `pull_request_target` (CLA-0030), which is unsafe if a workflow is written carelessly. New advisories appear for packages already in use, so a repository with no changes can become vulnerable. The tools must be free for private repositories, which rules out CodeQL and GitHub secret scanning for app repositories.
+Agents add packages, workflows and Dockerfiles quickly. A vulnerable package, a leaked key or an unsafe workflow trigger can reach `main` without anyone reading for it. New advisories appear for packages already in use, so a repository with no changes can become vulnerable. The tools must be free for private repositories, which rules out CodeQL and GitHub secret scanning for app repositories.
 
 ## Decision
 

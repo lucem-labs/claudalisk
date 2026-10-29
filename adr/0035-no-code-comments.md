@@ -11,7 +11,7 @@ Comments drift away from the code they describe. In an app built mostly by agent
 
 ## Decision
 
-- **No comments in any code.** This applies to everything an agent generates or writes, in every area and language: backend C#, frontend TypeScript and CSS, tests, scripts and SQL. It also covers project files, Compose files, Dockerfiles, CI and CD workflows and other config. Do not write line or block comments, XML doc comments (`///`), JSDoc, or `#` or `<!-- -->` comments.
+- **No comments in any code.** This applies to everything an agent generates or writes, in every area and language: backend C#, frontend TypeScript and CSS, tests, scripts and SQL. It also covers project files, Compose files, Dockerfiles, CI workflows and other config. Do not write line or block comments, XML doc comments (`///`), JSDoc, or `#` or `<!-- -->` comments.
 - **Intent goes elsewhere:**
   - into names: types, methods, variables and test names that say what they do;
   - into small functions;

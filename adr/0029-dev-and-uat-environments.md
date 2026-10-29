@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected uat resources, #2); deny-list backstop; CD and the environment scripts
+- **Enforced by:** guardrail hook (protected uat resources, #2); deny-list backstop; the environment scripts
 
 ## Context
 
@@ -12,12 +12,12 @@ The two environments were first called dev and prod. The second one is not produ
 ## Decision
 
 - **dev** (`<app>.dev.localhost`) is the **agent's** environment.
-  - The agent deploys, resets and refreshes it freely, by hand. CD never deploys it (CLA-0030).
+  - The agent deploys, resets and refreshes it freely, by hand. Nothing else deploys it (CLA-0030).
   - It shows a DEV badge.
 - **uat** (`<app>.uat.localhost`) is the **owner's** environment. It holds real, hand-curated data that cannot be recreated.
   - Its data volume is external and the owner creates it, so Compose can never delete it.
-  - It changes only through CD (CLA-0030). The agent never deploys, restarts or reconfigures it by hand.
-  - Its data changes only through the app (used by the owner), through migrations that CD deploys (CLA-0012), and through CD restores (CLA-0030). The agent never writes SQL against uat and never restores it. The only script the agent may run against uat data is the read-only backup (CLA-0031).
+  - It changes only through the guarded review deploy (CLA-0030). The agent never runs Compose commands against it, restarts or reconfigures it by hand.
+  - Its data changes only through the app (used by the owner), through migrations that the review deploy applies (CLA-0012), and through the restores that deploy makes to undo another pull request's migrations (CLA-0030). The agent never writes SQL against uat and never restores it. The only script the agent may run against uat data is the read-only backup (CLA-0031).
   - It shows a UAT badge.
 - **Compose files.** The files are `compose.base.yml` plus `compose.dev.yml` or `compose.uat.yml`. There is deliberately no `docker-compose.yml`.
 - **Never, on uat.** The agent never runs Compose commands against the uat project by hand. Neither the agent nor any script runs any of these against uat resources:

@@ -25,5 +25,5 @@ CI that triggers on push, on ready-for-review and on merge runs up to three time
 
 ## Consequences
 
-- CD deploys only pull request heads whose CI succeeded, never `main` (CLA-0030). Because a pull request merges only from a branch that contains `main`, what the owner reviews on uat is what the merge produces. The owner sees the run and the `up to date with main` status next to the Merge button (CLA-0024).
-- CD is a separate workflow. CLA-0030 describes it.
+- The review deploy deploys only pull request heads whose CI succeeded, never `main` (CLA-0030). Because a pull request merges only from a branch that contains `main`, what the owner reviews on uat is what the merge produces. The owner sees the run and the `up to date with main` status next to the Merge button (CLA-0024).
+- CI never deploys. CLA-0030 describes the review deploy.
