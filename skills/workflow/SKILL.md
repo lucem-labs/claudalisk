@@ -11,7 +11,7 @@ These are claudalisk's decisions for how work moves from an issue to `main`. The
 - [CLA-0021](${CLAUDE_PLUGIN_ROOT}/adr/0021-issue-driven-work.md) (accepted): every change starts from an issue and becomes one branch in a worktree and one pull request. Open the pull request only when it is ready, and never as a draft. Dependabot pull requests are the one exception.
 - [CLA-0072](${CLAUDE_PLUGIN_ROOT}/adr/0072-dependabot-updates.md) (accepted): Dependabot opens security updates and weekly grouped version updates for NuGet, npm, actions and Docker. Nothing auto-merges; the owner merges. When CI fails, the agent fixes the Dependabot branch.
 - [CLA-0022](${CLAUDE_PLUGIN_ROOT}/adr/0022-bugs-found-become-issues.md) (accepted): bugs found along the way become new `needs-design-review` issues, not inline fixes.
-- [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request (never a draft) when CI is green and dev is verified. CD puts it on uat, and the owner reviews there and merges.
+- [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request (never a draft) when CI is green and dev is verified. the agent review-deploys it to uat, and the owner reviews there and merges.
 - [CLA-0024](${CLAUDE_PLUGIN_ROOT}/adr/0024-owner-merges.md) (accepted): only the owner merges, in GitHub. The agent never merges.
 - [CLA-0026](${CLAUDE_PLUGIN_ROOT}/adr/0026-no-real-data-or-secrets-in-git.md) (accepted): env files, backups, dumps and real data never go into commits, pull requests or issues; CI runs gitleaks and a forbidden-file check.
 - [CLA-0028](${CLAUDE_PLUGIN_ROOT}/adr/0028-app-agents-md-wins.md) (accepted): the app's `AGENTS.md` holds app facts and lists deviations by ADR id.
