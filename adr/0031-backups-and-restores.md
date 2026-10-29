@@ -14,7 +14,7 @@
   - a `manifest.json`, written last, with the checksums, the deployed commit and the applied migrations
 
   A folder without a manifest is incomplete. Tools ignore it and never prune it.
-- **Pruning keeps the restore points the uat deploy needs.** Retention by count never deletes the newest backup taken before any migration that uat has applied but `main` does not have yet (CLA-0030).
+- **Pruning keeps the restore points the owner may need.** Retention by count never deletes the newest backup taken before any migration that uat has applied but `main` does not have yet (CLA-0030).
 - **When backups are taken:**
   - The review deploy backs up uat before every uat deploy, except the first deploy to an empty database (CLA-0030).
   - The owner can also take one by hand.
@@ -22,7 +22,7 @@
 - **Restores.**
   - A restore verifies the checksums, restores into a temporary database and swaps it in by rename. `pg_restore --clean` alone leaves extra tables behind.
   - Restoring uat first backs up the current uat data.
-  - **Who restores uat:** the review deploy, automatically, when it must undo another pull request's migrations (CLA-0030). Otherwise only the owner. The agent never restores uat by hand.
+  - **Who restores uat:** only the owner. The agent never restores uat. When a deploy finds migrations the commit lacks, it refuses and prints the owner's restore command (CLA-0030).
 - **Deleting backups** is the owner's decision.
 
 ## Consequences
