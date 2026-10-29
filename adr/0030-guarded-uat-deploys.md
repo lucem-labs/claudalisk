@@ -1,7 +1,7 @@
 # CLA-0030: The agent deploys pull requests to uat with a guarded deploy script
 
 - **Status:** accepted
-- **Date:** 2026-10-25, revised 2026-10-29
+- **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** the generated deploy script and its guards; guardrail hook (no uat Compose commands, restores or SQL by hand)
 - **Issue:** #64, #66
