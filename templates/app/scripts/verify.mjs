@@ -100,6 +100,7 @@ export function summarize({ sha, runs, jobs, layers, failures, logFolder, footer
     else if (j.conclusion === 'skipped') head.push(`- ${j.name} (skipped)`);
     else head.push(`✓ ${j.name}`);
   }
+  if (layers.length && jobs.length && !selected.length) head.push(`- no job is named after ${layers.join(', ')}; waited for the whole run`);
   const unselected = jobs.filter((j) => !selected.includes(j)).map((j) => j.name);
   if (unselected.length) head.push(`- not waited for: ${unselected.join(', ')}`);
   const details = failures.map(({ job, items }) => [`✗ ${job.name}`, ...items.map((f) => `  ${f.name}${f.message ? `\n${f.message.split('\n').map((l) => `    ${l}`).join('\n')}` : ''}`)].join('\n'));

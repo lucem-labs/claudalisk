@@ -244,6 +244,11 @@ test('summarize names the jobs it did not wait for', () => {
   assert.match(text, /✓ backend\n- not waited for: base, frontend\n\nverify: CI green on abc1234\.$/);
 });
 
+test('summarize says when no job matches the layer flags', () => {
+  const { text } = summarize({ sha: SHA, runs: [run()], jobs: [job('adrs')], layers: ['backend'], failures: [], logFolder: '/l' });
+  assert.match(text, /- no job is named after backend; waited for the whole run\n- not waited for: adrs/);
+});
+
 test('stateFolder is per app and worktree in the env-state folder', () => {
   assert.equal(stateFolder({ home: '/home/me', app: 'shop', worktree: 'shop-95' }), join('/home/me', '.claudalisk', 'apps', 'shop', 'verify', 'shop-95'));
 });
