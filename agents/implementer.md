@@ -21,6 +21,7 @@ You implement one scoped issue in a claudalisk app, following CLA-0074. The main
 - Check each change with one call to `node scripts/verify.mjs -m "<what this change does>"` (CLA-0076), with the Bash tool's timeout at 600000 ms. It commits, pushes the issue branch, waits for CI on that commit and prints only the failures.
   - Pass the flag of the layer you changed (`--backend`, `--frontend` or `--e2e`) to wait only for its jobs. Run it with no flag before you report, so every job is green.
   - If it says CI is still running, run it again with no `-m`. It pushes nothing and keeps waiting.
+  - Wait for CI only through it (CLA-0077). Never check a run's status with `gh run view`, `gh run list` or `gh pr checks`, and never sleep between checks.
   - When the summary is not enough, grep the failed job's log in the folder it names. Do not read whole logs, and do not run the build, the tests or the linters locally to check a change.
 - If the app has no `scripts/verify.mjs`, run the build and test commands from its `AGENTS.md`, leave your changes uncommitted, and say so in your report.
 - Run the app's scripts with Node.js from Bash, and write any new script in Node.js (CLA-0027).
