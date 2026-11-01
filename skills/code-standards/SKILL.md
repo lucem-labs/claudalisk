@@ -25,3 +25,4 @@ These are claudalisk's decisions for every kind of code and config. The app's `A
 
 - [CLA-0035](${CLAUDE_PLUGIN_ROOT}/adr/0035-no-code-comments.md) (accepted): code has no comments (no line, block or XML doc comments, none in config). Intent goes into names, tests, commits and ADRs.
 - [CLA-0027](${CLAUDE_PLUGIN_ROOT}/adr/0027-scripts-in-node.md) (accepted): scripts are Node.js, start processes with argument arrays and send SQL on stdin.
+- [CLA-0078](${CLAUDE_PLUGIN_ROOT}/adr/0078-read-by-range-never-re-read.md) (accepted): find lines with Grep, read large files by range with `Read` (not `cat` or `sed` in Bash), and never re-read a file just edited or one unchanged since the last read; briefs to subagents name the lines to change.
