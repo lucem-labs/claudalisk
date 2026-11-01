@@ -79,6 +79,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0070](0070-testing-layers.md) | Each rule is tested at the lowest layer that can see it | accepted | testing |
 | [CLA-0071](0071-security-scans.md) | Security scans run in CI at three levels, and every suppression expires | accepted | environments |
 | [CLA-0072](0072-dependabot-updates.md) | Dependabot opens grouped dependency updates, and the owner merges them | accepted | workflow |
+| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | session-economy |
 
 ## Format
 
@@ -89,7 +90,7 @@ Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and are neve
 
 - **Status:** proposed | accepted | superseded by CLA-NNNN
 - **Date:** YYYY-MM-DD
-- **Area:** backend-architecture | data-and-migrations | frontend | testing | workflow | environments | code-standards (cross-cutting)
+- **Area:** backend-architecture | data-and-migrations | frontend | testing | workflow | environments | session-economy | code-standards (cross-cutting)
 - **Enforced by:** hook | test | CI | reviewer | prompt only (be specific)
 - **Issue:** #n (optional)
 ```

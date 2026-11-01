@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch and pull request per issue, no drafts, bugs found along the way, when a pull request is ready, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
+description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch, pull request and session per issue, handoff notes, no drafts, bugs found along the way, when a pull request is ready, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
 user-invocable: false
 ---
 
@@ -9,6 +9,7 @@ user-invocable: false
 These are claudalisk's decisions for how work moves from an issue to `main`. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). Before acting on one of these steps, read the ADR.
 
 - [CLA-0021](${CLAUDE_PLUGIN_ROOT}/adr/0021-issue-driven-work.md) (accepted): every change starts from an issue and becomes one branch in a worktree and one pull request. Open the pull request only when it is ready, and never as a draft. Dependabot pull requests are the one exception.
+- [CLA-0073](${CLAUDE_PLUGIN_ROOT}/adr/0073-one-session-per-issue.md) (accepted): one session works on one issue. To hand over, post a handoff note as a comment on the issue and stop; the next session starts from the issue and its latest handoff note.
 - [CLA-0072](${CLAUDE_PLUGIN_ROOT}/adr/0072-dependabot-updates.md) (accepted): Dependabot opens security updates and weekly grouped version updates for NuGet, npm, actions and Docker. Nothing auto-merges; the owner merges. When CI fails, the agent fixes the Dependabot branch.
 - [CLA-0022](${CLAUDE_PLUGIN_ROOT}/adr/0022-bugs-found-become-issues.md) (accepted): bugs found along the way become new `needs-design-review` issues, not inline fixes.
 - [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request (never a draft) when CI is green and dev is verified. the agent review-deploys it to uat, and the owner reviews there and merges.
