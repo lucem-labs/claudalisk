@@ -13,7 +13,7 @@ Every model request sends the whole conversation again (CLA-0073). A build, test
 ## Decision
 
 - **The main thread plans and reviews.** It keeps scoping the issue, design questions, reviewing the change and committing what the review changes, opening the pull request (CLA-0023) and the uat deploy (CLA-0030).
-- **Once an issue is scoped, the implementer subagent runs the implement, build, test and fix loop.** The plugin ships it as the `claudalisk:implementer` agent: Sonnet at medium effort, with file and shell tools only.
+- **Once an issue is scoped, the implementer subagent runs the implement, build, test and fix loop.** The plugin ships it as the `claudalisk:implementer` agent: Sonnet at medium effort, the implementer role's default (CLA-0079), with file and shell tools only.
 - **The main thread's brief names** the issue, the worktree, the files or area to change, what done looks like and any decisions already made.
 - **The implementer iterates until CI is green.** It checks each change with one call to the app's verify script (CLA-0076), which commits, pushes the issue branch and reads CI's result. In an app without the verify script, it runs the build and test commands the app's `AGENTS.md` lists, and leaves its changes uncommitted.
 - **The implementer commits and pushes only through the verify script, to the issue branch.** It never opens a pull request, deploys, files issues, rewrites history or pushes `main`. The main thread reviews the branch diff since the brief, and commits what the review changes, before it opens the pull request.
