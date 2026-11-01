@@ -12,6 +12,9 @@ export const FIRST_POLL_MS = 5000;
 export const MAX_POLL_MS = 20000;
 export const NO_RUN_LIMIT_MS = 90000;
 const TAIL_LINES = 20;
+const MARKER_LINES = 20;
+const MARKER_TAIL_LINES = 5;
+const FAILURE_MARKER = /^\s*(?:not ok \d+|✖|×|✘|FAIL\b|\S*\berror\b[^:]{0,40}:|\w*Error:)/i;
 const MESSAGE_LINES = 6;
 const OK_CONCLUSIONS = ['success', 'skipped', 'neutral'];
 const PROCESS_EXIT = /^Process completed with exit code \d+\.?$/;
@@ -78,7 +81,10 @@ export function failedStepTail(log) {
   const lines = cleanLog(log);
   const firstError = lines.findIndex((l) => l.startsWith('##[error]'));
   const end = firstError === -1 ? lines.length : firstError;
-  const before = lines.slice(0, end).filter((l) => l && !l.startsWith('##[')).slice(-TAIL_LINES);
+  const stepStart = lines.slice(0, end).findLastIndex((l) => l.startsWith('##[group]Run '));
+  const step = lines.slice(stepStart + 1, end).filter((l) => l && !l.startsWith('##['));
+  const markers = [...new Set(step.filter((l) => FAILURE_MARKER.test(l)))].slice(0, MARKER_LINES);
+  const before = markers.length ? [...markers, '…', ...step.slice(-MARKER_TAIL_LINES)] : step.slice(-TAIL_LINES);
   const errors = lines.filter((l) => l.startsWith('##[error]') && !PROCESS_EXIT.test(l.slice(9))).map((l) => l.slice(9));
   return [...before, ...errors].join('\n');
 }
@@ -168,15 +174,21 @@ export async function watch({ gh, sha, layers, failFast, timeoutMinutes, sleep, 
   }
 }
 
+export function jobLog(gh, id) {
+  const path = `repos/{owner}/{repo}/actions/jobs/${id}/logs`;
+  const log = gh(['api', '--allow-escape-sequences', path]);
+  return log.status !== 0 && /unknown flag/.test(log.stderr ?? '') ? gh(['api', path]) : log;
+}
+
 export function collectFailures({ gh, jobs, layers, logFolder, writeLog }) {
   const failures = [];
   for (const job of selectJobs(jobs, layers).filter(jobFailed)) {
     if (job.conclusion === 'cancelled') { failures.push({ job, items: [{ name: 'cancelled, usually by a newer push to the branch' }] }); continue; }
     const annotations = gh(['api', `repos/{owner}/{repo}/check-runs/${job.id}/annotations?per_page=50`]);
-    const log = gh(['api', `repos/{owner}/{repo}/actions/jobs/${job.id}/logs`]);
+    const log = jobLog(gh, job.id);
     if (log.status === 0) writeLog(join(logFolder, `${fileName(job.name)}.log`), cleanLog(log.stdout).join('\n'));
     const items = annotations.status === 0 ? failuresFromAnnotations(JSON.parse(annotations.stdout)) : [];
-    failures.push({ job, items: items.length ? items : [{ name: 'last lines of the failed step', message: log.status === 0 ? failedStepTail(log.stdout) : 'log not available yet' }] });
+    failures.push({ job, items: items.length ? items : [{ name: "from the failed step's log", message: log.status === 0 ? failedStepTail(log.stdout) : 'log not available yet' }] });
   }
   return failures;
 }

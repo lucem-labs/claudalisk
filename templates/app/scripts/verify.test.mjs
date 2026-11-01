@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   FIRST_POLL_MS,
@@ -9,6 +11,7 @@ import {
   failedStepTail,
   failuresFromAnnotations,
   isDone,
+  jobLog,
   layerOf,
   nextDelay,
   parseArgs,
@@ -20,6 +23,7 @@ import {
 } from './verify.mjs';
 
 const SHA = 'abc1234def5678';
+const tempHome = () => mkdtempSync(join(tmpdir(), 'verify-home-'));
 const ok = (stdout = '') => ({ status: 0, stdout, stderr: '' });
 const fail = (stderr = 'boom') => ({ status: 1, stdout: '', stderr });
 const run = (overrides = {}) => ({ id: 1, name: 'ci', status: 'completed', conclusion: 'success', html_url: 'https://github.com/o/r/actions/runs/1', ...overrides });
@@ -50,7 +54,7 @@ function fakeClock() {
 function fakeGh(responses) {
   const calls = [];
   const gh = (args) => {
-    const path = args[1];
+    const path = args.at(-1);
     calls.push(path);
     for (const [pattern, respond] of responses) {
       if (path.includes(pattern)) return typeof respond === 'function' ? respond(calls.filter((c) => c.includes(pattern)).length) : respond;
@@ -176,6 +180,41 @@ test('failedStepTail keeps the lines before the first error and the error lines'
   assert.equal(tail.at(-1), 'Steiger found 2 problems');
 });
 
+test('failedStepTail picks failure lines out of the failed step before its tail', () => {
+  const log = [
+    '##[group]Run npm ci',
+    'not ok 1 - from an earlier step',
+    '##[endgroup]',
+    '##[group]Run node --test tools/*.test.mjs',
+    '# Subtest: a',
+    'ok 1 - a',
+    'not ok 2 - verify saves the logs',
+    "  error: \"EACCES: permission denied, mkdir '/home/me'\"",
+    ...Array.from({ length: 40 }, (_, i) => `  detail ${i}`),
+    'ℹ fail 1',
+    '##[error]Process completed with exit code 1.',
+  ].join('\n');
+  assert.deepEqual(failedStepTail(log).split('\n'), [
+    'not ok 2 - verify saves the logs',
+    "  error: \"EACCES: permission denied, mkdir '/home/me'\"",
+    '…',
+    '  detail 36',
+    '  detail 37',
+    '  detail 38',
+    '  detail 39',
+    'ℹ fail 1',
+  ]);
+});
+
+test('jobLog lets gh print escape sequences, and retries without the flag on an older gh', () => {
+  const calls = [];
+  const modern = jobLog((args) => { calls.push(args); return ok('log'); }, 7);
+  assert.equal(modern.stdout, 'log');
+  assert.deepEqual(calls[0], ['api', '--allow-escape-sequences', 'repos/{owner}/{repo}/actions/jobs/7/logs']);
+  const older = jobLog((args) => (args.includes('--allow-escape-sequences') ? fail('unknown flag: --allow-escape-sequences') : ok('old log')), 7);
+  assert.equal(older.stdout, 'old log');
+});
+
 test('summarize lists jobs, then only the failures, and caps the output', () => {
   const jobs = [job('backend'), job('frontend', { conclusion: 'failure' }), job('e2e', { conclusion: 'skipped' })];
   const failures = [{ job: jobs[1], items: [{ name: 'src/a.test.ts:18 removes a line', message: 'expected 2 to be 1' }] }];
@@ -219,12 +258,13 @@ test('verify pushes, waits, prints the annotated failures and saves the failed j
   ]);
   const printed = [];
   const logs = new Map();
-  const code = await verify({ argv: ['-m', 'Fix'], git, gh, home: '/home/me', ...fakeClock(), write: (t) => printed.push(t), writeLog: (p, t) => logs.set(p, t) });
+  const home = tempHome();
+  const code = await verify({ argv: ['-m', 'Fix'], git, gh, home, ...fakeClock(), write: (t) => printed.push(t), writeLog: (p, t) => logs.set(p, t) });
   assert.equal(code, 1);
   assert.ok(!calls.some((c) => c.includes('check-runs/11')));
   assert.match(printed[0], /^committed and pushed abc1234\nCI ci on abc1234: failure/);
   assert.match(printed[0], /✗ frontend\n {2}frontend\/src\/a.test.ts:3 removes\n {4}expected 2 to be 1/);
-  const folder = stateFolder({ home: '/home/me', app: 'shop', worktree: 'shop-95' });
+  const folder = stateFolder({ home, app: 'shop', worktree: 'shop-95' });
   assert.deepEqual([...logs], [[join(folder, 'frontend.log'), 'full log line\n']]);
 });
 
@@ -236,17 +276,17 @@ test('verify falls back to the failed step when a job has no annotations, and re
     ['jobs/5/logs', ok('steiger: slice imports a sibling\n##[error]Process completed with exit code 1.')],
   ]);
   const printed = [];
-  await verify({ argv: [], git: fakeGit().git, gh: red.gh, home: '/h', ...fakeClock(), write: (t) => printed.push(t), writeLog: () => {} });
-  assert.match(printed[0], /last lines of the failed step\n {4}steiger: slice imports a sibling/);
+  await verify({ argv: [], git: fakeGit().git, gh: red.gh, home: tempHome(), ...fakeClock(), write: (t) => printed.push(t), writeLog: () => {} });
+  assert.match(printed[0], /from the failed step's log\n {4}steiger: slice imports a sibling/);
 
   const green = fakeGh([[`head_sha`, ok(JSON.stringify({ workflow_runs: [run()] }))], ['/jobs?', ok(JSON.stringify({ jobs: [job('backend')] }))]]);
-  assert.equal(await verify({ argv: [], git: fakeGit().git, gh: green.gh, home: '/h', ...fakeClock(), write: () => {}, writeLog: () => {} }), 0);
+  assert.equal(await verify({ argv: [], git: fakeGit().git, gh: green.gh, home: tempHome(), ...fakeClock(), write: () => {}, writeLog: () => {} }), 0);
 });
 
 test('verify tells the agent to run it again when CI outlasts the timeout', async () => {
   const slow = fakeGh([[`head_sha`, ok(JSON.stringify({ workflow_runs: [run({ status: 'in_progress', conclusion: null })] }))]]);
   const printed = [];
-  const code = await verify({ argv: ['--timeout', '1'], git: fakeGit().git, gh: slow.gh, home: '/h', ...fakeClock(), write: (t) => printed.push(t), writeLog: () => {} });
+  const code = await verify({ argv: ['--timeout', '1'], git: fakeGit().git, gh: slow.gh, home: tempHome(), ...fakeClock(), write: (t) => printed.push(t), writeLog: () => {} });
   assert.equal(code, 3);
   assert.match(printed[0], /CI ci on abc1234: in_progress[\s\S]*still running after 1 min\. Run node scripts\/verify\.mjs again/);
 });
