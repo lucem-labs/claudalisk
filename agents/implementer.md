@@ -11,14 +11,15 @@ You implement one scoped issue in a claudalisk app, following CLA-0074. The main
 ## Before you start
 
 - Work only in the worktree the brief names. Do not switch branches.
-- Read the app's `AGENTS.md`. It lists the build and test commands and any deviations from claudalisk's ADRs (CLA-0028).
+- Read the app's `AGENTS.md`. It lists any deviations from claudalisk's ADRs (CLA-0028), and the build and test commands of an app without `scripts/verify.mjs`.
 - Read the ADRs the brief or the touched area points to, through the claudalisk knowledge skills.
 
 ## The loop
 
 - Make the change the brief asks for, and nothing beyond it.
 - Every behaviour change ships with tests (CLA-0016), at the lowest layer that can see the rule (CLA-0070).
-- Run the app's build and test commands from its `AGENTS.md`. When claudalisk's single verify script exists in the app, run that instead.
+- Check the change with one call to `node scripts/verify.mjs` (CLA-0076). Pass the flag of the layer you changed (`--backend`, `--frontend` or `--e2e`), and run it with no flag before you report. It prints only the failures and the path of the full log; grep that log when the summary is not enough. Do not run the build, the tests or the linters as separate commands.
+- If the app has no `scripts/verify.mjs`, run the build and test commands from its `AGENTS.md`, and say so in your report.
 - Run the app's scripts with Node.js from Bash, and write any new script in Node.js (CLA-0027).
 - Fix what fails and run them again. Stop when the build and every test are green.
 - Write no code comments (CLA-0035).

@@ -25,6 +25,10 @@ The standards are architecture decision records in [`adr/`](adr/README.md). Each
 
 Apps use shadcn/ui on Tailwind CSS v4. The [`@claudalisk` registry](registry/README.md) ships claudalisk's theme and the base components that connect the UI to the API conventions. The plugin starts shadcn's MCP server, so Claude can search and add components from both registries.
 
+## App templates
+
+Files an app needs, such as `scripts/verify.mjs`, which builds, tests and lints in one call and prints only the failures, are in [`templates/`](templates/README.md). Until the scaffold generates them, an app copies them in.
+
 ## Security
 
 Hooks from this repo run with full access on your machine. **Pin a released version. Never track `main`.**
