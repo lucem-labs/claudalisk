@@ -13,6 +13,7 @@ Every model request sends the whole conversation again, so the cost of a request
 ## Decision
 
 - **One session works on one issue** (CLA-0021), in that issue's worktree. Start a new session, or run `/clear`, before work on the next issue.
+- **Within one issue, the session compacts at milestones** (CLA-0075).
 - **A session hands over** when:
   - the working day ends with the issue still open;
   - the pull request is opened (CLA-0023);
