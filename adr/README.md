@@ -80,6 +80,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0071](0071-security-scans.md) | Security scans run in CI at three levels, and every suppression expires | accepted | environments |
 | [CLA-0072](0072-dependabot-updates.md) | Dependabot opens grouped dependency updates, and the owner merges them | accepted | workflow |
 | [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | session-economy |
+| [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | session-economy |
 
 ## Format
 
