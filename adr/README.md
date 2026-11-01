@@ -83,6 +83,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | session-economy |
 | [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | session-economy |
 | [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | session-economy |
+| [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | session-economy |
 
 ## Format
 

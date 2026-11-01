@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch, pull request and session per issue, handoff notes, the implementer subagent, no drafts, bugs found along the way, when a pull request is ready, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
+description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch, pull request and session per issue, handoff notes, the implementer subagent, no drafts, bugs found along the way, when a pull request is ready, waiting for CI in one call, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
 user-invocable: false
 ---
 
@@ -14,6 +14,7 @@ These are claudalisk's decisions for how work moves from an issue to `main`. The
 - [CLA-0072](${CLAUDE_PLUGIN_ROOT}/adr/0072-dependabot-updates.md) (accepted): Dependabot opens security updates and weekly grouped version updates for NuGet, npm, actions and Docker. Nothing auto-merges; the owner merges. When CI fails, the agent fixes the Dependabot branch.
 - [CLA-0022](${CLAUDE_PLUGIN_ROOT}/adr/0022-bugs-found-become-issues.md) (accepted): bugs found along the way become new `needs-design-review` issues, not inline fixes.
 - [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request (never a draft) when CI is green and dev is verified. the agent review-deploys it to uat, and the owner reviews there and merges.
+- [CLA-0077](${CLAUDE_PLUGIN_ROOT}/adr/0077-wait-for-ci-in-one-call.md) (accepted): wait for green CI in one blocking call (`node scripts/verify.mjs` in the background), never by polling; after the pull request is open, the host's pull request monitor is enough where there is one.
 - [CLA-0024](${CLAUDE_PLUGIN_ROOT}/adr/0024-owner-merges.md) (accepted): only the owner merges, in GitHub. The agent never merges.
 - [CLA-0026](${CLAUDE_PLUGIN_ROOT}/adr/0026-no-real-data-or-secrets-in-git.md) (accepted): env files, backups, dumps and real data never go into commits, pull requests or issues; CI runs gitleaks and a forbidden-file check.
 - [CLA-0028](${CLAUDE_PLUGIN_ROOT}/adr/0028-app-agents-md-wins.md) (accepted): the app's `AGENTS.md` holds app facts and lists deviations by ADR id.
