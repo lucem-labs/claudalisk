@@ -82,7 +82,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | session-economy |
 | [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | session-economy |
 | [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | session-economy |
-| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify script per cycle, which prints only the failures | accepted | session-economy |
+| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | session-economy |
 
 ## Format
 

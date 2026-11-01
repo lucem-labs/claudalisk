@@ -27,7 +27,7 @@ Apps use shadcn/ui on Tailwind CSS v4. The [`@claudalisk` registry](registry/REA
 
 ## App templates
 
-Files an app needs, such as `scripts/verify.mjs`, which builds, tests and lints in one call and prints only the failures, are in [`templates/`](templates/README.md). Until the scaffold generates them, an app copies them in.
+Files an app needs, such as `scripts/verify.mjs`, which pushes a change, waits for CI and prints only the failures, are in [`templates/`](templates/README.md). Until the scaffold generates them, an app copies them in.
 
 ## Security
 

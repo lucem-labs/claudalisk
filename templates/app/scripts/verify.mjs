@@ -1,217 +1,213 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const LAYERS = ['backend', 'frontend', 'e2e'];
-export const DEFAULT_LAYERS = ['backend', 'frontend'];
 export const OUTPUT_LIMIT = 4000;
-const MESSAGE_LINES = 6;
+export const DEFAULT_TIMEOUT_MINUTES = 9;
+export const FIRST_POLL_MS = 5000;
+export const MAX_POLL_MS = 20000;
+export const NO_RUN_LIMIT_MS = 90000;
 const TAIL_LINES = 20;
-const USAGE = 'Usage: node scripts/verify.mjs [--backend] [--frontend] [--e2e] [--all]';
+const MESSAGE_LINES = 6;
+const OK_CONCLUSIONS = ['success', 'skipped', 'neutral'];
+const PROCESS_EXIT = /^Process completed with exit code \d+\.?$/;
+const USAGE = 'Usage: node scripts/verify.mjs [-m "<commit message>"] [--backend] [--frontend] [--e2e] [--fail-fast] [--timeout <minutes>]';
+
+export class UsageError extends Error {}
 
 export function parseArgs(argv) {
-  const layers = new Set();
-  for (const arg of argv) {
-    if (arg === '--all') LAYERS.forEach((layer) => layers.add(layer));
-    else if (LAYERS.includes(arg.slice(2)) && arg.startsWith('--')) layers.add(arg.slice(2));
-    else throw new Error(`Unknown argument: ${arg}\n${USAGE}`);
+  const options = { layers: [], message: undefined, failFast: false, timeoutMinutes: DEFAULT_TIMEOUT_MINUTES };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '-m' || arg === '--message') options.message = argv[++i];
+    else if (arg === '--fail-fast') options.failFast = true;
+    else if (arg === '--timeout') options.timeoutMinutes = Number(argv[++i]);
+    else if (arg.startsWith('--') && LAYERS.includes(arg.slice(2))) options.layers.push(arg.slice(2));
+    else throw new UsageError(`Unknown argument: ${arg}\n${USAGE}`);
   }
-  return { layers: layers.size ? LAYERS.filter((layer) => layers.has(layer)) : DEFAULT_LAYERS, explicit: layers.size > 0 };
+  if (options.message !== undefined && !options.message.trim()) throw new UsageError(`-m needs a commit message\n${USAGE}`);
+  if (!(options.timeoutMinutes > 0)) throw new UsageError(`--timeout needs a number of minutes\n${USAGE}`);
+  options.layers = LAYERS.filter((layer) => options.layers.includes(layer));
+  return options;
+}
+
+export function layerOf(jobName) {
+  const words = jobName.toLowerCase().split(/[^a-z0-9]+/);
+  return ['e2e', 'backend', 'frontend'].find((layer) => words.includes(layer));
+}
+
+export const selectJobs = (jobs, layers) => (layers.length ? jobs.filter((j) => layers.includes(layerOf(j.name))) : jobs);
+export const jobFailed = (job) => job.status === 'completed' && !OK_CONCLUSIONS.includes(job.conclusion);
+
+export function isDone({ runs, jobs, layers, failFast }) {
+  if (!runs.length) return false;
+  const selected = selectJobs(jobs, layers);
+  if (failFast && selected.some(jobFailed)) return true;
+  if (runs.every((r) => r.status === 'completed')) return true;
+  return layers.length > 0 && selected.length > 0 && selected.every((j) => j.status === 'completed');
+}
+
+export function nextDelay(delay) {
+  return Math.min(Math.round(delay * 1.5), MAX_POLL_MS);
+}
+
+export function failuresFromAnnotations(annotations) {
+  const seen = new Set();
+  const failures = [];
+  for (const a of annotations) {
+    if (a.annotation_level !== 'failure' || PROCESS_EXIT.test(a.message ?? '')) continue;
+    const where = a.path && a.path !== '.github' ? `${a.path}${a.start_line ? `:${a.start_line}` : ''}` : '';
+    const message = String(a.message ?? '').replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd()).filter(Boolean).slice(0, MESSAGE_LINES).join('\n');
+    const key = `${where}|${message}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    failures.push({ name: [where, a.title].filter(Boolean).join(' ') || 'error', message });
+  }
+  return failures;
+}
+
+export function cleanLog(log) {
+  return String(log).replace(/\r\n/g, '\n').split('\n').map((l) => l.replace(/^\d{4}-\d\d-\d\dT[\d:.]+Z ?/, '').replace(/\x1b\[[0-9;]*m/g, '').trimEnd());
+}
+
+export function failedStepTail(log) {
+  const lines = cleanLog(log);
+  const firstError = lines.findIndex((l) => l.startsWith('##[error]'));
+  const end = firstError === -1 ? lines.length : firstError;
+  const before = lines.slice(0, end).filter((l) => l && !l.startsWith('##[')).slice(-TAIL_LINES);
+  const errors = lines.filter((l) => l.startsWith('##[error]') && !PROCESS_EXIT.test(l.slice(9))).map((l) => l.slice(9));
+  return [...before, ...errors].join('\n');
+}
+
+const fileName = (name) => name.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-|-$/g, '') || 'job';
+
+export function summarize({ sha, runs, jobs, layers, failures, logFolder, footer: footerOverride, limit = OUTPUT_LIMIT }) {
+  const head = runs.map((r) => `CI ${r.name} on ${sha.slice(0, 7)}: ${r.conclusion ?? r.status} ${r.html_url}`);
+  const selected = selectJobs(jobs, layers);
+  for (const j of selected) {
+    if (j.status !== 'completed') head.push(`… ${j.name} (${j.status})`);
+    else if (jobFailed(j)) head.push(`✗ ${j.name} (${j.conclusion})`);
+    else if (j.conclusion === 'skipped') head.push(`- ${j.name} (skipped)`);
+    else head.push(`✓ ${j.name}`);
+  }
+  const unselected = jobs.filter((j) => !selected.includes(j)).map((j) => j.name);
+  if (unselected.length) head.push(`- not waited for: ${unselected.join(', ')}`);
+  const details = failures.map(({ job, items }) => [`✗ ${job.name}`, ...items.map((f) => `  ${f.name}${f.message ? `\n${f.message.split('\n').map((l) => `    ${l}`).join('\n')}` : ''}`)].join('\n'));
+  const failed = selected.filter(jobFailed).length;
+  const footer = footerOverride ?? (failed ? `verify: ${failed} job(s) failed. Logs of the failed jobs: ${logFolder}` : `verify: CI green on ${sha.slice(0, 7)}.`);
+  const top = head.join('\n');
+  let body = details.join('\n\n');
+  const room = limit - top.length - footer.length - 4;
+  if (body.length > room) {
+    const note = '\n  … cut; grep the job logs for the rest';
+    body = body.slice(0, Math.max(0, room - note.length)) + note;
+  }
+  return { text: [top, body, footer].filter(Boolean).join('\n\n'), failed };
 }
 
 export function stateFolder({ home, app, worktree }) {
   return join(home, '.claudalisk', 'apps', app, 'verify', worktree);
 }
 
-export function plan({ root, layers, explicit, state, exists = existsSync, readText = (p) => readFileSync(p, 'utf8') }) {
-  const steps = [];
-  const missing = [];
-  const backend = join(root, 'backend');
-  const frontend = join(root, 'frontend');
-  const scripts = exists(join(frontend, 'package.json')) ? Object.keys(JSON.parse(readText(join(frontend, 'package.json'))).scripts ?? {}) : null;
+export function gitNames(git) {
+  const top = git(['rev-parse', '--show-toplevel']).stdout.trim();
+  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir']).stdout.trim();
+  return { app: basename(dirname(common)), worktree: basename(top) };
+}
 
-  for (const layer of layers) {
-    if (layer === 'backend') {
-      if (!exists(backend)) { missing.push('backend: no backend/ folder'); continue; }
-      steps.push({ layer, name: 'build', command: 'dotnet', args: ['build', '-nologo'], cwd: backend, report: 'build' });
-      steps.push({ layer, name: 'tests', command: 'dotnet', args: ['test', '--no-build', '-nologo', '--logger', 'trx', '--results-directory', join(state, 'trx')], cwd: backend, report: 'trx', reportPath: join(state, 'trx'), needs: 'build' });
-    } else if (layer === 'frontend') {
-      if (!scripts) { missing.push('frontend: no frontend/package.json'); continue; }
-      for (const script of ['build', 'lint']) {
-        if (scripts.includes(script)) steps.push({ layer, name: script, command: 'npm', args: ['run', script, '--silent'], cwd: frontend, report: 'build' });
+function must(result, what) {
+  if (result.status !== 0) throw new Error(`${what} failed: ${(result.stderr || result.stdout || '').trim()}`);
+  return result.stdout.trim();
+}
+
+export function commitAndPush({ git, message }) {
+  const branch = must(git(['rev-parse', '--abbrev-ref', 'HEAD']), 'git rev-parse');
+  if (['HEAD', 'main', 'master'].includes(branch)) throw new UsageError(`verify pushes the issue branch; it will not push ${branch}.`);
+  const notes = [];
+  if (must(git(['status', '--porcelain']), 'git status')) {
+    if (!message) throw new UsageError(`There are uncommitted changes. Pass -m "<commit message>" to commit them.\n${USAGE}`);
+    must(git(['add', '-A']), 'git add');
+    must(git(['commit', '-q', '-m', message]), 'git commit');
+    notes.push('committed');
+  }
+  const sha = must(git(['rev-parse', 'HEAD']), 'git rev-parse');
+  const upstream = git(['rev-parse', '--verify', '-q', '@{u}']);
+  if (upstream.status !== 0) { must(git(['push', '-q', '-u', 'origin', 'HEAD']), 'git push'); notes.push('pushed'); }
+  else if (upstream.stdout.trim() !== sha) { must(git(['push', '-q']), 'git push'); notes.push('pushed'); }
+  return { sha, branch, notes };
+}
+
+export async function watch({ gh, sha, layers, failFast, timeoutMinutes, sleep, now }) {
+  const json = (path) => JSON.parse(must(gh(['api', path]), `gh api ${path}`));
+  const start = now();
+  const deadline = start + timeoutMinutes * 60000;
+  let delay = FIRST_POLL_MS;
+  let errors = 0;
+  let runs = [];
+  let jobs = [];
+  for (;;) {
+    try {
+      runs = json(`repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=50`).workflow_runs ?? [];
+      const allCompleted = runs.length > 0 && runs.every((r) => r.status === 'completed');
+      if (runs.length && (layers.length || failFast || allCompleted)) {
+        jobs = runs.flatMap((r) => (json(`repos/{owner}/{repo}/actions/runs/${r.id}/jobs?per_page=100`).jobs ?? []).map((j) => ({ ...j, workflow: r.name })));
       }
-      steps.push({ layer, name: 'tests', command: 'npm', args: ['exec', '--no', '--', 'vitest', 'run', '--reporter=json', `--outputFile=${join(state, 'vitest.json')}`], cwd: frontend, report: 'vitest', reportPath: join(state, 'vitest.json') });
-    } else if (layer === 'e2e') {
-      if (!scripts) { missing.push('e2e: no frontend/package.json'); continue; }
-      const reportPath = join(state, 'playwright.json');
-      steps.push({ layer, name: 'tests', command: 'npm', args: ['exec', '--no', '--', 'playwright', 'test', '--reporter=json'], cwd: frontend, env: { PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath, PLAYWRIGHT_JSON_OUTPUT_NAME: reportPath }, report: 'playwright', reportPath });
+      errors = 0;
+      if (isDone({ runs, jobs, layers, failFast })) return { state: 'done', runs, jobs };
+    } catch (error) {
+      if (++errors >= 3) throw error;
     }
+    if (!runs.length && now() - start >= NO_RUN_LIMIT_MS) return { state: 'no-run', runs, jobs };
+    if (now() + delay > deadline) return { state: 'timeout', runs, jobs };
+    await sleep(delay);
+    delay = nextDelay(delay);
   }
-  return { steps, missing: explicit ? missing : [], skipped: explicit ? [] : missing };
 }
 
-const firstLines = (text, count = MESSAGE_LINES) => String(text ?? '').replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd()).filter((l) => l && !/node_modules|node:internal/.test(l)).slice(0, count).join('\n');
-
-const decodeXml = (text) => text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d))).replace(/&amp;/g, '&');
-
-export function failuresFromTrx(xml) {
-  const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+export function collectFailures({ gh, jobs, layers, logFolder, writeLog }) {
   const failures = [];
-  let passed = 0;
-  for (const [, attrs, body = ''] of xml.matchAll(/<UnitTestResult\b([^>]*?)(?:\/>|>([\s\S]*?)<\/UnitTestResult>)/g)) {
-    const result = attr(attrs, 'outcome');
-    if (result === 'Passed') passed++;
-    if (result !== 'Failed') continue;
-    const message = body.match(/<Message>([\s\S]*?)<\/Message>/)?.[1] ?? '';
-    const stack = body.match(/<StackTrace>([\s\S]*?)<\/StackTrace>/)?.[1] ?? '';
-    failures.push({ name: decodeXml(attr(attrs, 'testName') ?? ''), message: firstLines(`${decodeXml(message)}\n${firstLines(decodeXml(stack), 2)}`) });
+  for (const job of selectJobs(jobs, layers).filter(jobFailed)) {
+    if (job.conclusion === 'cancelled') { failures.push({ job, items: [{ name: 'cancelled, usually by a newer push to the branch' }] }); continue; }
+    const annotations = gh(['api', `repos/{owner}/{repo}/check-runs/${job.id}/annotations?per_page=50`]);
+    const log = gh(['api', `repos/{owner}/{repo}/actions/jobs/${job.id}/logs`]);
+    if (log.status === 0) writeLog(join(logFolder, `${fileName(job.name)}.log`), cleanLog(log.stdout).join('\n'));
+    const items = annotations.status === 0 ? failuresFromAnnotations(JSON.parse(annotations.stdout)) : [];
+    failures.push({ job, items: items.length ? items : [{ name: 'last lines of the failed step', message: log.status === 0 ? failedStepTail(log.stdout) : 'log not available yet' }] });
   }
-  return { passed, failures };
+  return failures;
 }
 
-export function failuresFromVitest(report) {
-  const failures = [];
-  for (const file of report.testResults ?? []) {
-    if (file.status === 'failed' && !(file.assertionResults ?? []).some((a) => a.status === 'failed')) {
-      failures.push({ name: file.name, message: firstLines(file.message) });
-    }
-    for (const a of file.assertionResults ?? []) {
-      if (a.status === 'failed') failures.push({ name: a.fullName ?? a.title, message: firstLines((a.failureMessages ?? []).join('\n')) });
-    }
+export async function verify({ argv, git, gh, home = homedir(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)), now = Date.now, write = console.log, writeLog = writeFileSync }) {
+  const options = parseArgs(argv);
+  const { sha, notes } = commitAndPush({ git, message: options.message });
+  const logFolder = stateFolder({ home, ...gitNames(git) });
+  const result = await watch({ gh, sha, ...options, sleep, now });
+  const prefix = notes.length ? `${notes.join(' and ')} ${sha.slice(0, 7)}\n` : '';
+  if (result.state === 'no-run') {
+    write(`${prefix}verify: no CI run started for ${sha.slice(0, 7)} within ${NO_RUN_LIMIT_MS / 1000}s. Check that CI runs on pushes to this branch.`);
+    return 2;
   }
-  return { passed: report.numPassedTests ?? 0, failures };
-}
-
-export function failuresFromPlaywright(report) {
-  const failures = [];
-  let passed = 0;
-  const walk = (suite, path) => {
-    for (const spec of suite.specs ?? []) {
-      for (const t of spec.tests ?? []) {
-        if (t.status === 'expected' || t.status === 'flaky') passed++;
-        if (t.status !== 'unexpected') continue;
-        const result = (t.results ?? []).at(-1) ?? {};
-        const error = result.error ?? (result.errors ?? [])[0] ?? {};
-        failures.push({ name: [...path, spec.title].filter(Boolean).join(' › ') + (t.projectName ? ` [${t.projectName}]` : ''), message: firstLines(error.message ?? result.status) });
-      }
-    }
-    for (const child of suite.suites ?? []) walk(child, [...path, child.title]);
-  };
-  for (const suite of report.suites ?? []) walk(suite, [suite.title]);
-  for (const error of report.errors ?? []) failures.push({ name: 'Playwright', message: firstLines(error.message) });
-  return { passed, failures };
-}
-
-const ERROR_LINE = /\berror\s*(?:[A-Z]+\d+)?\s*:|^\s*[×✘✗]\s/i;
-
-export function failuresFromOutput(output) {
-  const lines = String(output).replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd());
-  const errors = [...new Set(lines.filter((l) => ERROR_LINE.test(l)).map((l) => l.trim()))];
-  if (errors.length) return { failures: errors.map((line) => ({ name: line })) };
-  return { failures: [{ name: 'output (last lines)', message: lines.filter(Boolean).slice(-TAIL_LINES).join('\n') }] };
-}
-
-export function readReport(step, { exists = existsSync, readText = (p) => readFileSync(p, 'utf8'), list = (p) => readdirSync(p) } = {}) {
-  try {
-    if (step.report === 'trx') {
-      if (!exists(step.reportPath)) return null;
-      const files = list(step.reportPath).filter((f) => f.endsWith('.trx'));
-      if (!files.length) return null;
-      return files.map((f) => failuresFromTrx(readText(join(step.reportPath, f)))).reduce((a, b) => ({ passed: a.passed + b.passed, failures: [...a.failures, ...b.failures] }));
-    }
-    if (!step.reportPath || !exists(step.reportPath)) return null;
-    const report = JSON.parse(readText(step.reportPath));
-    return step.report === 'vitest' ? failuresFromVitest(report) : failuresFromPlaywright(report);
-  } catch {
-    return null;
+  if (result.state === 'timeout') {
+    const footer = `verify: CI is still running after ${options.timeoutMinutes} min. Run node scripts/verify.mjs again to keep waiting; it pushes nothing new.`;
+    write(`${prefix}${summarize({ sha, runs: result.runs, jobs: result.jobs, layers: options.layers, failures: [], logFolder, footer }).text}`);
+    return 3;
   }
-}
-
-export function outcome(step, run, reader = {}) {
-  const structured = step.report === 'build' ? null : readReport(step, reader);
-  const failed = run.status !== 0 || (structured?.failures.length ?? 0) > 0;
-  if (!failed) return { ok: true, passed: structured?.passed, failures: [] };
-  const found = structured?.failures.length ? structured : failuresFromOutput(run.output);
-  return { ok: false, passed: structured?.passed, failures: found.failures };
-}
-
-export function summarize({ results, missing = [], skipped = [], logPath, limit = OUTPUT_LIMIT }) {
-  const head = [];
-  const details = [];
-  for (const r of results) {
-    const label = `${r.step.layer} ${r.step.name}`;
-    if (r.skipped) { head.push(`- ${label}: skipped, ${r.skipped}`); continue; }
-    const counts = r.passed !== undefined ? ` (${r.passed} passed${r.ok ? '' : `, ${r.failures.length} failed`})` : '';
-    head.push(`${r.ok ? '✓' : '✗'} ${label}${counts}`);
-    if (!r.ok) {
-      const lines = r.failures.map((f) => `  ${f.name}${f.message ? `\n${f.message.split('\n').map((l) => `    ${l}`).join('\n')}` : ''}`);
-      details.push([`✗ ${label}`, ...lines].join('\n'));
-    }
-  }
-  for (const m of missing) head.push(`✗ ${m}`);
-  for (const s of skipped) head.push(`- ${s}, skipped`);
-  const failedSteps = results.filter((r) => !r.ok && !r.skipped).length + missing.length;
-  const top = head.join('\n');
-  const footer = `${failedSteps ? `verify: ${failedSteps} step(s) failed.` : 'verify: all green.'} Full log: ${logPath}`;
-  let body = details.join('\n\n');
-  const room = limit - top.length - footer.length - 4;
-  if (body.length > room) {
-    const note = '\n  … cut; grep the full log for the rest';
-    body = body.slice(0, Math.max(0, room - note.length)) + note;
-  }
-  return { text: [top, body, footer].filter(Boolean).join('\n\n'), ok: failedSteps === 0 };
-}
-
-export function quoteForWindowsShell(arg) {
-  return /[\s"&|<>^]/.test(arg) ? `"${arg.replaceAll('"', '""')}"` : arg;
-}
-
-export function runStep(step, platform = process.platform) {
-  const env = { ...process.env, ...step.env };
-  const options = { cwd: step.cwd, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 };
-  const result = platform === 'win32'
-    ? spawnSync([step.command, ...step.args].map(quoteForWindowsShell).join(' '), [], { ...options, shell: true })
-    : spawnSync(step.command, step.args, options);
-  const output = `${result.stdout ?? ''}${result.stderr ?? ''}${result.error ? `\n${result.error.message}` : ''}`;
-  return { status: result.status ?? 1, output };
-}
-
-export function gitNames(root, git = (args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' }).stdout.trim()) {
-  const top = git(['rev-parse', '--show-toplevel']) || root;
-  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir']);
-  return { app: basename(common ? dirname(common) : top), worktree: basename(top) };
-}
-
-export function verify({ root, argv, home = homedir(), names = gitNames(root), run = runStep, write = console.log, fs = { exists: existsSync, readText: (p) => readFileSync(p, 'utf8'), list: (p) => readdirSync(p) } }) {
-  const { layers, explicit } = parseArgs(argv);
-  const state = stateFolder({ home, ...names });
-  rmSync(state, { recursive: true, force: true });
-  mkdirSync(state, { recursive: true });
-  const logPath = join(state, 'verify.log');
-  const { steps, missing, skipped } = plan({ root, layers, explicit, state, exists: fs.exists, readText: fs.readText });
-  const log = [];
-  const results = [];
-  for (const step of steps) {
-    const blocker = results.find((r) => r.step.layer === step.layer && r.step.name === step.needs && !r.ok);
-    if (blocker) { results.push({ step, ok: false, skipped: `${step.needs} failed` }); continue; }
-    const ran = run(step);
-    log.push(`$ ${step.command} ${step.args.join(' ')}  (in ${step.cwd}, exit ${ran.status})\n${ran.output}`);
-    results.push({ step, ...outcome(step, ran, fs) });
-  }
-  writeFileSync(logPath, log.join('\n\n'));
-  const summary = summarize({ results, missing, skipped, logPath });
-  write(summary.text);
-  return summary.ok ? 0 : 1;
+  rmSync(logFolder, { recursive: true, force: true });
+  mkdirSync(logFolder, { recursive: true });
+  const failures = collectFailures({ gh, jobs: result.jobs, layers: options.layers, logFolder, writeLog });
+  const { text, failed } = summarize({ sha, runs: result.runs, jobs: result.jobs, layers: options.layers, failures, logFolder });
+  write(`${prefix}${text}`);
+  return failed ? 1 : 0;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    process.exitCode = verify({ root: resolve(fileURLToPath(import.meta.url), '..', '..'), argv: process.argv.slice(2) });
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 2;
-  }
+  const root = resolve(fileURLToPath(import.meta.url), '..', '..');
+  const run = (command) => (args) => spawnSync(command, args, { cwd: root, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+  verify({ argv: process.argv.slice(2), git: run('git'), gh: run('gh') })
+    .then((code) => { process.exitCode = code; })
+    .catch((error) => { console.error(error.message); process.exitCode = 2; });
 }

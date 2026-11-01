@@ -1,31 +1,42 @@
-# CLA-0076: One verify script per cycle, which prints only the failures
+# CLA-0076: One verify call per cycle pushes to CI and prints only the failures
 
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** session-economy
-- **Enforced by:** `scripts/verify.mjs` in the app; `implementer` agent; session-economy skill; reviewer
+- **Enforced by:** `scripts/verify.mjs` and `scripts/trx-annotations.mjs` in the app; `implementer` agent; session-economy skill; reviewer
 - **Issue:** #95
 
 ## Context
 
-Every model request sends the whole conversation again (CLA-0073). Checking a change by hand takes one shell call for the build, one for each test project and one for each linter, and each call is a request that sends the context again. Each also returns the tool's full output: restore logs, every passing test and long stack traces, most of which the agent never needs.
+Every model request sends the whole conversation again (CLA-0073). Checking a change by hand takes many shell calls: build, each test project, each linter, then pushing and reading CI. Each call is a request that sends the context again, and each returns the tool's full output, most of which the agent never needs. CI already runs every check on the shared runners for each pushed commit (CLA-0033, CLA-0034). Running the same checks locally as well means two definitions of "the checks" that drift apart.
 
 ## Decision
 
-- **Every app has `node scripts/verify.mjs`** (CLA-0027, CLA-0064). It checks a change in one call:
-  - **backend:** `dotnet build` in `backend/`, then `dotnet test --no-build` with a TRX report. Analyzers run as part of the build (CLA-0071). A failed build skips the tests.
-  - **frontend:** the `build` and `lint` scripts of `frontend/package.json` (`tsc`, oxlint and Steiger, CLA-0040, CLA-0065), then Vitest with its JSON reporter.
-  - **e2e:** Playwright with its JSON reporter, on its own throwaway stack (CLA-0017).
-- **Layer flags keep a cycle narrow.** `--backend`, `--frontend` and `--e2e` run only those layers, and they combine. With no flag it runs backend and frontend, and `--all` adds e2e. Run e2e once the lower layers are green, and before the pull request (CLA-0023).
-- **It runs quietly and prints a short summary:** one line per step, then only the failures, capped at about 4 KB. It exits non-zero when any step fails.
-- **Failing tests come from the test runners' reports, not from the console.** It reads TRX for .NET, and the JSON reporters for Vitest and Playwright. These name each failing test with its message and the top of its stack, whatever the console looks like. Build and lint errors have no report, so it keeps their `error` lines, or the last lines of the output when it finds none.
-- **The full log goes to the env-state folder,** `~/.claudalisk/apps/<app>/verify/<worktree>/verify.log` (CLA-0066), with the reports next to it. Each run replaces it. The summary ends with its path, so the agent can grep it when the summary is not enough. Nothing is written to the checkout.
-- **The agent runs it once per verify cycle,** as one call, and reads the summary. It does not run the build, the tests or the linters as separate calls. The `claudalisk:implementer` agent (CLA-0074) uses it as its check.
-- An app without the script yet copies `${CLAUDE_PLUGIN_ROOT}/templates/app/scripts/verify.mjs` and its test into its `scripts/`. An app with other steps adds them to its copy and lists the change in its `AGENTS.md` (CLA-0028).
+- **CI is the only verifier.** The agent does not run the build, the tests or the linters locally to check a change. It pushes, and reads the result of CI on that commit.
+- **Every app has `node scripts/verify.mjs`** (CLA-0027, CLA-0064). One call does a whole cycle:
+  - commits any changes with `-m "<message>"` and pushes the issue branch. It refuses `main`, and it pushes nothing when the remote already has the commit;
+  - waits for the CI runs of that exact commit, found by its SHA and never as "the latest run";
+  - prints one line per job, then only the failures, capped at about 4 KB, and exits non-zero when a job failed.
+- **Watching is quiet and cheap.** The script polls the Actions API itself and prints nothing while it waits. It starts at 5 seconds and backs off to 20. It fetches jobs only when it needs them, and rides out two API errors in a row.
+  - `--backend`, `--frontend` and `--e2e` wait only for the jobs of those layers, and return as soon as those jobs finish. A job belongs to a layer when its name contains `backend`, `frontend` or `e2e`.
+  - With no flag, it waits for every run on the commit, so one cycle reports every failure.
+  - `--fail-fast` returns at the first failed job.
+  - It stops after `--timeout` minutes (9 by default, under the agent's 10-minute command limit) and says to run it again. Run again on a pushed commit, it pushes nothing and keeps waiting.
+- **Failures come from check-run annotations, which CI produces.** Parsing happens on the runner, not in the agent's context. `verify.mjs` reads each failed job's annotations, which are small and structured, and drops GitHub's "Process completed with exit code" notice. The CI jobs produce annotations with the tools' own GitHub output:
+  - **Vitest:** its `github-actions` reporter, which Vitest turns on in GitHub Actions.
+  - **Playwright:** its `github` reporter.
+  - **oxlint:** `--format=github`.
+  - **`tsc` and the .NET compiler:** the problem matchers that `actions/setup-node` and `actions/setup-dotnet` register.
+  - **.NET tests:** `dotnet test --logger trx`, then `node scripts/trx-annotations.mjs <results folder>` in a step that runs on failure. It writes one annotation per failing test, with its file and line and the message, within GitHub's limit of 10 per step, and a table of every failure to the job summary.
+  - A failed job without annotations falls back to the last 20 lines of its failed step.
+- **The full logs go to the env-state folder** (CLA-0066). `verify.mjs` saves the log of each failed job to `~/.claudalisk/apps/<app>/verify/<worktree>/<job>.log`, and each run replaces them. The summary ends with the folder, so the agent can grep a log when the summary is not enough. Nothing is written to the checkout.
+- **The agent runs it once per verify cycle,** as one call, and reads the summary. The `claudalisk:implementer` agent (CLA-0074) commits and pushes only through it.
+- An app without the scripts copies `${CLAUDE_PLUGIN_ROOT}/templates/app/scripts/` into its `scripts/` and wires its CI jobs as `templates/README.md` shows. An app that cannot use CI for this lists the deviation in its `AGENTS.md` (CLA-0028).
 
 ## Consequences
 
-- A verify cycle is one request with a few KB of output, not several requests with tens of KB each.
-- The test runners' reports keep working when their console output changes. The script depends on their report formats instead.
-- The agent greps the full log only when it needs more, so long output stays out of the context.
-- CI keeps its own parallel jobs (CLA-0034). The verify script is for the agent's loop, not a replacement for CI.
+- A verify cycle is one request with a few KB of output. While CI runs, the agent sends nothing.
+- The checks are defined once, in CI, so the agent's verdict and the pull request's checks are the same.
+- A cycle takes as long as a CI run, including queueing and checkout, and every cycle uses the shared runners (CLA-0033). Layer flags and `--fail-fast` shorten a cycle when only one layer changed.
+- Every cycle is a pushed commit, so the issue branch carries the implementer's commits. The main thread reviews the branch diff before it opens the pull request (CLA-0023).
+- The output depends on the tools' GitHub annotation formats and on GitHub's annotation limits, not on their console output. A job that annotates nothing still reports the tail of its failed step.
