@@ -1,0 +1,36 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "job",
+  "title": "Job",
+  "description": "The job resource's types, a hook that polls a job until it ends and follows the newest active job when a newer one supersedes it, and a panel that shows its status, progress, error and cancel action.",
+  "dependencies": [
+    "@tanstack/react-query@^5"
+  ],
+  "registryDependencies": [
+    "progress",
+    "@claudalisk/hypermedia",
+    "@claudalisk/problem-details",
+    "@claudalisk/problem-alert",
+    "@claudalisk/action-button",
+    "@claudalisk/query-state"
+  ],
+  "files": [
+    {
+      "path": "lib/job.ts",
+      "content": "import type { Representation } from \"@/lib/hypermedia\"\nimport type { ProblemDetails } from \"@/lib/problem-details\"\n\nexport type JobStatus = \"queued\" | \"running\" | \"succeeded\" | \"failed\" | \"canceled\"\n\nexport type JobProgress = {\n  fraction: number | null\n  step: string | null\n}\n\nexport type Job = Representation & {\n  id: string\n  module: string\n  kind: string\n  status: JobStatus\n  attempts: number\n  maxAttempts: number\n  progress: JobProgress\n  error: ProblemDetails | null\n  createdAt: string\n  startedAt: string | null\n  finishedAt: string | null\n}\n\nexport const SUPERSEDED_PROBLEM_TYPE = \"/problems/jobs/superseded\"\n\nexport function isActive(job: Job | undefined): boolean {\n  return job?.status === \"queued\" || job?.status === \"running\"\n}\n\nexport function isSuperseded(job: Job | undefined): boolean {\n  return job?.status === \"canceled\" && job.error?.type === SUPERSEDED_PROBLEM_TYPE\n}\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "api/job.ts",
+      "content": "import { useQuery, useQueryClient, type QueryKey } from \"@tanstack/react-query\"\n\nimport type { Link } from \"@/lib/hypermedia\"\nimport { isActive, isSuperseded, type Job } from \"@/lib/job\"\nimport { followLink } from \"@/shared/api/hypermedia\"\n\nexport type UseJobOptions = {\n  findActive?: () => Promise<Link | undefined>\n  start?: () => Promise<Link>\n  invalidates?: readonly QueryKey[]\n  interval?: number\n}\n\nexport function jobQueryKey(link: Link | undefined): QueryKey {\n  return [\"claudalisk\", \"job\", link?.href]\n}\n\nexport function useJob(\n  link: Link | undefined,\n  { findActive, start, invalidates = [], interval = 1000 }: UseJobOptions = {}\n) {\n  const queryClient = useQueryClient()\n  const queryKey = jobQueryKey(link)\n  return useQuery({\n    queryKey,\n    enabled: link !== undefined,\n    queryFn: async ({ signal }) => {\n      const current = queryClient.getQueryData<Job>(queryKey)?._links?.self ?? link\n      if (!current) throw new Error(\"There is no job to follow.\")\n      let job = await followLink<Job>(current, { signal })\n      if (isSuperseded(job)) {\n        const replacement = (await findActive?.()) ?? (await start?.())\n        if (replacement) job = await followLink<Job>(replacement, { signal })\n      }\n      if (!isActive(job)) {\n        await Promise.all(invalidates.map((key) => queryClient.invalidateQueries({ queryKey: key })))\n      }\n      return job\n    },\n    refetchInterval: (query) => (query.state.status === \"success\" && isActive(query.state.data) ? interval : false),\n  })\n}\n",
+      "type": "registry:file",
+      "target": "src/shared/api/job.ts"
+    },
+    {
+      "path": "ui/job-panel.tsx",
+      "content": "import * as React from \"react\"\nimport type { UseQueryResult } from \"@tanstack/react-query\"\n\nimport { ActionButton } from \"@/components/ui/action-button\"\nimport { ProblemAlert } from \"@/components/ui/problem-alert\"\nimport { Progress } from \"@/components/ui/progress\"\nimport { QueryLoading } from \"@/components/ui/query-state\"\nimport { isActive, type Job, type JobStatus } from \"@/lib/job\"\n\nconst STATUS_TEXT: Record<JobStatus, string> = {\n  queued: \"Queued\",\n  running: \"Running\",\n  succeeded: \"Done\",\n  failed: \"Failed\",\n  canceled: \"Canceled\",\n}\n\ntype JobPanelProps = {\n  job: UseQueryResult<Job>\n  label: string\n  children?: (job: Job) => React.ReactNode\n}\n\nfunction JobPanel({ job: query, label, children }: JobPanelProps) {\n  if (query.isPending) return <QueryLoading />\n  if (query.isError) return <ProblemAlert error={query.error} />\n\n  const job = query.data\n  const active = isActive(job)\n  const fraction = job.progress.fraction\n\n  return (\n    <section aria-label={label} data-job-status={job.status} className=\"flex flex-col gap-2\">\n      <div className=\"flex items-center justify-between gap-2\">\n        <p className=\"text-sm font-medium\">{label}</p>\n        <p role=\"status\" className=\"text-sm text-muted-foreground\">\n          {STATUS_TEXT[job.status]}\n        </p>\n      </div>\n      {active ? (\n        <Progress aria-label={`${label} progress`} value={fraction === null ? null : Math.round(fraction * 100)} />\n      ) : null}\n      {job.progress.step ? <p className=\"text-sm text-muted-foreground\">{job.progress.step}</p> : null}\n      {job.status === \"failed\" || job.status === \"canceled\" ? <ProblemAlert error={job.error ?? undefined} /> : null}\n      <ActionButton\n        representation={job}\n        action=\"cancel\"\n        variant=\"outline\"\n        size=\"sm\"\n        className=\"self-start\"\n        onSuccess={() => void query.refetch()}\n      >\n        Cancel\n      </ActionButton>\n      {job.status === \"succeeded\" && children ? children(job) : null}\n    </section>\n  )\n}\n\nexport { JobPanel }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

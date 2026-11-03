@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "pager",
+  "title": "Pager",
+  "description": "Previous and next buttons that follow a collection's prev and next links, with an optional page count, for lists that are not tables.",
+  "registryDependencies": [
+    "button",
+    "@claudalisk/hypermedia"
+  ],
+  "files": [
+    {
+      "path": "ui/pager.tsx",
+      "content": "import { Button } from \"@/components/ui/button\"\nimport type { Links } from \"@/lib/hypermedia\"\n\ntype PagerProps = {\n  links: Links | undefined\n  onNavigate: (href: string) => void\n  page?: number\n  pageCount?: number\n  label?: string\n}\n\nfunction Pager({ links, onNavigate, page, pageCount, label = \"Pages\" }: PagerProps) {\n  const prev = links?.prev\n  const next = links?.next\n  if (!prev && !next) return null\n\n  return (\n    <nav aria-label={label} className=\"flex items-center justify-end gap-2\">\n      {page !== undefined ? (\n        <p className=\"mr-auto text-sm text-muted-foreground\">\n          {pageCount !== undefined ? `Page ${page} of ${pageCount}` : `Page ${page}`}\n        </p>\n      ) : null}\n      <Button variant=\"outline\" size=\"sm\" disabled={!prev} onClick={() => prev && onNavigate(prev.href)}>\n        Previous\n      </Button>\n      <Button variant=\"outline\" size=\"sm\" disabled={!next} onClick={() => next && onNavigate(next.href)}>\n        Next\n      </Button>\n    </nav>\n  )\n}\n\nexport { Pager }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

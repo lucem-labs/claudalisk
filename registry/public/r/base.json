@@ -12,7 +12,14 @@
     "@claudalisk/action-button",
     "@claudalisk/paged-table",
     "@claudalisk/query-state",
-    "@claudalisk/app-shell"
+    "@claudalisk/app-shell",
+    "@claudalisk/table",
+    "@claudalisk/badge",
+    "@claudalisk/heading",
+    "@claudalisk/section-card",
+    "@claudalisk/disclosure",
+    "@claudalisk/pager",
+    "@claudalisk/job"
   ],
   "type": "registry:item"
 }

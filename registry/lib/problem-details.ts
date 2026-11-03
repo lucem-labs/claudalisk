@@ -11,7 +11,7 @@ export class ProblemError extends Error {
   readonly problem: ProblemDetails
 
   constructor(problem: ProblemDetails) {
-    super(problem.detail ?? problem.title ?? "The request failed.")
+    super(messageOf(problem) ?? "The request failed.")
     this.name = "ProblemError"
     this.problem = problem
   }
@@ -33,20 +33,34 @@ export function problemOf(error: unknown): ProblemDetails | undefined {
   return undefined
 }
 
+export function problemMessage(error: unknown): string | undefined {
+  const problem = problemOf(error)
+  if (problem) return messageOf(problem)
+  return error instanceof Error ? error.message : undefined
+}
+
 export function fieldErrors(error: unknown, field: string): string[] {
   const errors = problemOf(error)?.errors
   if (!errors) return []
-  const wanted = field.toLowerCase()
+  const wanted = fieldKey(field)
   return Object.entries(errors)
-    .filter(([key]) => key.toLowerCase() === wanted)
+    .filter(([key]) => fieldKey(key) === wanted)
     .flatMap(([, messages]) => messages)
 }
 
 export function unmatchedFieldErrors(error: unknown, fields: readonly string[]): string[] {
   const errors = problemOf(error)?.errors
   if (!errors) return []
-  const known = new Set(fields.map((field) => field.toLowerCase()))
+  const known = new Set(fields.map(fieldKey))
   return Object.entries(errors)
-    .filter(([key]) => !known.has(key.toLowerCase()))
+    .filter(([key]) => !known.has(fieldKey(key)))
     .flatMap(([, messages]) => messages)
+}
+
+function messageOf(problem: ProblemDetails): string | undefined {
+  return problem.detail ?? Object.values(problem.errors ?? {}).flat()[0] ?? problem.title
+}
+
+function fieldKey(key: string): string {
+  return key.replace(/^\$\./, "").toLowerCase()
 }

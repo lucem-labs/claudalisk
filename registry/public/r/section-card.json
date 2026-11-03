@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "section-card",
+  "title": "Section card",
+  "description": "A card with a real heading, a description and an action, which is a named region when it has a label.",
+  "registryDependencies": [
+    "card",
+    "@claudalisk/heading"
+  ],
+  "files": [
+    {
+      "path": "ui/section-card.tsx",
+      "content": "import * as React from \"react\"\n\nimport { Card, CardAction, CardContent, CardDescription, CardHeader } from \"@/components/ui/card\"\nimport { Heading, type HeadingLevel } from \"@/components/ui/heading\"\n\ntype SectionCardProps = Omit<React.ComponentProps<typeof Card>, \"title\"> & {\n  title: React.ReactNode\n  label?: string\n  level?: HeadingLevel\n  description?: React.ReactNode\n  action?: React.ReactNode\n}\n\nfunction SectionCard({ title, label, level = 2, description, action, children, ...props }: SectionCardProps) {\n  return (\n    <Card role={label ? \"region\" : undefined} aria-label={label} {...props}>\n      <CardHeader>\n        <Heading level={level}>{title}</Heading>\n        {description ? <CardDescription>{description}</CardDescription> : null}\n        {action ? <CardAction>{action}</CardAction> : null}\n      </CardHeader>\n      <CardContent>{children}</CardContent>\n    </Card>\n  )\n}\n\nexport { SectionCard }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

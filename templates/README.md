@@ -9,6 +9,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/trx-annotations.mjs` | Run in CI: turns the failing tests of .NET TRX reports into annotations and a job summary |
 | `app/scripts/no-comments.mjs` | `node scripts/no-comments.mjs [<root>] [--skip <path>]...`: fails when a tracked file has a comment ([CLA-0035](../adr/0035-no-code-comments.md)) |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
+| `app/frontend/.oxlintrc.json` | The frontend's oxlint configuration ([CLA-0065](../adr/0065-frontend-tooling.md)). It turns `react/only-export-components` off in `src/shared/ui`, where shadcn's components export their variants beside them, so the warning stays meaningful everywhere else |
 
 ## Comment check
 

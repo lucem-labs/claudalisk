@@ -3,9 +3,10 @@ import { spawn } from 'node:child_process';
 import { cpSync, createReadStream, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join, normalize, resolve, sep } from 'node:path';
+import { join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { addDesignSystem } from './add-design-system.mjs';
+import { findCommentLines } from '../templates/app/scripts/no-comments.mjs';
 import { builtRegistry, checkRegistrySources, listFiles, registryRoot, shadcnVersion, spawnArguments } from './registry.mjs';
 
 export function runAsync(command, args, cwd) {
@@ -18,6 +19,12 @@ export function runAsync(command, args, cwd) {
       else reject(new Error(`${command} ${args.join(' ')} failed with exit code ${code}`));
     });
   });
+}
+
+export function installedComments(app) {
+  const shared = join(app, 'src', 'shared');
+  return listFiles(shared, ['.ts', '.tsx'])
+    .flatMap((file) => findCommentLines(readFileSync(file, 'utf8'), file).map((line) => `${relative(app, file).replaceAll('\\', '/')}:${line}`));
 }
 
 export function compareBuilds(expectedDir, actualDir) {
@@ -135,6 +142,9 @@ async function main() {
     try {
       const registry = `http://127.0.0.1:${server.address().port}/{name}.json`;
       await addDesignSystem({ app, registry, skill: !process.argv.includes('--no-skill') }, { run: runAsync });
+      const comments = installedComments(app);
+      if (comments.length) throw new Error(`The scaffold left comments in ${comments.join(', ')}`);
+      console.log('✓ The scaffold removed the comments of the installed shadcn components.');
       await runAsync('npx', ['--yes', `shadcn@${version}`, 'add', 'input', '--yes'], app);
       await checkMcp(version, app);
       console.log('✓ shadcn\'s MCP server lists @claudalisk items and searches @shadcn.');

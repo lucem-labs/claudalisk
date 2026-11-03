@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; `claude plugin validate`; CI's `registry` job; reviewer
-- **Issue:** #38
+- **Issue:** #75
 
 ## Decision
 
@@ -15,19 +15,23 @@
   - `theme`: the theme file with the tokens of claudalisk (CLA-0054), installed as `src/app/styles/theme.css`.
   - The base components that every app needs, built on shadcn components:
     - `app-shell`: the app shell and navigation. It has no business meaning, so it lives in `shared/ui`. The app passes its own navigation from `app` (CLA-0036).
-    - `problem-field` and `problem-alert`: form fields and an alert wired to Problem Details validation errors (CLA-0045).
+    - `problem-field` and `problem-alert`: form fields and an alert wired to Problem Details validation errors (CLA-0045). A field shows the errors under its own key. The alert shows the `title`, the `detail` and the validation errors that no field of the form shows. Where one line is enough, `problemMessage` and `ProblemError`'s message give the `detail`, else the first field error, else the `title`.
     - `paged-table`: a data table for paged collections that follows `next` and `prev` links (CLA-0042, CLA-0044).
     - `action-button`: a button that renders only when its action is in `_actions` (CLA-0044).
     - `query-state`: empty, loading and error states for TanStack Query results (CLA-0038).
+    - `job`: the job component (CLA-0060). It polls a job until it ends and shows its status, progress, error and cancel action. When a newer job with the same dedupe key supersedes it (CLA-0058), it follows the newest active job of the same kind and input that the page finds, and starts a new one only when there is none.
+    - `heading` (`Heading` and `PageHeader`), `section-card`, `disclosure` and `pager`: real headings, a titled card that is a named region when it has a label, a collapsible section in place of `<details>`, and previous and next buttons for lists that are not tables.
+    - `table` and `badge`: shadcn's table with a `stacked` variant that turns rows into cards labelled by each cell's `data-label` on narrow screens, and shadcn's badge with `success` and `warning` variants on the theme's tokens of the same names.
   - The helpers they share:
     - `problem-details` in `shared/lib`;
     - `hypermedia`: types in `shared/lib`, and the requests that follow a link and send an action in `shared/api` (CLA-0014).
   - `base`, which installs all of them.
 - **Apps reference it under the `@claudalisk` namespace** in `components.json`, next to the default shadcn registry.
 - **The scaffold sets up the design system** with `node tools/add-design-system.mjs --app <frontend folder>`. It:
+  - fetches the official Claude Code skill of shadcn first, from the same shadcn version, with `GITHUB_TOKEN` or else `gh auth token`, so a refused request changes nothing;
   - writes `components.json` with the aliases into `shared` and the `@claudalisk` registry;
-  - runs `shadcn add @claudalisk/base`;
-  - adds the official Claude Code skill of shadcn to `.claude/skills/shadcn`, from the same shadcn version, with its commands pinned to that version.
+  - runs `shadcn add @claudalisk/base`, then removes the comments of the installed files (CLA-0053);
+  - writes the skill to `.claude/skills/shadcn`, with its commands pinned to that version. `--skill-only` adds just the skill to an app that already has `components.json`.
 - **The plugin configures the MCP server of shadcn** in `.mcp.json`, pinned to an exact `shadcn` version. That version is the one the scaffold, the theme and CI use. Agents use the server to search and install components from both registries.
 - **Registry components follow the rules of claudalisk:**
   - no comments (CLA-0035);
@@ -39,6 +43,7 @@
   - It installs `@claudalisk/base` into a fresh Vite, React and Tailwind v4 app in `registry/fixture-app`, then:
     - type-checks and builds the app;
     - runs the components' Vitest and Testing Library tests;
+    - checks that the scaffold left no comment in the installed files;
     - checks that shadcn's MCP server lists `@claudalisk` and searches `@shadcn`.
 - **The components' tests live in the fixture app.** They test the installed copies, as an app receives them. An app's own end-to-end tests cover the components in its screens (CLA-0016).
 
