@@ -3,7 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
-- **Enforced by:** reviewer; Steiger (CLA-0040)
+- **Enforced by:** reviewer; Steiger (CLA-0040); the scaffold and the app's comment check (CLA-0035)
+- **Issue:** #75
 
 ## Context
 
@@ -31,7 +32,11 @@ Alternatives considered:
   - A screen uses a `shared/ui` component where one exists, instead of a styled raw HTML element.
   - Add a new variant to the component, such as a `cva` variant. Do not override it with classes at the call site.
 - **Tables and charts use recipes.** Tables use the shadcn data table recipe on TanStack Table. Charts use the shadcn chart components on Recharts.
-- **Copied components belong to the app.** They follow the app's rules, including no comments (CLA-0035). shadcn's components ship without comments. If an upstream update brings one in, the agent removes it. When an agent touches a component, it checks for upstream fixes with `shadcn diff` and applies them as a normal change.
+- **Copied components belong to the app.** They follow the app's rules, including no comments (CLA-0035). When an agent touches a component, it checks for upstream fixes with `shadcn diff` and applies them as a normal change.
+  - Some of shadcn's components ship with comments, such as `sidebar.tsx` and `chart.tsx`. The scaffold removes them when it installs the base (CLA-0055). After a later `shadcn add` or an upstream fix, the agent runs `node tools/strip-comments.mjs --app <frontend folder>` from claudalisk, which removes the comments under `src/shared` and keeps lint directives.
+  - `table.tsx` and `badge.tsx` in `shared/ui` come from `@claudalisk`, which adds variants to shadcn's (CLA-0055). The agent updates them from `@claudalisk` and never overwrites them with shadcn's own, with `--overwrite` or by applying a `shadcn diff` against `@shadcn`.
+  - shadcn's files export variants beside their components, such as `buttonVariants`. The template's oxlint configuration turns `react/only-export-components` off in `shared/ui` only, so the warning stays meaningful in the rest of the app.
+- **An existing app moves onto the design system in steps**, by the recipe in the registry's README: its old stylesheet goes into `@layer base`, its variables are renamed and pointed at the tokens, its element rules skip shadcn's components, and its pages are restyled one by one until the stylesheet is deleted. Until then, an `AGENTS.md` deviation names the issue that deletes it (CLA-0028).
 
 ## Consequences
 

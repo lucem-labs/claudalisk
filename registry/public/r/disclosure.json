@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "disclosure",
+  "title": "Disclosure",
+  "description": "A collapsible section opened by a button with a chevron, in place of details and summary.",
+  "dependencies": [
+    "lucide-react",
+    "cn"
+  ],
+  "registryDependencies": [
+    "button",
+    "collapsible"
+  ],
+  "files": [
+    {
+      "path": "ui/disclosure.tsx",
+      "content": "import * as React from \"react\"\nimport { ChevronRight } from \"lucide-react\"\n\nimport { Button } from \"@/components/ui/button\"\nimport { Collapsible, CollapsibleContent, CollapsibleTrigger } from \"@/components/ui/collapsible\"\nimport { cn } from \"cn\"\n\ntype DisclosureProps = Omit<React.ComponentProps<typeof Collapsible>, \"children\"> & {\n  trigger: React.ReactNode\n  children: React.ReactNode\n}\n\nfunction Disclosure({ trigger, children, className, ...props }: DisclosureProps) {\n  return (\n    <Collapsible className={cn(\"flex flex-col gap-2\", className)} {...props}>\n      <CollapsibleTrigger asChild>\n        <Button variant=\"ghost\" className=\"group/disclosure w-fit justify-start gap-2 px-2\">\n          <ChevronRight\n            aria-hidden\n            className=\"transition-transform group-data-[state=open]/disclosure:rotate-90\"\n          />\n          {trigger}\n        </Button>\n      </CollapsibleTrigger>\n      <CollapsibleContent>{children}</CollapsibleContent>\n    </Collapsible>\n  )\n}\n\nexport { Disclosure }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

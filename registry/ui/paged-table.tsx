@@ -6,7 +6,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table"
 
-import { Button } from "@/components/ui/button"
+import { Pager } from "@/components/ui/pager"
 import {
   Table,
   TableBody,
@@ -24,6 +24,7 @@ type PagedTableProps<T> = {
   onNavigate: (href: string) => void
   getRowId?: (item: T, index: number) => string
   empty?: React.ReactNode
+  stacked?: boolean
 }
 
 function PagedTable<T>({
@@ -33,6 +34,7 @@ function PagedTable<T>({
   onNavigate,
   getRowId,
   empty = "No results.",
+  stacked = false,
 }: PagedTableProps<T>) {
   const table = useReactTable({
     data: items,
@@ -40,14 +42,12 @@ function PagedTable<T>({
     getCoreRowModel: getCoreRowModel(),
     getRowId,
   })
-  const prev = links?.prev
-  const next = links?.next
   const rows = table.getRowModel().rows
 
   return (
     <div className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-md border">
-        <Table>
+        <Table variant={stacked ? "stacked" : "default"}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -66,8 +66,8 @@ function PagedTable<T>({
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <TableCell key={cell.id} data-label={labelOf(cell.column.columnDef)}>
+                      <div>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -82,28 +82,15 @@ function PagedTable<T>({
           </TableBody>
         </Table>
       </div>
-      {prev || next ? (
-        <nav aria-label="Pages" className="flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!prev}
-            onClick={() => prev && onNavigate(prev.href)}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!next}
-            onClick={() => next && onNavigate(next.href)}
-          >
-            Next
-          </Button>
-        </nav>
-      ) : null}
+      <Pager links={links} onNavigate={onNavigate} />
     </div>
   )
+}
+
+function labelOf<T>(column: ColumnDef<T>): string | undefined {
+  const meta = column.meta as { label?: string } | undefined
+  if (meta?.label) return meta.label
+  return typeof column.header === "string" && column.header.length > 0 ? column.header : undefined
 }
 
 export { PagedTable }

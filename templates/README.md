@@ -12,6 +12,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
 | `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
+| `app/frontend/.oxlintrc.json` | The frontend's oxlint configuration ([CLA-0065](../adr/0065-frontend-tooling.md)). It keeps `fetch` inside `src/shared/api` ([CLA-0014](../adr/0014-frontend-stack-and-api-module.md)) and turns `react/only-export-components` off in `src/shared/ui`, where shadcn's components export their variants beside them, so the warning stays meaningful everywhere else |
 | `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
 | `app/.zap/rules.tsv` | The ZAP rules file, with the three informational rules every single-page app trips set to `INFO` |
 | `app/.github/zizmor.yml` | zizmor's config: `lucem-labs/*` actions may be pinned to a tag, every other action to a commit SHA |

@@ -71,7 +71,7 @@
       "name": "problem-alert",
       "type": "registry:ui",
       "title": "Problem alert",
-      "description": "An alert that shows a Problem Details title and detail, and any validation errors no field shows.",
+      "description": "An alert that shows a Problem Details title and detail, and the validation errors no field shows.",
       "dependencies": ["lucide-react"],
       "registryDependencies": ["alert", "@claudalisk/problem-details"],
       "files": [
@@ -99,9 +99,9 @@
       "name": "paged-table",
       "type": "registry:ui",
       "title": "Paged table",
-      "description": "A data table on TanStack Table for a page of a collection, paged by following its next and prev links.",
+      "description": "A data table on TanStack Table for a page of a collection, paged by following its next and prev links, and stacked into labelled cards on narrow screens when asked.",
       "dependencies": ["@tanstack/react-table@^8"],
-      "registryDependencies": ["table", "button", "@claudalisk/hypermedia"],
+      "registryDependencies": ["@claudalisk/table", "@claudalisk/pager", "@claudalisk/hypermedia"],
       "files": [
         {
           "path": "ui/paged-table.tsx",
@@ -138,6 +138,115 @@
       ]
     },
     {
+      "name": "table",
+      "type": "registry:ui",
+      "title": "Table",
+      "description": "shadcn's table with a stacked variant that turns rows into cards labelled by each cell's data-label when its container is narrow.",
+      "dependencies": ["cn"],
+      "files": [
+        {
+          "path": "ui/table.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "badge",
+      "type": "registry:ui",
+      "title": "Badge",
+      "description": "shadcn's badge with success and warning variants on the theme's tokens.",
+      "dependencies": ["cn", "class-variance-authority@^0.7", "radix-ui@^1"],
+      "files": [
+        {
+          "path": "ui/badge.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "heading",
+      "type": "registry:ui",
+      "title": "Heading",
+      "description": "Heading, a real h1 to h4 in the theme's type scale, and PageHeader, a page's h1 with its description and actions.",
+      "dependencies": ["cn"],
+      "files": [
+        {
+          "path": "ui/heading.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "section-card",
+      "type": "registry:ui",
+      "title": "Section card",
+      "description": "A card with a real heading, a description and an action, which is a region named by its heading when asked.",
+      "registryDependencies": ["card", "@claudalisk/heading"],
+      "files": [
+        {
+          "path": "ui/section-card.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "disclosure",
+      "type": "registry:ui",
+      "title": "Disclosure",
+      "description": "A collapsible section opened by a button with a chevron, in place of details and summary.",
+      "dependencies": ["lucide-react", "cn"],
+      "registryDependencies": ["button", "collapsible"],
+      "files": [
+        {
+          "path": "ui/disclosure.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "pager",
+      "type": "registry:ui",
+      "title": "Pager",
+      "description": "Previous and next buttons that follow a collection's prev and next links, with an optional page count, for lists that are not tables.",
+      "registryDependencies": ["button", "@claudalisk/hypermedia"],
+      "files": [
+        {
+          "path": "ui/pager.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "job",
+      "type": "registry:ui",
+      "title": "Job",
+      "description": "The job resource's types, a hook that polls a job until it ends and follows the newest active job when a newer one supersedes it, and a panel that shows its status, progress, error and cancel action.",
+      "dependencies": ["@tanstack/react-query@^5"],
+      "registryDependencies": [
+        "progress",
+        "@claudalisk/hypermedia",
+        "@claudalisk/problem-details",
+        "@claudalisk/problem-alert",
+        "@claudalisk/action-button",
+        "@claudalisk/query-state"
+      ],
+      "files": [
+        {
+          "path": "lib/job.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "api/job.ts",
+          "type": "registry:file",
+          "target": "src/shared/api/job.ts"
+        },
+        {
+          "path": "ui/job-panel.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "base",
       "type": "registry:item",
       "title": "Base",
@@ -151,7 +260,14 @@
         "@claudalisk/action-button",
         "@claudalisk/paged-table",
         "@claudalisk/query-state",
-        "@claudalisk/app-shell"
+        "@claudalisk/app-shell",
+        "@claudalisk/table",
+        "@claudalisk/badge",
+        "@claudalisk/heading",
+        "@claudalisk/section-card",
+        "@claudalisk/disclosure",
+        "@claudalisk/pager",
+        "@claudalisk/job"
       ]
     }
   ]

@@ -15,7 +15,7 @@ function ProblemAlert({ error, fields, action }: ProblemAlertProps) {
   const problem = problemOf(error)
   const title = problem?.title ?? "Something went wrong"
   const detail = problem?.detail ?? (problem ? undefined : errorMessage(error))
-  const extra = fields ? unmatchedFieldErrors(error, fields) : []
+  const extra = unmatchedFieldErrors(error, fields ?? [])
 
   return (
     <Alert variant="destructive" data-problem-type={problem?.type}>

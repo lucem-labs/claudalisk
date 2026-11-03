@@ -4,6 +4,7 @@ import {
   fieldErrors,
   isProblemDetails,
   ProblemError,
+  problemMessage,
   problemOf,
   unmatchedFieldErrors,
 } from "@/shared/lib/problem-details"
@@ -42,5 +43,30 @@ describe("problem details", () => {
     expect(new ProblemError({ title: "Conflict", detail: "The order has shipped." }).message).toBe(
       "The order has shipped."
     )
+  })
+
+  it("finds a field's errors under a JSON path key", () => {
+    const problem = { title: "Invalid", status: 400, errors: { "$.name": ["Name is required."] } }
+
+    expect(fieldErrors(problem, "name")).toEqual(["Name is required."])
+    expect(unmatchedFieldErrors(problem, ["name"])).toEqual([])
+  })
+
+  it("uses the first field error as the message when there is no detail", () => {
+    expect(validation.message).toBe("Name is required.")
+    expect(problemMessage(validation)).toBe("Name is required.")
+  })
+
+  it("prefers the detail to the field errors", () => {
+    const problem = { title: "T", detail: "D", errors: { Name: ["E"] } }
+
+    expect(problemMessage(problem)).toBe("D")
+    expect(new ProblemError(problem).message).toBe("D")
+  })
+
+  it("falls back to the title, then to an ordinary error's message", () => {
+    expect(problemMessage({ title: "Conflict", status: 409 })).toBe("Conflict")
+    expect(problemMessage(new Error("network down"))).toBe("network down")
+    expect(problemMessage("text")).toBeUndefined()
   })
 })

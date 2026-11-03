@@ -61,4 +61,21 @@ describe("hypermedia client", () => {
 
     expect(page.items).toEqual([])
   })
+
+  it("refuses a link or an action on another origin without sending it", async () => {
+    const fetchMock = respond(200, {})
+
+    await expect(followLink({ href: "https://elsewhere.example/api/jobs/1" })).rejects.toThrow(/leaves this app's origin/)
+    await expect(sendAction({ href: "//elsewhere.example/x", method: "POST" })).rejects.toThrow(/leaves this app's origin/)
+    await expect(followLink({ href: "data:application/json,{}" })).rejects.toThrow(/leaves this app's origin/)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("follows an absolute link on its own origin", async () => {
+    const fetchMock = respond(200, { id: "1" })
+
+    await followLink({ href: `${window.location.origin}/api/orders/1` })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
 })

@@ -14,7 +14,7 @@ export type ActionResponse<T> = {
 }
 
 export async function followLink<T>(link: Link, init?: { signal?: AbortSignal }): Promise<T> {
-  const response = await fetch(link.href, {
+  const response = await fetch(sameOrigin(link.href), {
     headers: { Accept: "application/json" },
     signal: init?.signal,
   })
@@ -29,7 +29,7 @@ export async function sendAction<T = unknown>(
   const headers: Record<string, string> = { Accept: "application/json" }
   if (request.body !== undefined) headers["Content-Type"] = "application/json"
   if (request.ifMatch !== undefined) headers["If-Match"] = request.ifMatch
-  const response = await fetch(action.href, {
+  const response = await fetch(sameOrigin(action.href), {
     method: action.method,
     headers,
     body: request.body === undefined ? undefined : JSON.stringify(request.body),
@@ -50,6 +50,15 @@ async function readResponse<T>(response: Response): Promise<ActionResponse<T>> {
     etag: response.headers.get("ETag") ?? undefined,
     location: response.headers.get("Location") ?? undefined,
   }
+}
+
+function sameOrigin(href: string): string {
+  const origin = window.location.origin
+  const url = new URL(href, document.baseURI)
+  if (origin === "null" || url.origin !== origin || !/^https?:$/.test(url.protocol)) {
+    throw new Error(`The link ${href} leaves this app's origin.`)
+  }
+  return href
 }
 
 function parseBody(text: string): unknown {

@@ -22,6 +22,8 @@ jobs:
           node-version: 22
       - name: ADR index check
         run: node tools/check-adrs.mjs
+      - name: Tool dependencies
+        run: npm ci --prefix tools --ignore-scripts --no-audit --no-fund
       - name: Tool tests
         run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs
       - name: No comments
