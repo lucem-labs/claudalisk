@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0002, CLA-0006), reviewer
+- **Enforced by:** architecture tests (CLA-0002, CLA-0006; no module class name, minus `Module`, ends in a plural `s`, apart from an allow-list of singular nouns), reviewer
 - **Issue:** #63
 
 ## Context

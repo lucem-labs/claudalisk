@@ -43,7 +43,7 @@ A **schema per module in one physical database** keeps the ownership and keeps a
   - adds an interceptor that points every save at the current unit of work's transaction.
 
   Without that interceptor, a save that sends several statements tries to start its own transaction.
-- **Things that break the shared connection.** Do not use `AddDbContextPool`, because each context needs its own scope's connection. Do not use `EnableRetryOnFailure` on module contexts, because EF Core retries do not work with a transaction that you control. Retry the whole `RunAsync` call instead.
+- **Things that break the shared connection.** Do not use `AddDbContextPool`, because each context needs its own scope's connection. Do not use `EnableRetryOnFailure` on module contexts, because EF Core retries do not work with a transaction that you control. Retry the whole `RunAsync` call instead: CLA-0056 decides which failures re-run a command in a new unit of work, and the dispatcher's retry step does it (CLA-0049).
 
 ### Dispatching between modules
 

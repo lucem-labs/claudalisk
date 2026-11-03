@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (DTO and controller dependencies), reviewer
+- **Enforced by:** architecture tests (controllers live only in the API project or a module implementation project; DTOs live next to their controller and do not use EF Core), reviewer
 
 ## Context
 

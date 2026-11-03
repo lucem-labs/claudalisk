@@ -13,7 +13,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
 | [CLA-0005](0005-modules-expose-thin-controllers.md) | Modules may expose their own API, and controllers stay thin | accepted | backend-architecture |
-| [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention | accepted | backend-architecture |
+| [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention and prove that each rule can fail | accepted | backend-architecture |
 | [CLA-0007](0007-persistence-owns-ef-core.md) | Each module owns its schema; cross-module work uses a unit of work or the queue | accepted | data-and-migrations |
 | [CLA-0008](0008-migrations-are-a-deploy-step.md) | Migrations are an explicit deploy step | accepted | data-and-migrations |
 | [CLA-0009](0009-no-data-changes-at-startup.md) | No data changes at startup | accepted | data-and-migrations |
