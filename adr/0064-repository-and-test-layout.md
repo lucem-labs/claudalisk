@@ -16,7 +16,7 @@ Skills load by file path, and several ADRs assume folder names, but no ADR fixed
   - `frontend/`: the Vite app, with its source in `src/` (CLA-0036) and its Playwright tests in `e2e/`;
   - `scripts/`: the environment scripts (CLA-0027);
   - `compose.*.yml`, `.github/`, `AGENTS.md` and `README.md`.
-- **Each module has its own test project,** `<Root>.Modules.<Name>.Tests`, next to its other projects. It tests the module's implementation, Domain and Persistence projects. Its folders mirror the module's features (CLA-0047), such as `Features/CancelOrder/`. There is no test folder for `Dtos/` or `Shared/`: the features that use them test them.
+- **Each module has its own test project,** `<Root>.Modules.<Name>.Tests`, next to its other projects. It tests the module's implementation, Domain and Persistence projects. Its folders mirror the module's features (CLA-0047), such as `Features/CancelOrder/`. There is no test folder for `Shared/`: the features that use them test them.
 - **Other implementation projects get a test project when they have code to test,** named after the project plus `.Tests`, such as `<Root>.Api.Tests` for the Host's endpoints and composition (CLA-0004).
 - **`<Root>.ArchitectureTests`** holds the architecture tests (CLA-0006).
 - Frontend unit tests sit next to the code they test, as `*.test.ts` (CLA-0065).

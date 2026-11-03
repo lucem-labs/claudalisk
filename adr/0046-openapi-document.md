@@ -24,6 +24,6 @@
 
 - The API reference reads like the module map: one group for each bounded context, matching the frontend's entity slices.
 - The endpoints of a new module get the correct group without anyone remembering to tag them.
-- The request and response DTOs in each module's feature folders and `Dtos/` folder (CLA-0047) are the one source of truth for the shape of the API.
+- The request and response DTOs in each module's feature folders and `Shared/` folder (CLA-0047) are the one source of truth for the shape of the API.
 - DTOs need accurate nullability and names, because the frontend sees them as they are.
 - A schema name in the generated types always means one DTO, so the frontend never gets one module's shape under another's name.
