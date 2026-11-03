@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-quer
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { useJob, type UseJobOptions } from "@/shared/api/job"
+import { jobQueryKeys, useJob, type UseJobOptions } from "@/shared/api/job"
 import type { Link } from "@/shared/lib/hypermedia"
 import type { Job } from "@/shared/lib/job"
 import { JobPanel } from "@/shared/ui/job-panel"
@@ -208,4 +208,74 @@ describe("useJob and JobPanel", () => {
     await vi.waitFor(() => expect(requests).toContain("POST /api/jobs/ordering/1/cancel"))
     expect(screen.getByRole("progressbar", { name: "Reindex orders progress" })).toBeTruthy()
   })
+
+  it("keeps polling after a failed poll and shows the poll's error meanwhile", async () => {
+    let down = false
+    let polls = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        polls++
+        if (polls === 1) return jsonResponse(job("1", { status: "running" }))
+        if (down || polls === 2) {
+          down = true
+          return jsonResponse({ title: "Service unavailable", status: 503 }, 503)
+        }
+        return jsonResponse(succeeded("1"))
+      })
+    )
+    renderJob(<Follow link={{ href: "/api/jobs/ordering/1" }} />)
+
+    expect(await screen.findByText("Service unavailable")).toBeTruthy()
+    expect(screen.getByRole("status").textContent).toBe("Running")
+    down = false
+
+    expect(await screen.findByText("Result at /api/orders")).toBeTruthy()
+    expect(screen.queryByText("Service unavailable")).toBeNull()
+  })
+
+  it("shows why a cancel failed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: string, init?: RequestInit) =>
+        init?.method === "POST"
+          ? jsonResponse({ title: "Conflict", detail: "The job has already ended.", status: 409 }, 409)
+          : jsonResponse(
+              job("1", { status: "running", _actions: { cancel: { href: "/api/jobs/ordering/1/cancel", method: "POST" } } })
+            )
+      )
+    )
+    renderJob(<Follow link={{ href: "/api/jobs/ordering/1" }} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }))
+
+    expect(await screen.findByText("The job has already ended.")).toBeTruthy()
+  })
+
+  it("invalidates the affected queries once, not on later refetches of the finished job", async () => {
+    stubJobs({ "/api/jobs/ordering/1": [job("1", { status: "running" }), succeeded("1")] })
+    const orders = vi.fn(async () => ["order"])
+    function Orders() {
+      useQuery({ queryKey: ["orders"], queryFn: orders })
+      return null
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <Orders />
+        <Follow link={{ href: "/api/jobs/ordering/1" }} options={{ invalidates: [["orders"]] }} />
+      </QueryClientProvider>
+    )
+    expect(await screen.findByText("Result at /api/orders")).toBeTruthy()
+    await vi.waitFor(() => expect(orders).toHaveBeenCalledTimes(2))
+
+    await client.refetchQueries({ queryKey: jobQueryKeys })
+    await client.refetchQueries({ queryKey: jobQueryKeys })
+
+    expect(orders).toHaveBeenCalledTimes(2)
+  })
 })
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })
+}

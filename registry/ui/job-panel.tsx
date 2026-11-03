@@ -32,7 +32,11 @@ function JobPanel({ job: query, label, children }: JobPanelProps) {
   const job = query.data
   const active = isActive(job)
   const fraction = job.progress.fraction
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: jobQueryKeys })
+  const refresh = () =>
+    void queryClient.invalidateQueries({
+      queryKey: jobQueryKeys,
+      predicate: (cached) => (cached.state.data as Job | undefined)?.id === job.id,
+    })
 
   return (
     <section aria-label={label} data-job-status={job.status} className="flex flex-col gap-2">
