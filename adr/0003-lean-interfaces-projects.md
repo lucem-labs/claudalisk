@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests
+- **Enforced by:** architecture tests (messages implement no interface, have no base type and reference no EF Core, MVC or service types; Interfaces projects reference no project or package)
 
 ## Context
 
