@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-26
 - **Area:** testing
-- **Enforced by:** reviewer; architecture tests (no faked stores, dispatcher or DbContext in test projects); `scripts/check-e2e-locators.mjs` (no CSS or element locators in `frontend/e2e`); reviewer (`exact: true`, other `getBy*` locators)
+- **Enforced by:** reviewer (including `exact: true` and the other `getBy*` locators); architecture tests (no faked stores, dispatcher or DbContext in test projects); `scripts/check-e2e-locators.mjs` (no CSS or element locators in `frontend/e2e`)
 - **Issue:** #89
 
 ## Context
@@ -32,7 +32,7 @@ CLA-0016 asks for tests with every change, but no ADR says which kind of test co
   - Role and name come first, then label. A `data-testid` is for elements with no meaningful role or name, such as repeated rows or tiles. A control without an accessible name gets one in the component, not a test id.
   - A role or label name passes `exact: true` unless the test means a substring.
   - `.first()`, `.nth()` and `.last()` may pick among the matches of one of these locators, though a `filter()` is preferred. Other `getBy*` locators are not used to find an element, except `getByText` with `exact: true` to assert on text.
-  - `scripts/check-e2e-locators.mjs` fails on CSS and element locators anywhere in `frontend/e2e`: `locator()`, `frameLocator()`, the `$` family, `waitForSelector()` and the page methods that take a selector. It finds `frontend/e2e` from its own location, so the frontend's `lint` script runs `node ../scripts/check-e2e-locators.mjs`, and CI runs it with the lint.
+  - `scripts/check-e2e-locators.mjs` fails on CSS and element locators anywhere in `frontend/e2e`: `locator()`, `frameLocator()`, the `$` family, `waitForSelector()` and the page methods that take a selector. The frontend's `lint` script runs `node ../scripts/check-e2e-locators.mjs`, which finds `frontend/e2e` from the script's own location, and CI runs it with the lint.
 - **Fakes only at the edges.** Fake only third-party APIs (CLA-0013) and time (CLA-0020). Do not fake stores, the dispatcher, the unit of work or the database. A caller's Feature test composes the modules it calls for real, or fakes `IDispatcher` when the called module is not part of the behaviour under test (CLA-0067).
 - **No separate contract tests.** The frontend's types are generated from the OpenAPI document, and `tsc` fails on a breaking change (CLA-0046).
 - **No coverage target.** A percentage does not show whether the rules are tested. The reviewer checks that each changed rule has a test at its layer.

@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_FOLDER, REPO_ROOT, check, findViolations, format, sourceFiles } from './check-e2e-locators.mjs';
+import { check, findViolations, format, sourceFiles } from './check-e2e-locators.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./check-e2e-locators.mjs', import.meta.url));
 
@@ -21,6 +21,8 @@ test('cancels an order', async ({ page }) => {
   await page.mouse.click(10, 10);
   await page.mouse.dblclick(10, 10);
   await page.touchscreen.tap(10, 10);
+  await loginPage.fill('alice');
+  await cartPage.check();
   await expect(page.getByRole('status')).toHaveText('Cancelled');
 });
 `;
@@ -71,9 +73,16 @@ test('format writes a GitHub annotation in Actions and a file:line:col message e
   assert.equal(format(v, true), '::error file=frontend/e2e/a%2Cb%3Ac.spec.ts,line=4,col=7,title=E2E locator::Use `getByRole`, then 100%25');
 });
 
-test('the default folder is frontend/e2e beside the scripts folder, whatever the current directory', () => {
-  assert.equal(REPO_ROOT, join(dirname(SCRIPT), '..'));
-  assert.equal(DEFAULT_FOLDER, join(REPO_ROOT, 'frontend', 'e2e'));
+test('without a folder the command checks frontend/e2e beside its scripts folder, run from frontend', () => {
+  const repo = mkdtempSync(join(tmpdir(), 'e2e-locators-'));
+  mkdirSync(join(repo, 'scripts'));
+  mkdirSync(join(repo, 'frontend', 'e2e'), { recursive: true });
+  copyFileSync(SCRIPT, join(repo, 'scripts', 'check-e2e-locators.mjs'));
+  writeFileSync(join(repo, 'frontend', 'e2e', 'bad.spec.ts'), "await page.locator('.x').click();\n");
+  assert.throws(
+    () => execFileSync(process.execPath, ['../scripts/check-e2e-locators.mjs'], { cwd: join(repo, 'frontend'), env: { ...process.env, GITHUB_ACTIONS: '' }, stdio: 'pipe' }),
+    (e) => e.status === 1 && e.stdout.toString().startsWith('frontend/e2e/bad.spec.ts:1:11: '),
+  );
 });
 
 test('check reports each violation relative to the root and skips node_modules', () => {
@@ -102,7 +111,7 @@ test('check passes a clean folder and returns 2 for a missing folder or a file',
   assert.match(errors[1], /^::error title=E2E locator::/);
 });
 
-test('the command exits 1 on a violation, run from another directory', () => {
+test('the command checks a folder given relative to the current directory', () => {
   const root = mkdtempSync(join(tmpdir(), 'e2e-locators-'));
   writeFileSync(join(root, 'bad.spec.ts'), "await page.locator('.x').click();\n");
   assert.throws(

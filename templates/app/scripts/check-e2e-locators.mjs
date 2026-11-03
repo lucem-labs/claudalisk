@@ -21,7 +21,7 @@ const RULES = [
   { pattern: /\.\$\$?(?:eval)?\s*\(/g, message: `\`$\`, \`$$\`, \`$eval\` and \`$$eval\` find by selector. Use ${ALLOWED}.` },
   { pattern: /\.waitForSelector\s*\(/g, message: `\`waitForSelector()\` finds by selector. Wait on a ${ALLOWED} locator.` },
   { pattern: /\.querySelector(?:All)?\s*\(/g, message: `\`querySelector()\` finds by element structure. Use ${ALLOWED}.` },
-  { pattern: new RegExp(`\\b(?:\\w*[Pp]age|frame|popup)\\s*\\.\\s*(?:${PAGE_SELECTOR_METHODS.join('|')})\\s*\\(`, 'g'), message: `Page methods that take a selector find by CSS. Call the method on a ${ALLOWED} locator.` },
+  { pattern: new RegExp(`\\b(?:page|frame|popup|newPage)\\s*\\.\\s*(?:${PAGE_SELECTOR_METHODS.join('|')})\\s*\\(`, 'g'), message: `Page methods that take a selector find by CSS. Call the method on a ${ALLOWED} locator.` },
 ];
 
 const position = (text, index) => {
