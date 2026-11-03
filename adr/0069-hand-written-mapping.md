@@ -12,7 +12,7 @@ Mapping libraries such as AutoMapper match properties by name at runtime. A rena
 ## Decision
 
 - **Mapping at a boundary is internal extension methods in the consuming project.** This covers:
-  - the module's own DTOs to and from messages, next to the controller (CLA-0005). A module never maps to or from another module's DTOs, because it never sees them;
+  - the module's own DTOs to and from messages, next to the controller, or in `Dtos/` with a DTO that several features return (CLA-0005, CLA-0047). A module never maps to or from another module's DTOs, because it never sees them;
   - the messages of one module to those of another;
   - other modules' messages to Domain types, in the handler (CLA-0048);
   - aggregates to messages and results, in the implementation project (CLA-0048);

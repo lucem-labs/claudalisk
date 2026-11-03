@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (features do not reference each other), reviewer
+- **Enforced by:** architecture tests (features do not reference each other; DTOs live only in a feature or `Dtos`), reviewer
 
 ## Context
 
@@ -16,8 +16,8 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
 - A module's implementation project, `<Root>.Modules.<Name>`, holds:
   - the module class, `<Name>Module.cs`
   - `Features/`, with one folder for each feature
-  - `Dtos/`, for the response DTOs that two or more of the module's features return, with their mapping
-  - `Shared/`, for other code that two or more of the module's features use and that is not a domain rule (CLA-0050). It never holds DTOs.
+  - `Dtos/`, once a second feature needs it, for the response DTOs that two or more of the module's features return, with their mapping (CLA-0050)
+  - `Shared/`, once a second feature needs it, for other code that two or more of the module's features use and that is not a domain rule (CLA-0050). It never holds DTOs.
 
   The aggregates are in the module's Domain project (CLA-0048). Persistence is in its Persistence project (CLA-0007).
 - **DTOs that features share.** A response DTO that two or more of the module's features return lives in `Dtos/`, with its mapping. A request DTO always stays in its feature. `Dtos/` can have sub-folders, such as `Dtos/Runs/`. A module's `Dtos/` belongs to it alone: another module never uses its DTOs (CLA-0005).
@@ -28,7 +28,7 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
   - **Plain CRUD on one resource is one feature**, named after the resource, such as `Features/OrderNotes/`. This covers create, read, update and delete of attributes that have no rules of their own. When one of these operations gets a domain rule, it moves out into its own command feature.
 - **A feature folder holds the whole slice:**
   - one small controller, `<Feature>Controller`, with the feature's endpoint (or the endpoints, for a CRUD feature)
-  - the HTTP request and response DTOs
+  - the HTTP request DTO, and the response DTOs that only this feature returns
   - the command or query that goes through the dispatcher, and its handler (CLA-0049), named as in CLA-0052
   - the feature's mapping extension methods (CLA-0005)
   - the validators of its commands and queries (CLA-0057)

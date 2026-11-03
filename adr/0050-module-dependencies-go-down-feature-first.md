@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (features do not reference each other), reviewer
+- **Enforced by:** architecture tests (features do not reference each other; neither `Dtos` nor `Shared` references `Features`), reviewer
 
 ## Context
 
@@ -13,7 +13,8 @@ This is the backend version of the import rule and the "pages first" rule of Fea
 
 - **Dependencies go down.** Within a module:
   - features can use the module's `Dtos` and `Shared` folders, its Domain project and its store contracts (the module's `Shared` folder is not the `<Root>.Shared` project)
-  - `Dtos` and `Shared` can use the Domain project
+  - `Shared` can use the Domain project. It does not use `Dtos`.
+  - `Dtos` can use the Domain project, the module's own Interfaces project, the read models of its store contracts, `Shared` and the claudalisk packages. A shared DTO's mapping never maps from a type in a feature. When that type is shared too, it moves down first.
   - nothing in the module references a feature
 - **Features never reference each other.** A feature does not use the request, handler, DTOs or mapping of another feature. When two features need the same thing, it moves down.
 - **Only a module's contracts are public to other modules.** Everything in the implementation and Persistence projects is `internal`, except the module class, the feature controllers, and what module registration needs. Controllers are `public` because ASP.NET Core discovers only public controllers. Only the module's projects itself reference the Domain and Persistence.Interfaces projects (CLA-0048). Other modules see only the Interfaces project (CLA-0002).
