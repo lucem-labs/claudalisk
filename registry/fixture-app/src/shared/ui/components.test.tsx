@@ -1,10 +1,12 @@
 import * as React from "react"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
+import { MemoryRouter } from "react-router"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { ProblemError } from "@/shared/lib/problem-details"
 import { ActionButton } from "@/shared/ui/action-button"
+import { AppShell } from "@/shared/ui/app-shell"
 import { Input } from "@/shared/ui/input"
 import { PagedTable } from "@/shared/ui/paged-table"
 import { ProblemField } from "@/shared/ui/problem-field"
@@ -49,6 +51,39 @@ describe("ActionButton", () => {
 
     await vi.waitFor(() => expect(onSuccess).toHaveBeenCalled())
     expect(fetchMock).toHaveBeenCalledWith("/api/orders/1/cancel", expect.objectContaining({ method: "POST" }))
+  })
+})
+
+describe("AppShell", () => {
+  it("puts its links in one navigation landmark and marks the current page", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    render(
+      <MemoryRouter initialEntries={["/orders/1"]}>
+        <AppShell
+          title="Shop"
+          navigation={[
+            { to: "/", label: "Home" },
+            { to: "/orders", label: "Orders" },
+            { to: "/order", label: "Order" },
+          ]}
+        >
+          <p>Order 1</p>
+        </AppShell>
+      </MemoryRouter>
+    )
+
+    expect(screen.getAllByRole("navigation")).toHaveLength(1)
+    const navigation = screen.getByRole("navigation", { name: "Main" })
+    const links = within(navigation).getAllByRole("link")
+    expect(links.map((link) => link.textContent)).toEqual(["Home", "Orders", "Order"])
+    for (const link of links) expect(within(link).queryByRole("button")).toBeNull()
+    expect(links.map((link) => link.getAttribute("aria-current"))).toEqual([null, "page", null])
+    expect(links.map((link) => link.getAttribute("data-active"))).toEqual(["false", "true", "false"])
   })
 })
 

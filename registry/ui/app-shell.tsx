@@ -1,5 +1,5 @@
 import * as React from "react"
-import { NavLink } from "react-router"
+import { NavLink, UNSAFE_NavigationContext, useLocation, useResolvedPath } from "react-router"
 
 import { Separator } from "@/components/ui/separator"
 import {
@@ -40,15 +40,17 @@ function AppShell({ title, navigation, header, children }: AppShellProps) {
             {title}
           </SidebarHeader>
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navigation.map((item) => (
-                    <AppShellLink key={item.to} item={item} />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <nav aria-label="Main">
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {navigation.map((item) => (
+                      <AppShellLink key={item.to} item={item} />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </nav>
           </SidebarContent>
         </Sidebar>
         <SidebarInset>
@@ -66,18 +68,28 @@ function AppShell({ title, navigation, header, children }: AppShellProps) {
 
 function AppShellLink({ item }: { item: NavigationItem }) {
   const Icon = item.icon
+  const isActive = useIsCurrent(item.to, item.end ?? false)
   return (
     <SidebarMenuItem>
-      <NavLink to={item.to} end={item.end}>
-        {({ isActive }) => (
-          <SidebarMenuButton isActive={isActive} tabIndex={-1}>
-            {Icon ? <Icon /> : null}
-            <span>{item.label}</span>
-          </SidebarMenuButton>
-        )}
-      </NavLink>
+      <SidebarMenuButton asChild isActive={isActive}>
+        <NavLink to={item.to} end={item.end}>
+          {Icon ? <Icon /> : null}
+          <span>{item.label}</span>
+        </NavLink>
+      </SidebarMenuButton>
     </SidebarMenuItem>
   )
+}
+
+function useIsCurrent(to: string, end: boolean) {
+  const { navigator } = React.useContext(UNSAFE_NavigationContext)
+  const path = useResolvedPath(to)
+  const target = (navigator.encodeLocation ? navigator.encodeLocation(path).pathname : path.pathname).toLowerCase()
+  const current = useLocation().pathname.toLowerCase()
+  if (current === target) return true
+  if (end || !current.startsWith(target)) return false
+  const boundary = target !== "/" && target.endsWith("/") ? target.length - 1 : target.length
+  return current.charAt(boundary) === "/"
 }
 
 export { AppShell }
