@@ -26,7 +26,7 @@ A check that runs inside another tool's step, such as the frontend lint, covers 
   - the bare `/// <inheritdoc />` that EF Core writes into every migration, because a migration that has run never changes (CLA-0010). It is allowed only in migration files;
   - tool-generated files that nobody edits by hand, such as EF Core migration designer files, model snapshots and generated API types.
 - **One CI check covers every listed file type.** The app copies the template's comment checker, `scripts/no-comments.mjs`, and runs it as its own CI step over the tracked files. The template's README lists which file types it covers. A file the checker cannot tell apart from a hand-written one, such as a vendored file or a generated file without a generated-file header, is named with `--skip`.
-- **Migrations that have run are never edited for the check.** A comment in a migration that has run, or in SQL that it runs, stays, and the file is named with `--skip` (CLA-0010). This applies when an existing app adopts the checker.
+- **Migrations that have run are never edited for the check.** A comment in a migration that has run (applied to uat or tracked on `origin/main`), or in SQL that it runs, stays, and the file is named with `--skip` (CLA-0010). This applies when an existing app adopts the checker.
 
 ## Consequences
 

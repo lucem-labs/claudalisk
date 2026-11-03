@@ -244,3 +244,29 @@ test('main exits 2 on a usage error', () => {
   assert.equal(result.code, 2);
   assert.match(result.err[0], /Unknown argument: --nope/);
 });
+
+test('a YAML comment that ends in a block indicator does not start a block scalar', () => {
+  assert.deepEqual(findCommentLines('steps:  # list ->\n  # hidden\n', 'a.yml'), [1, 2]);
+  assert.deepEqual(findCommentLines('# use a |\n  # hidden\n', 'a.yml'), [1, 2]);
+});
+
+test('an unbalanced quote inside a plain YAML value ends with its line', () => {
+  assert.deepEqual(findCommentLines("a: b 'c\n# yes\n", 'a.yml'), [2]);
+  assert.deepEqual(findCommentLines('run: echo "a # b"\n', 'a.yml'), []);
+});
+
+test('a regular expression that starts a line after a block is not division', () => {
+  assert.deepEqual(findCommentLines('if (a) {}\n/^https?:\\/\\//.test(u)\n', 'a.js'), []);
+});
+
+test('Dockerfile parser directives are case-insensitive', () => {
+  assert.deepEqual(findCommentLines('# SYNTAX=docker/dockerfile:1\nFROM x\n', 'Dockerfile'), []);
+});
+
+test('a dollar inside a SQL identifier is not a dollar quote', () => {
+  assert.deepEqual(findCommentLines('select a$b$ -- c\n', 'fix.sql'), [1]);
+});
+
+test('parseArgs drops a leading ./ from --skip', () => {
+  assert.deepEqual(parseArgs(['--skip', './design']).skip, ['design']);
+});
