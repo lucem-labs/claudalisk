@@ -12,15 +12,15 @@ This is the backend version of the import rule and the "pages first" rule of Fea
 ## Decision
 
 - **Dependencies go down.** Within a module:
-  - features can use the module's `Shared` folder, its Domain project and its store contracts (the module's `Shared` folder is not the `<Root>.Shared` project)
-  - `Shared` can use the Domain project
+  - features can use the module's `Dtos` and `Shared` folders, its Domain project and its store contracts (the module's `Shared` folder is not the `<Root>.Shared` project)
+  - `Dtos` and `Shared` can use the Domain project
   - nothing in the module references a feature
 - **Features never reference each other.** A feature does not use the request, handler, DTOs or mapping of another feature. When two features need the same thing, it moves down.
 - **Only a module's contracts are public to other modules.** Everything in the implementation and Persistence projects is `internal`, except the module class, the feature controllers, and what module registration needs. Controllers are `public` because ASP.NET Core discovers only public controllers. Only the module's projects itself reference the Domain and Persistence.Interfaces projects (CLA-0048). Other modules see only the Interfaces project (CLA-0002).
 - **Domain rules start in the aggregate.** An invariant, or a rule about which commands are allowed, belongs in the aggregate from the start (CLA-0048), even when only one feature uses it.
 - **All other code starts in the feature that needs it.** It moves down only on its second use:
   - a technical helper, such as a parser or a formatter, moves to the module's `Shared` folder
-  - a response DTO moves to the module's `Shared` folder (CLA-0047)
+  - a response DTO moves to the module's `Dtos` folder, never to `Shared` (CLA-0047)
   - code moves to `<Root>.Shared` only when a second module needs it, and only if it has no business meaning. DTOs and messages never move there: each module defines its own (CLA-0003, CLA-0005)
 - Never create a folder or project for code that only one feature uses.
 
@@ -28,4 +28,4 @@ This is the backend version of the import rule and the "pages first" rule of Fea
 
 - A feature can change or go away without breaking another feature.
 - Duplication between two features lasts only until a second use. The move down is a normal refactor in the change that adds that use.
-- Architecture tests check the rules by namespace. A type in `Features.<A>` may not reference `Features.<B>`, and `Shared`, with its sub-namespaces such as `Shared.Runs`, may not reference `Features`. A feature may use any namespace under `Shared`.
+- Architecture tests check the rules by namespace. A type in `Features.<A>` may not reference `Features.<B>`, and neither `Dtos` nor `Shared`, with their sub-namespaces such as `Dtos.Runs`, may reference `Features`. A feature may use any namespace under `Dtos` or `Shared`.
