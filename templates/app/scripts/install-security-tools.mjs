@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, chmodSync, constants, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,13 +67,13 @@ function* filesIn(folder) {
   }
 }
 
-export async function installTool({ name, destination, download, untar, chmod = chmodSync, tools = SECURITY_TOOLS }) {
+export async function installTool({ name, destination, download, untar, chmod = chmodSync, tools = SECURITY_TOOLS, workRoot = tmpdir() }) {
   const tool = Object.hasOwn(tools, name) ? tools[name] : undefined;
   if (!tool) throw new UsageError(`Unknown security tool '${name}'. Known tools: ${Object.keys(tools).join(', ')}.`);
   const content = await download(tool.url);
   const actual = createHash('sha256').update(content).digest('hex');
   if (actual !== tool.sha256) throw new Error(`Checksum mismatch for ${name} (${tool.url}): expected ${tool.sha256}, got ${actual}.`);
-  const work = mkdtempSync(join(tmpdir(), 'security-tool-'));
+  const work = mkdtempSync(join(workRoot, 'security-tool-'));
   try {
     let binary = join(work, basename(new URL(tool.url).pathname));
     writeFileSync(binary, content);
@@ -87,7 +87,7 @@ export async function installTool({ name, destination, download, untar, chmod = 
     mkdirSync(destination, { recursive: true });
     const target = join(destination, tool.binary);
     rmSync(target, { force: true });
-    copyFileSync(binary, target);
+    copyFileSync(binary, target, constants.COPYFILE_EXCL);
     chmod(target, 0o755);
     return target;
   } finally {

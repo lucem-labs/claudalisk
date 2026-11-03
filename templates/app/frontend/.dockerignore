@@ -4,6 +4,13 @@ e2e
 test-results
 playwright-report
 **/*.local.json
-.env
-.env.*
+**/.env
+**/.env.*
 !.env.example
+**/.npmrc
+**/*.pem
+**/*.key
+**/*.dump
+**/*.backup
+**/backups
+**/*.log

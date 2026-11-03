@@ -14,7 +14,6 @@ function folder(t) {
   return path;
 }
 
-const workFolders = () => readdirSync(tmpdir()).filter((name) => name.startsWith('security-tool-')).sort();
 
 test('every tool is a pinned release with a SHA-256', () => {
   for (const [name, tool] of Object.entries(SECURITY_TOOLS)) {
@@ -58,12 +57,12 @@ test('installTool copies a plain binary into the destination and makes it execut
   const destination = join(folder(t), 'bin');
   const tools = { scanner: { url: 'https://example.invalid/scanner_linux_amd64', sha256: sha256('binary'), binary: 'scanner' } };
   const modes = [];
-  const before = workFolders();
-  const target = await installTool({ name: 'scanner', destination, download: async () => Buffer.from('binary'), chmod: (path, mode) => modes.push([path, mode]), tools });
+  const workRoot = folder(t);
+  const target = await installTool({ name: 'scanner', destination, download: async () => Buffer.from('binary'), chmod: (path, mode) => modes.push([path, mode]), tools, workRoot });
   assert.equal(target, join(destination, 'scanner'));
   assert.equal(readFileSync(target, 'utf8'), 'binary');
   assert.deepEqual(modes, [[target, 0o755]]);
-  assert.deepEqual(workFolders(), before);
+  assert.deepEqual(readdirSync(workRoot), []);
 });
 
 test('installTool replaces a file already at the target', async (t) => {
@@ -90,12 +89,12 @@ test('installTool takes the binary out of the verified tarball', async (t) => {
 
 test('installTool fails when the tarball lacks the binary and removes its work folder', async (t) => {
   const tools = { scanner: { url: 'https://example.invalid/scanner.tar.gz', sha256: sha256('archive'), binary: 'scanner' } };
-  const before = workFolders();
+  const workRoot = folder(t);
   await assert.rejects(
-    installTool({ name: 'scanner', destination: folder(t), download: async () => Buffer.from('archive'), untar: () => {}, tools }),
+    installTool({ name: 'scanner', destination: folder(t), download: async () => Buffer.from('archive'), untar: () => {}, tools, workRoot }),
     /scanner is not in/,
   );
-  assert.deepEqual(workFolders(), before);
+  assert.deepEqual(readdirSync(workRoot), []);
 });
 
 test('main installs into a new folder under RUNNER_TEMP and adds it to GITHUB_PATH', async (t) => {

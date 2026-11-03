@@ -6,7 +6,7 @@ import { isIPv4 } from 'node:net';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const USAGE = 'Usage: node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <host or IPv4 address>]';
+export const USAGE = 'Usage: node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]';
 export const ZAP_IMAGE = 'ghcr.io/zaproxy/zaproxy:2.17.0@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238';
 export const DEFAULT_PROXY_HOST = 'host.docker.internal';
 export const REPORT_MARKER = '===ZAP-REPORT===';

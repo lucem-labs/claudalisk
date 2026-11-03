@@ -10,7 +10,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/no-comments.mjs` | `node scripts/no-comments.mjs [<root>] [--skip <path>]...`: fails when a tracked file has a comment ([CLA-0035](../adr/0035-no-code-comments.md)) |
 | `app/scripts/install-security-tools.mjs` | `node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a pinned release, refuses a download whose SHA-256 differs, installs into a new folder under `RUNNER_TEMP` unless `--destination` names one, and adds the folder to `GITHUB_PATH` ([CLA-0071](../adr/0071-security-scans.md)) |
 | `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
-| `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]`: runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
+| `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
 | `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
 | `app/.zap/rules.tsv` | The ZAP rules file, with the three informational rules every single-page app trips set to `INFO` |
@@ -77,7 +77,7 @@ When a file type the app uses isn't in the table, add it to the checker in claud
 CLA-0071's scans run on the shared self-hosted runners (CLA-0033). Those runners use a Docker-in-Docker sidecar, which doesn't share the job's workspace with the Docker daemon: container actions and `docker run -v "$PWD"` see an empty folder. So the scanners avoid mounts:
 
 - gitleaks, OSV-Scanner, Trivy, zizmor and uv are release binaries that `install-security-tools.mjs` checks against a SHA-256 before they run. Each run installs them into a new folder of its own, so nothing left on a shared runner lands on `PATH`. To move a scanner to a new release, change its URL and SHA-256 in that script, in claudalisk first.
-- Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for. `UV_EXCLUDE_NEWER` makes uv resolve Semgrep's dependencies as they were on that date, so a release published later can't reach the job. Move it forward together with `SEMGREP_VERSION`. Unlike the binaries, these packages aren't checked against a SHA-256 of ours: PyPI's own hashes are the check.
+- Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for. `UV_EXCLUDE_NEWER` makes uv resolve Semgrep's dependencies as they were on that date, so a release published later can't reach the job. Move it forward together with `SEMGREP_VERSION`. Unlike the binaries, these packages aren't checked against a SHA-256 of ours: PyPI's own hashes are the check. The `p/csharp` and `p/typescript` rule packs also come from the Semgrep registry on each run, unpinned. The `UV_*` folders under `RUNNER_TEMP` keep uv's cache, tools and Python out of the runner's home folder, where another job's could be reused.
 - Trivy scans images from `docker save` archives, not from the daemon.
 - ZAP gets its rules on stdin and writes its report to a `tmpfs` folder. The script prints the report to the log, and to the job summary when it runs in GitHub Actions.
 
@@ -97,6 +97,7 @@ security:
     DOTNET_CLI_TELEMETRY_OPTOUT: "1"
     SEMGREP_VERSION: "1.182.0"
     UV_EXCLUDE_NEWER: "2026-11-01T00:00:00Z"
+    UV_PYTHON_PREFERENCE: only-managed
   steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -109,6 +110,12 @@ security:
     - name: Install scanners
       id: tools
       run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
+    - name: Keep uv and Trivy state in this run
+      run: printf 'UV_CACHE_DIR=%s/uv-cache
+UV_TOOL_DIR=%s/uv-tools
+UV_PYTHON_INSTALL_DIR=%s/uv-python
+TRIVY_CACHE_DIR=%s/trivy-cache
+' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
     - name: Secrets (gitleaks)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
       run: gitleaks git --redact --exit-code 1 .
@@ -141,7 +148,7 @@ security:
 
 The weekly `security.yml` repeats the dependency scans, builds and scans the images, and runs the ZAP baseline:
 
-- The image scan fails on fixable HIGH and CRITICAL vulnerabilities in the OS packages of the images (`--severity HIGH,CRITICAL --ignore-unfixed`). A finding with no fixed release can't be acted on until one exists. When one appears, the next weekly run fails.
+- The image scan fails on fixable HIGH and CRITICAL vulnerabilities in the images, in their OS packages and in the libraries the app ships (`--severity HIGH,CRITICAL --ignore-unfixed`). A finding with no fixed release can't be acted on until one exists. When one appears, the next weekly run fails.
 - The base images are tagged by major version, not by digest, and `--pull` takes the latest patch each week. Dependabot raises the major version in a pull request of its own (CLA-0072).
 - The `zap` job runs only on the self-hosted `ci` runner on the owner's PC, where dev and the proxy run, so it doesn't read `CI_RUNS_ON` and never falls back to GitHub-hosted runners. dev may hold data refreshed from uat (CLA-0032), and the report quotes what ZAP saw, so the job summary may show it. The runners serve only private repositories (CLA-0033).
 - GitHub dispatches a workflow only once it is on the default branch. To try a change to it before the merge, push it to a throwaway branch with a temporary `push` trigger, and delete the branch afterwards.
@@ -155,7 +162,7 @@ Trivy's config scan fails on a container that runs as root and on an image witho
   ```csharp
   if (args.Contains("--health-check", StringComparer.Ordinal))
   {
-      var port = (Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080").Split([';', ','], StringSplitOptions.RemoveEmptyEntries)[0];
+      var port = (Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS") ?? "8080").Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "8080";
       using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}"), Timeout = TimeSpan.FromSeconds(5) };
       try
       {
@@ -178,7 +185,7 @@ Trivy's config scan fails on a container that runs as root and on an image witho
 
 `nginx.conf` sends the security headers the ZAP baseline checks for on every response, a Content Security Policy among them.
 
-- nginx drops the server's `add_header` lines in a `location` that has its own. So the locations add none, and a location that needs a header of its own repeats every server-level line. For caching, use `expires`, which isn't an `add_header`.
+- nginx drops the server's `add_header` lines in a `location` that has its own. So the locations add none, and a location that needs a header of its own repeats every server-level line. For caching, use `expires`, which isn't an `add_header`: `index.html` is never cached, so a deploy reaches the browser at once.
 - `/assets/` answers 404 for a missing file, so a stale chunk after a deploy fails as a missing file, not as `index.html` with the wrong type. Other paths fall back to `index.html` for the client-side routes.
 - The CSP allows no inline script or style. Some components inject a `<style>` element at runtime: Radix's scroll lock behind dialogs and sheets, sonner and shadcn's chart. Check the browser console for CSP violations after adding a UI library, and fix one with that style's `'sha256-…'` source or a nonce, in the one directive at fault. `'unsafe-inline'` is never the fix, and ZAP flags it.
 - When the app loads images or fonts from another host, add that host to `img-src` or `font-src`, and nothing wider. `Cross-Origin-Embedder-Policy: credentialless` loads such images without cookies, and a font from another host needs CORS headers there.

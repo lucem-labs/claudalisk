@@ -62,6 +62,9 @@ jobs:
       - name: Install scanners
         run: node scripts/install-security-tools.mjs --tool trivy
 
+      - name: Keep Trivy state in this run
+        run: echo "TRIVY_CACHE_DIR=$RUNNER_TEMP/trivy-cache" >> "$GITHUB_ENV"
+
       - name: Build the images
         run: node scripts/scan-images.mjs --build --image <app>-api=backend/<Root>.Api/Dockerfile --image <app>-frontend=frontend/Dockerfile
 
