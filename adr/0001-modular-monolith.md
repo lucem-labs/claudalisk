@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0002, CLA-0006, and the module-name test), reviewer
+- **Enforced by:** architecture tests (CLA-0002, CLA-0006), reviewer
 - **Issue:** #63
 
 ## Context

@@ -20,7 +20,7 @@ These are claudalisk's decisions for frontend code. The app's `AGENTS.md` wins w
 - [CLA-0037](${CLAUDE_PLUGIN_ROOT}/adr/0037-entities-mirror-backend-modules.md) (accepted): one entity slice per backend module, named after it and so singular, calling only that module's endpoints.
 - [CLA-0038](${CLAUDE_PLUGIN_ROOT}/adr/0038-server-state-in-tanstack-query.md) (accepted): read and write API data only through TanStack Query hooks exported by entity `api` segments, and never fetch in `useEffect`.
 - [CLA-0039](${CLAUDE_PLUGIN_ROOT}/adr/0039-client-state-in-zustand-stores.md) (accepted): shared client state lives in Zustand stores in a slice's `model` segment. Components subscribe through selectors and change state only through actions.
-- [CLA-0040](${CLAUDE_PLUGIN_ROOT}/adr/0040-frontend-boundaries-linted.md) (accepted): Steiger checks the layer boundaries in CI, and its naming rule never turns off.
+- [CLA-0040](${CLAUDE_PLUGIN_ROOT}/adr/0040-frontend-boundaries-linted.md) (accepted): Steiger checks the layer boundaries in CI, and a failure of its naming rule is fixed by renaming the module.
 - [CLA-0044](${CLAUDE_PLUGIN_ROOT}/adr/0044-hypermedia-links-and-actions.md) (accepted): representations carry HAL-style `_links` and the `_actions` the aggregate allows now, and the UI shows only those actions.
 - [CLA-0045](${CLAUDE_PLUGIN_ROOT}/adr/0045-http-semantics-and-problem-details.md) (accepted): standard status codes, RFC 9457 Problem Details with a `type` per domain error, and ETag with If-Match on writes.
 - [CLA-0046](${CLAUDE_PLUGIN_ROOT}/adr/0046-openapi-document.md) (accepted): the OpenAPI document groups endpoints by module. Frontend API types are generated from it and checked in CI.

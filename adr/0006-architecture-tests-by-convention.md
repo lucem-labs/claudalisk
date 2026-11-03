@@ -20,7 +20,8 @@ Architecture tests that list module assemblies by hand ("add every new module to
   - features do not reference each other, and Domain projects reference only `<Root>.Shared` (CLA-0047, CLA-0048, CLA-0050);
   - only persistence projects use EF Core;
   - no project references another module's persistence project;
-  - every entity maps to its own context's schema, and no foreign key crosses schemas (CLA-0007).
+  - every entity maps to its own context's schema, and no foreign key crosses schemas (CLA-0007);
+  - no module class name, minus `Module`, ends in a plural `s`, apart from an allow-list of singular nouns such as `Analysis` (CLA-0001).
 
 ## Consequences
 
