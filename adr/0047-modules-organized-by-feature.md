@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (features do not reference each other; DTOs live only in a feature or `Shared`), reviewer
+- **Enforced by:** architecture tests (features do not reference each other; DTOs live in a feature folder or the module's `Shared` namespace), reviewer (`Shared/` grouped by resource or concern)
 
 ## Context
 
@@ -16,11 +16,11 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
 - A module's implementation project, `<Root>.Modules.<Name>`, holds:
   - the module class, `<Name>Module.cs`
   - `Features/`, with one folder for each feature
-  - `Shared/`, once a second feature needs it, for code that two or more of the module's features use and that is not a domain rule, such as a response DTO or a client (CLA-0050)
+  - `Shared/`, for code that two or more of the module's features use and that is not a domain rule, such as a response DTO or a client (CLA-0050). It may call a rule in the Domain project, as a DTO's mapping does for `_actions`.
 
   The aggregates are in the module's Domain project (CLA-0048). Persistence is in its Persistence project (CLA-0007).
 - **`Shared/` is grouped by resource or concern,** such as `Shared/Orders/` or `Shared/Payments/`, never by technical kind such as `Shared/Dtos/` or `Shared/Services/`. A folder by kind brings back the layout this ADR replaces.
-- **DTOs that features share.** A response DTO that two or more of the module's features return lives in `Shared/`, in its resource's folder, with its mapping. An aggregate is one resource with one representation (CLA-0042, CLA-0044), so every endpoint that returns it returns that one DTO. A request DTO, and a response DTO for a read model only one feature returns, stay in their feature. A module's `Shared/` belongs to it alone: another module never uses its DTOs (CLA-0005).
+- **DTOs that features share.** A response DTO that two or more of the module's features return lives in `Shared/`, in its resource's folder, with its mapping. An aggregate has one representation (CLA-0042), so every endpoint that returns it returns that one DTO. A request DTO, and a response DTO for a read model only one feature returns, stay in their feature. A module's `Shared/` belongs to it alone: another module never uses its DTOs (CLA-0005).
 - **A started job.** The module defines its own response DTO for an endpoint that starts a job (CLA-0060), mapped from `JobReference` (CLA-0067). It lives in the one feature that returns it, or in `Shared/` once several do. It never comes from a claudalisk package or another module. It takes a schema name of its own, such as `OrderingJobStartedResponse`, distinct from other modules' and from the jobs library's job resource (CLA-0046).
 - **A feature is one use case**, named after it in the module's ubiquitous language (CLA-0041):
   - **A command** gets its own feature, named after the command, such as `Features/CancelOrder/` (CLA-0043).
@@ -49,6 +49,8 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
     OrderNotes/
   Shared/
     Orders/
+      OrderResponse.cs
+      OrderMapping.cs
 ```
 
 ## Consequences
