@@ -5,7 +5,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | File | What it is |
 |---|---|
 | `app/scripts/verify.mjs` | `node scripts/verify.mjs [-m "<message>"] [--backend] [--frontend] [--e2e] [--fail-fast] [--timeout <minutes>]`: commits, pushes, waits for CI on that commit and prints only the failures ([CLA-0076](../adr/0076-one-verify-script-per-cycle.md)) |
-| `app/scripts/check-e2e-locators.mjs` | `node scripts/check-e2e-locators.mjs [frontend/e2e]`: fails on CSS and element locators in the end-to-end tests ([CLA-0070](../adr/0070-testing-layers.md)). Run it in the frontend lint |
+| `app/scripts/check-e2e-locators.mjs` | `node scripts/check-e2e-locators.mjs [<folder>]`: fails on CSS and element locators in the end-to-end tests ([CLA-0070](../adr/0070-testing-layers.md)). Without a folder it checks `frontend/e2e`, found from the script's own location. Add `node ../scripts/check-e2e-locators.mjs` to the frontend's `lint` script |
 | `app/scripts/trx-annotations.mjs` | Run in CI: turns the failing tests of .NET TRX reports into annotations and a job summary |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
 

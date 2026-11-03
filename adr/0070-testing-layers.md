@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-26
 - **Area:** testing
-- **Enforced by:** reviewer; architecture tests (no faked stores, dispatcher or DbContext in test projects); `scripts/check-e2e-locators.mjs` (no CSS or element locators in `frontend/e2e`)
+- **Enforced by:** reviewer; architecture tests (no faked stores, dispatcher or DbContext in test projects); `scripts/check-e2e-locators.mjs` (no CSS or element locators in `frontend/e2e`); reviewer (`exact: true`, other `getBy*` locators)
 - **Issue:** #89
 
 ## Context
@@ -28,9 +28,11 @@ CLA-0016 asks for tests with every change, but no ADR says which kind of test co
   - An API test checks only how the result becomes HTTP. It does not test the business rule again.
   - An end-to-end test follows a journey, such as "create an order and cancel it". It never checks a business rule that a backend test can check (CLA-0044).
 - **Every feature has at least one Feature test.** A feature with an endpoint also has an API test for each status it can return.
-- **End-to-end locators.** An end-to-end test finds an element by its role and accessible name (`getByRole`), by its label (`getByLabel`), or by its `data-testid` (`getByTestId`). It never finds one by CSS class, element type or position in the markup, because those change when the design changes and the journey does not.
+- **End-to-end locators.** An end-to-end test finds an element by its role and accessible name (`getByRole`), by its label (`getByLabel`), or by its `data-testid` (`getByTestId`). It never finds one by CSS class, element type or a structural selector such as `td > span` or `:nth-child`, because those change when the design changes and the journey does not.
+  - Role and name come first, then label. A `data-testid` is for elements with no meaningful role or name, such as repeated rows or tiles. A control without an accessible name gets one in the component, not a test id.
   - A role or label name passes `exact: true` unless the test means a substring.
-  - `node scripts/check-e2e-locators.mjs` runs in the frontend lint and fails on `locator()`, `$`, `$$`, `$eval`, `$$eval`, `waitForSelector()`, `querySelector()` and the page methods that take a selector, anywhere in `frontend/e2e`.
+  - `.first()`, `.nth()` and `.last()` may pick among the matches of one of these locators, though a `filter()` is preferred. Other `getBy*` locators are not used to find an element, except `getByText` with `exact: true` to assert on text.
+  - `scripts/check-e2e-locators.mjs` fails on CSS and element locators anywhere in `frontend/e2e`: `locator()`, `frameLocator()`, the `$` family, `waitForSelector()` and the page methods that take a selector. It finds `frontend/e2e` from its own location, so the frontend's `lint` script runs `node ../scripts/check-e2e-locators.mjs`, and CI runs it with the lint.
 - **Fakes only at the edges.** Fake only third-party APIs (CLA-0013) and time (CLA-0020). Do not fake stores, the dispatcher, the unit of work or the database. A caller's Feature test composes the modules it calls for real, or fakes `IDispatcher` when the called module is not part of the behaviour under test (CLA-0067).
 - **No separate contract tests.** The frontend's types are generated from the OpenAPI document, and `tsc` fails on a breaking change (CLA-0046).
 - **No coverage target.** A percentage does not show whether the rules are tested. The reviewer checks that each changed rule has a test at its layer.

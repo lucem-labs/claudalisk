@@ -13,8 +13,8 @@ A test class that builds a database per test can take most of the backend suite'
 ## Decision
 
 - **Unique data.** Tests create uniquely named data and assert only on their own data.
-- **Global state.** Tests that read global totals run in a separate serial Playwright project.
-- **Singleton aggregates.** The app has one owner, so some aggregates exist once per database, such as the owner's settings or a collection that every deck draws from. A spec that writes to one of them runs in the serial Playwright project. It reads the value before it acts and asserts the change relative to that value, never an absolute count, because other specs and earlier runs leave data behind.
+- **Global state.** Tests that read global totals run in a separate serial Playwright project. It runs after the parallel projects, through Playwright's `dependencies`.
+- **Singleton aggregates.** Some aggregates exist once per database, for example because the app has one owner, such as the owner's settings or the owner's cart. A spec that writes to one of them runs in the same serial project. It reads the value before it acts and asserts the change relative to that value, never an absolute count, because other specs and earlier runs leave data behind.
 - **No test-only owner.** There is no request header, query parameter or other switch that makes the API act as a different owner for tests. The API under test is the API that ships.
 - **Ports.** Use no fixed ports. Ports are free or can be overridden through the environment.
 - **Database speed.** Backend tests clone a migrated template database (`CREATE DATABASE … TEMPLATE`). They do not migrate per test.
