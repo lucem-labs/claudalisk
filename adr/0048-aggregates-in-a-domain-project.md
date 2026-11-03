@@ -17,7 +17,7 @@ The aggregate decides which commands are allowed and which `_actions` a represen
   - An aggregate carries its version, which becomes the `ETag` (CLA-0045, CLA-0056).
 - **Algorithms with no IO live in the Domain project.** A stateless algorithm or domain service that reads no database, file or network goes in a folder of its own, such as `Engine/`, and its tests call it as plain C#.
   - It takes and returns Domain types. It never takes a message or a DTO.
-  - The handler maps other modules' messages into those Domain types (CLA-0069).
+  - The handler maps messages, its module's own and other modules', into those Domain types (CLA-0069).
   - A Domain type that mirrors another module's message takes a name of its own, so that the two are never confused.
 - **A stored hash or fingerprint names its fields.** It is built from an explicit list of fields, in a fixed order. It is never built by serialising a message, DTO or entity whole, because then a new property would change every stored value.
 - **The Persistence project maps the aggregates.**
@@ -39,4 +39,5 @@ The aggregate decides which commands are allowed and which `_actions` a represen
 
 - Tests check domain rules as plain C#, without a database or HTTP.
 - Each aggregate has a mapping in its store. This is more code than a direct mapping of EF Core entities. In exchange, the rules do not depend on the database.
+- A new property on a message or DTO never changes a stored hash.
 - A module has five projects: Interfaces, Domain, the implementation, Persistence.Interfaces and Persistence. The scaffold generates them together.

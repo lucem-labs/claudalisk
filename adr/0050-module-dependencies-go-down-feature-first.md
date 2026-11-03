@@ -28,4 +28,4 @@ This is the backend version of the import rule and the "pages first" rule of Fea
 
 - A feature can change or go away without breaking another feature.
 - Duplication between two features lasts only until a second use. The move down is a normal refactor in the change that adds that use.
-- Architecture tests check the rules by namespace. A type in `Features.<A>` may not reference `Features.<B>`, and `Shared` may not reference `Features`.
+- Architecture tests check the rules by namespace. A type in `Features.<A>` may not reference `Features.<B>`, and `Shared`, with its sub-namespaces such as `Shared.Runs`, may not reference `Features`. A feature may use any namespace under `Shared`.

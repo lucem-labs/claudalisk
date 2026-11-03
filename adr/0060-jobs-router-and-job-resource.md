@@ -7,7 +7,7 @@
 
 ## Decision
 
-- **A module endpoint starts a job.** The UI calls the module's own feature endpoint, such as `POST /api/orders/reindex` (CLA-0043, CLA-0047). The endpoint hides the queue. It returns `202 Accepted` with a `Location` header that points to the job (CLA-0045).
+- **A module endpoint starts a job.** The UI calls the module's own feature endpoint, such as `POST /api/orders/reindex` (CLA-0043, CLA-0047). The endpoint hides the queue. It returns `202 Accepted` with a `Location` header that points to the job (CLA-0045). Its body is the module's own started-job response DTO, mapped from `JobReference` (CLA-0047). It never comes from the jobs library or another module.
 - **The jobs router serves every job.** The router is a module from the jobs library (CLA-0062), registered in the Host. It serves `GET /api/jobs/{module}/{id}` and `POST /api/jobs/{module}/{id}/cancel`.
   - It finds the module's job store through module registration, by the module name in the URL.
   - It reads only the standard job columns (CLA-0058). It knows nothing about what a job does.
