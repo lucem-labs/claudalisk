@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-26
 - **Area:** environments
-- **Enforced by:** CI (the security jobs, the suppression check, the source-hygiene check and the weekly security workflow); the new-app CI template (#18); reviewer (suppressions, overrides and Compose files)
+- **Enforced by:** CI (the security jobs, the suppression check, the source-hygiene check and the weekly security workflow); the new-app CI template (#18) and the security templates in `templates/app/` (#73); reviewer (suppressions, overrides and Compose files)
 - **Issue:** #87
 
 ## Context
