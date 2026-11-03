@@ -4,6 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
 - **Enforced by:** the jobs library and its tests; reviewer
+- **Issue:** #79
 
 ## Context
 
@@ -11,7 +12,7 @@ A normal job runs in one unit of work (CLA-0058). A long job would then hold one
 
 ## Decision
 
-- **A long job is a batch job.** Its handler implements the library's batch-job type, such as `IBatchJobHandler<TCommand, TCheckpoint>`, instead of a normal command handler. It has two parts:
+- **A long job is a batch job.** Work that calls a third-party API more than once, or can run longer than a request, is queued (CLA-0058) and runs as a batch job. Its handler implements the library's batch-job type, such as `IBatchJobHandler<TCommand, TCheckpoint>`, instead of a normal command handler. It has two parts:
   - one that returns the next batch from a checkpoint;
   - one that processes a batch.
 - **The library drives the batches.** For each batch, it opens a unit of work (`IUnitOfWork.RunAsync`, CLA-0007). In that unit of work it processes the batch and saves the new checkpoint on the job's row. The writes and the checkpoint commit together.
