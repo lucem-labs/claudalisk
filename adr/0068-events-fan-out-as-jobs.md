@@ -27,5 +27,5 @@ An event can have several subscribers, in the publishing module and in others. I
 - A failing or slow subscriber never blocks or rolls back the change that published the event.
 - Delivery is guaranteed: an event reaches every subscriber exactly when its change commits.
 - Reactions are eventually consistent, including inside one module. A read model that one module keeps for itself is updated shortly after the change, not with it.
-- The jobs library writes into the subscribers' jobs tables. This is the same named exception to "nothing crosses a schema" as the jobs router (CLA-0007, CLA-0060).
+- The jobs library writes into the subscribers' jobs tables. This is the jobs library's other exception to "nothing crosses a schema", beside the jobs router (CLA-0007, CLA-0060). It is allowed because only the library writes these rows, in its fixed shape, inside the publisher's unit of work. No module code writes another module's jobs table.
 - On SQS, the fan-out maps to one SNS topic per event with one SQS queue per subscriber.

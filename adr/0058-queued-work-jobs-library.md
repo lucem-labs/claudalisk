@@ -32,7 +32,7 @@ Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but n
   - A dedupe key replaces older queued jobs with the same key.
   - On shutdown, a running job is cancelled and goes back in the queue.
 - **Handlers are idempotent for side effects outside the database.** They use the job id as the idempotency key for calls such as HTTP requests or emails.
-- **The job stores its result link.** When the job finishes, its handler sets the URL of the resource it created or changed, for the UI to follow. CLA-0060 says where the link points.
+- **The job stores its result link.** When the job succeeds, its handler sets the URL of the resource it created or changed, for the UI to follow. A failed or canceled job has no result link. CLA-0060 says where the link points.
 - **Workers run only queued work.** A worker is not a startup write (CLA-0009). End-to-end runs can turn workers off or run jobs inline.
 
 ## Consequences

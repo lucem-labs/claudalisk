@@ -11,7 +11,7 @@
 - **A module endpoint starts a job.** The UI calls the module's own feature endpoint, such as `POST /api/orders/reindex` (CLA-0043, CLA-0047). The endpoint hides the queue. It returns `202 Accepted` with a `Location` header that points to the job (CLA-0045).
 - **The jobs router serves every job.** The router is a module from the jobs library (CLA-0062), registered in the Host. It serves `GET /api/jobs/{module}/{id}` and `POST /api/jobs/{module}/{id}/cancel`.
   - It finds the module's job store through module registration, by the module name in the URL.
-  - It reads only the standard job columns (CLA-0058). It knows nothing about what a job does.
+  - It reads only the job's status columns (status, attempts, progress, result link, last error and timestamps), never its command (CLA-0058). It knows nothing about what a job does.
 - **The job representation is the same for every module:**
   - `status`: `queued`, `running`, `succeeded`, `failed` or `canceled`;
   - `progress`, with a step text the UI shows as is, `attempts`, and the timestamps;
@@ -28,4 +28,4 @@
 - One job component in the frontend can show any job (CLA-0055).
 - A module adds background work without new status endpoints.
 - The UI tells "not computed yet" from "does not exist" by the problem type alone, and finds the action that computes it on the parent.
-- The router reads the jobs tables of other modules. This is the one exception to "nothing crosses a schema" (CLA-0007). It is allowed because the jobs table has the library's fixed shape, and the router reads only its status columns, never the job's command.
+- The router reads the jobs tables of other modules. This is one of the jobs library's two exceptions to "nothing crosses a schema" (CLA-0007); the other is the event fan-out (CLA-0068). It is allowed because the jobs table has the library's fixed shape, and the router reads only its status columns, never the job's command.
