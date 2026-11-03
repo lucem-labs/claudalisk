@@ -77,7 +77,7 @@ When a file type the app uses isn't in the table, add it to the checker in claud
 CLA-0071's scans run on the shared self-hosted runners (CLA-0033). Those runners use a Docker-in-Docker sidecar, which doesn't share the job's workspace with the Docker daemon: container actions and `docker run -v "$PWD"` see an empty folder. So the scanners avoid mounts:
 
 - gitleaks, OSV-Scanner, Trivy, zizmor and uv are release binaries that `install-security-tools.mjs` checks against a SHA-256 before they run. Each run installs them into a new folder of its own, so nothing left on a shared runner lands on `PATH`. To move a scanner to a new release, change its URL and SHA-256 in that script, in claudalisk first.
-- Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for. `UV_EXCLUDE_NEWER` makes uv resolve Semgrep's dependencies as they were on that date, so a release published later can't reach the job. Move it forward together with `SEMGREP_VERSION`. Unlike the binaries, these packages aren't checked against a SHA-256 of ours: PyPI's own hashes are the check. The `p/csharp` and `p/typescript` rule packs also come from the Semgrep registry on each run, unpinned. The `UV_*` folders under `RUNNER_TEMP` keep uv's cache, tools and Python out of the runner's home folder, where another job's could be reused.
+- Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for. `UV_EXCLUDE_NEWER` makes uv resolve Semgrep's dependencies as they were on that date, so a release published later can't reach the job. Move it forward together with `SEMGREP_VERSION`. Unlike the binaries, these packages aren't checked against a SHA-256 of ours: PyPI's own hashes are the check. The `p/csharp` and `p/typescript` rule packs also come from the Semgrep registry on each run, unpinned. The `UV_*` and `TRIVY_CACHE_DIR` folders under `RUNNER_TEMP` keep uv's cache, tools and Python, and Trivy's vulnerability database, out of the runner's home folder, where another job's could be reused.
 - Trivy scans images from `docker save` archives, not from the daemon.
 - ZAP gets its rules on stdin and writes its report to a `tmpfs` folder. The script prints the report to the log, and to the job summary when it runs in GitHub Actions.
 
@@ -110,12 +110,6 @@ security:
     - name: Install scanners
       id: tools
       run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
-    - name: Keep uv and Trivy state in this run
-      run: printf 'UV_CACHE_DIR=%s/uv-cache
-UV_TOOL_DIR=%s/uv-tools
-UV_PYTHON_INSTALL_DIR=%s/uv-python
-TRIVY_CACHE_DIR=%s/trivy-cache
-' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
     - name: Secrets (gitleaks)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
       run: gitleaks git --redact --exit-code 1 .
@@ -131,6 +125,10 @@ TRIVY_CACHE_DIR=%s/trivy-cache
       run: osv-scanner scan --config osv-scanner.toml --lockfile frontend/package-lock.json
     - name: Code (Semgrep)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      env:
+        UV_CACHE_DIR: ${{ runner.temp }}/uv-cache
+        UV_TOOL_DIR: ${{ runner.temp }}/uv-tools
+        UV_PYTHON_INSTALL_DIR: ${{ runner.temp }}/uv-python
       run: uv tool run --python 3.13 --from "semgrep==$SEMGREP_VERSION" semgrep scan --config p/csharp --config p/typescript --metrics=off --error --quiet
     - name: Workflows (zizmor)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
@@ -139,6 +137,8 @@ TRIVY_CACHE_DIR=%s/trivy-cache
       run: zizmor --config .github/zizmor.yml .github/workflows
     - name: Dockerfiles (Trivy)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      env:
+        TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
       run: trivy config --exit-code 1 --ignorefile .trivyignore.yaml .
 ```
 
