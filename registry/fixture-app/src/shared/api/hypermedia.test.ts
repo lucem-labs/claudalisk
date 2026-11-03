@@ -67,6 +67,7 @@ describe("hypermedia client", () => {
 
     await expect(followLink({ href: "https://elsewhere.example/api/jobs/1" })).rejects.toThrow(/leaves this app's origin/)
     await expect(sendAction({ href: "//elsewhere.example/x", method: "POST" })).rejects.toThrow(/leaves this app's origin/)
+    await expect(followLink({ href: "data:application/json,{}" })).rejects.toThrow(/leaves this app's origin/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

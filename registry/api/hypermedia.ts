@@ -54,7 +54,10 @@ async function readResponse<T>(response: Response): Promise<ActionResponse<T>> {
 
 function sameOrigin(href: string): string {
   const origin = window.location.origin
-  if (new URL(href, document.baseURI).origin !== origin) throw new Error(`The link ${href} leaves this app's origin.`)
+  const url = new URL(href, document.baseURI)
+  if (origin === "null" || url.origin !== origin || !/^https?:$/.test(url.protocol)) {
+    throw new Error(`The link ${href} leaves this app's origin.`)
+  }
   return href
 }
 

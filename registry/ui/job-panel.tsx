@@ -35,7 +35,7 @@ function JobPanel({ job: query, label, children }: JobPanelProps) {
   const refresh = () =>
     void queryClient.invalidateQueries({
       queryKey: jobQueryKeys,
-      predicate: (cached) => (cached.state.data as Job | undefined)?.id === job.id,
+      predicate: (cached) => (cached.state.data as Job | undefined)?._links?.self?.href === job._links?.self?.href,
     })
 
   return (

@@ -9,7 +9,7 @@ import { PagedTable } from "@/shared/ui/paged-table"
 import { Pager } from "@/shared/ui/pager"
 import { ProblemAlert } from "@/shared/ui/problem-alert"
 import { SectionCard } from "@/shared/ui/section-card"
-import { Table, TableBody, TableCell, TableRow } from "@/shared/ui/table"
+import { Table, TableBody, TableCell, TableFooter, TableRow } from "@/shared/ui/table"
 
 afterEach(cleanup)
 
@@ -99,12 +99,18 @@ describe("Table", () => {
             <TableCell data-label="Status">Shipped</TableCell>
           </TableRow>
         </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell>Total</TableCell>
+          </TableRow>
+        </TableFooter>
       </Table>
     )
 
     expect(screen.getByRole("table").getAttribute("data-variant")).toBe("stacked")
     expect(screen.getByRole("cell", { name: "Shipped" }).getAttribute("data-label")).toBe("Status")
-    expect(screen.getByRole("row").getAttribute("role")).toBe("row")
+    expect(screen.getAllByRole("rowgroup").map((group) => group.getAttribute("role"))).toEqual(["rowgroup", "rowgroup"])
+    expect(screen.getAllByRole("row").every((row) => row.getAttribute("role") === "row")).toBe(true)
     expect(screen.getByRole("cell", { name: "Shipped" }).getAttribute("role")).toBe("cell")
   })
 
