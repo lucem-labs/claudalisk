@@ -31,6 +31,26 @@ test('removes a JSX comment with its braces', () => {
   assert.equal(strip(text), ['const x = (', '  <div>', '    <span>Gap</span>', '  </div>', ')', ''].join('\n'));
 });
 
+test('removes a JSX comment inside a line or over lines without adding text', () => {
+  assert.equal(strip('const x = <div>{\n  // note\n}</div>\n'), 'const x = <div></div>\n');
+  assert.equal(strip('const x = <p>a{/* b */}c</p>\n'), 'const x = <p>ac</p>\n');
+});
+
+test('keeps CRLF line endings', () => {
+  assert.equal(strip('const a = 1 // x\r\nconst b = 2\r\n', 'file.ts'), 'const a = 1\r\nconst b = 2\r\n');
+  assert.equal(strip('// x\r\nconst b = 2\r\n', 'file.ts'), 'const b = 2\r\n');
+});
+
+test('refuses to strip when the result has more parse errors than the source', () => {
+  const breaking = (marker) => ({
+    ...ts,
+    createSourceFile: (name, text, ...rest) =>
+      Object.assign(ts.createSourceFile(name, text, ...rest), { parseDiagnostics: text.includes(marker) ? [] : [{}] }),
+  });
+  assert.throws(() => stripComments(breaking('// x'), 'a() // x\n', 'f.ts'), /would break it/);
+  assert.equal(stripComments(breaking('never'), 'a() // x\n', 'f.ts'), 'a()\n');
+});
+
 test('leaves strings, template literals, regular expressions and JSX text alone', () => {
   const text = [
     'const url = "https://example.com/*not*/"',
@@ -45,8 +65,20 @@ test('leaves strings, template literals, regular expressions and JSX text alone'
 });
 
 test('keeps lint and compiler directives and the shebang', () => {
-  const text = ['#!/usr/bin/env node', '// eslint-disable-next-line no-console', 'console.log(1)', '// @ts-expect-error untyped', 'x()', ''].join('\n');
+  const text = [
+    '#!/usr/bin/env node',
+    '/// <reference types="vite/client" />',
+    '/* eslint-disable */',
+    '// oxlint-disable-next-line no-console',
+    '// @ts-nocheck',
+    '// eslint-disable-next-line no-console',
+    'console.log(1)',
+    '// @ts-expect-error untyped',
+    'x()',
+    '',
+  ].join('\n');
   assert.equal(strip(text, 'file.ts'), text);
+  assert.equal(strip('// eslint is great\nx()\n', 'file.ts'), 'x()\n');
 });
 
 test('strips the source files under the app paths and reports what changed', () => {

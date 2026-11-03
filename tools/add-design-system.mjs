@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { componentsJson, pluginVersion, releaseRegistryUrl, shadcnVersion, spawnArguments } from './registry.mjs';
-import { stripAppComments } from './strip-comments.mjs';
+import { DEFAULT_PATHS, loadTypeScript, stripAppComments } from './strip-comments.mjs';
 
 const SKILL_SOURCE = 'skills/shadcn/';
 const SKIPPED_SKILL_FOLDERS = ['evals/', 'agents/'];
@@ -38,12 +38,18 @@ export function skillFiles(tree) {
   return tree
     .filter((entry) => entry.type === 'blob' && entry.path.startsWith(SKILL_SOURCE))
     .map((entry) => entry.path.slice(SKILL_SOURCE.length))
-    .filter((path) => !SKIPPED_SKILL_FOLDERS.some((folder) => path.startsWith(folder)));
+    .filter((path) => !SKIPPED_SKILL_FOLDERS.some((folder) => path.startsWith(folder)))
+    .map((path) => {
+      if (path.split(/[\\/]/).some((part) => part === '..' || part === '') || /^[A-Za-z]:/.test(path)) {
+        throw new Error(`The shadcn skill has a file outside its folder: ${path}`);
+      }
+      return path;
+    });
 }
 
 export function githubToken(env = process.env, spawn = spawnSync) {
   if (env.GITHUB_TOKEN) return env.GITHUB_TOKEN;
-  const result = spawn('gh', ['auth', 'token'], { encoding: 'utf8', shell: process.platform === 'win32' });
+  const result = spawn('gh', ['auth', 'token'], { encoding: 'utf8', shell: false });
   const token = result.status === 0 ? result.stdout?.trim() : '';
   return token || undefined;
 }
@@ -51,8 +57,9 @@ export function githubToken(env = process.env, spawn = spawnSync) {
 async function githubResponse(fetchImpl, url, token, accept) {
   const headers = { 'User-Agent': 'claudalisk' };
   if (accept) headers.Accept = accept;
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetchImpl(url, { headers });
+  const authorized = token && new URL(url).hostname === 'api.github.com';
+  if (authorized) headers.Authorization = `Bearer ${token}`;
+  const response = await fetchImpl(url, authorized ? { headers, redirect: 'error' } : { headers });
   if (!response.ok) {
     const hint = token ? '' : '; set GITHUB_TOKEN or sign in with gh auth login';
     throw new Error(`GET ${url} returned ${response.status}${hint}`);
@@ -80,9 +87,10 @@ export async function fetchSkill({ version, fetchImpl = fetch, token }) {
 }
 
 export function writeSkill(app, files) {
-  const target = join(app, '.claude', 'skills', 'shadcn');
+  const target = resolve(app, '.claude', 'skills', 'shadcn');
   for (const { file, content } of files) {
-    const path = join(target, file);
+    const path = resolve(target, file);
+    if (!path.startsWith(target + sep)) throw new Error(`The shadcn skill has a file outside its folder: ${file}`);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
   }
@@ -90,7 +98,14 @@ export function writeSkill(app, files) {
 
 export async function addDesignSystem(
   { app, registry, skill, skillOnly = false },
-  { run = runCommand, fetchImpl = fetch, log = console.log, token = githubToken, strip = stripAppComments } = {},
+  {
+    run = runCommand,
+    fetchImpl = fetch,
+    log = console.log,
+    token = githubToken,
+    typescript = loadTypeScript,
+    strip = stripAppComments,
+  } = {},
 ) {
   const appRoot = resolve(app);
   if (!existsSync(join(appRoot, 'package.json'))) throw new Error(`${appRoot} has no package.json`);
@@ -99,20 +114,27 @@ export async function addDesignSystem(
   if (!skillOnly && existsSync(configPath)) {
     throw new Error(`${configPath} already exists; run shadcn add @claudalisk/base in it, or add the skill with --skill-only`);
   }
+  const ts = skillOnly ? undefined : typescript(appRoot);
   const version = shadcnVersion();
   const skillContent = skill ? await fetchSkill({ version, fetchImpl, token: token() }) : [];
+  let stripError;
   if (!skillOnly) {
     const registryUrl = registry ?? releaseRegistryUrl(pluginVersion());
     writeFileSync(configPath, `${JSON.stringify(componentsJson(registryUrl), null, 2)}\n`);
     log(`Wrote components.json with @claudalisk at ${registryUrl}`);
     await run('npx', ['--yes', `shadcn@${version}`, 'add', '@claudalisk/base', '--yes'], appRoot);
-    const stripped = strip(appRoot);
-    if (stripped.length) log(`Removed comments from ${stripped.join(', ')}`);
+    try {
+      const stripped = strip(appRoot, DEFAULT_PATHS, { ts });
+      if (stripped.length) log(`Removed comments from ${stripped.join(', ')}`);
+    } catch (error) {
+      stripError = error;
+    }
   }
   if (skill) {
     writeSkill(appRoot, skillContent);
     log(`Added the shadcn skill (${skillContent.length} files) for shadcn@${version} in .claude/skills/shadcn`);
   }
+  if (stripError) throw new Error(`Everything else is set up, but the comments were not all removed: ${stripError.message}`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

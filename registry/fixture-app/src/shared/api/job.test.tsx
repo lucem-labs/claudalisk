@@ -69,8 +69,8 @@ function Follow({ link, options }: { link: Link; options?: UseJobOptions }) {
   )
 }
 
-function renderJob(ui: React.ReactElement) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function renderJob(ui: React.ReactElement, retry: number | false = false) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry, retryDelay: 0 } } })
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
@@ -129,6 +129,44 @@ describe("useJob and JobPanel", () => {
     expect(await screen.findByText("Result at /api/orders")).toBeTruthy()
     expect(start).toHaveBeenCalledTimes(1)
     expect(requests.filter((request) => request === "GET /api/jobs/ordering/1")).toHaveLength(1)
+  })
+
+  it("shows a superseded job as canceled when no active job is found and none may be started", async () => {
+    stubJobs({ "/api/jobs/ordering/1": [superseded("1")] })
+    renderJob(<Follow link={{ href: "/api/jobs/ordering/1" }} options={{ findActive: async () => undefined }} />)
+
+    expect(await screen.findByText("A newer job with the same key replaced this one.")).toBeTruthy()
+    expect(screen.getByRole("status").textContent).toBe("Canceled")
+  })
+
+  it("starts one job for a superseded job even when the query retries", async () => {
+    let failures = 1
+    const requests: string[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        requests.push(input)
+        if (input === "/api/jobs/ordering/3" && failures-- > 0) return new Response(null, { status: 503 })
+        const body = input === "/api/jobs/ordering/1" ? superseded("1") : succeeded("3")
+        return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } })
+      })
+    )
+    const start = vi.fn(async () => ({ href: "/api/jobs/ordering/3" }))
+    renderJob(<Follow link={{ href: "/api/jobs/ordering/1" }} options={{ start }} />, 2)
+
+    expect(await screen.findByText("Result at /api/orders")).toBeTruthy()
+    expect(start).toHaveBeenCalledTimes(1)
+    expect(requests.filter((request) => request === "/api/jobs/ordering/3")).toHaveLength(2)
+  })
+
+  it("renders nothing while there is no job to follow", () => {
+    function NoJob() {
+      const query = useJob(undefined)
+      return <JobPanel job={query} label="Reindex orders" />
+    }
+    const { container } = renderJob(<NoJob />)
+
+    expect(container.textContent).toBe("")
   })
 
   it("shows a superseded job as canceled when the page gives no way to follow it", async () => {

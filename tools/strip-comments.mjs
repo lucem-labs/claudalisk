@@ -51,7 +51,7 @@ export function commentRanges(ts, text, fileName) {
     }
     if (ts.isJsxExpression(node) && !node.expression && !node.dotDotDotToken) {
       const start = node.getStart(source);
-      ranges.set(start, { start, end: node.end });
+      ranges.set(start, { start, end: node.end, jsx: true });
       return;
     }
     add(ts.getLeadingCommentRanges(text, node.pos));
@@ -65,14 +65,15 @@ export function commentRanges(ts, text, fileName) {
     .sort((a, b) => a.start - b.start);
 }
 
-function removeRange(text, start, end) {
+function removeRange(text, { start, end, jsx }) {
   const lineStart = text.lastIndexOf('\n', start - 1) + 1;
   const newline = text.indexOf('\n', end);
   const lineEnd = newline < 0 ? text.length : newline;
   const before = text.slice(lineStart, start);
   const after = text.slice(end, lineEnd);
   if (before.trim() === '' && after.trim() === '') return text.slice(0, lineStart) + text.slice(newline < 0 ? lineEnd : lineEnd + 1);
-  if (after.trim() === '') return text.slice(0, lineStart) + before.trimEnd() + text.slice(lineEnd);
+  if (jsx) return text.slice(0, start) + text.slice(end);
+  if (after.trim() === '') return text.slice(0, lineStart) + before.trimEnd() + (after.endsWith('\r') ? '\r' : '') + text.slice(lineEnd);
   if (before.trim() === '') return text.slice(0, start) + after.trimStart() + text.slice(lineEnd);
   const head = text.slice(0, start).replace(/[ \t]+$/, '');
   const tail = text.slice(end).replace(/^[ \t]+/, '');
@@ -85,7 +86,7 @@ export function stripComments(ts, text, fileName) {
   const ranges = commentRanges(ts, text, fileName);
   if (ranges.length === 0) return text;
   let stripped = text;
-  for (const { start, end } of ranges.reverse()) stripped = removeRange(stripped, start, end);
+  for (const range of ranges.reverse()) stripped = removeRange(stripped, range);
   if (parseErrors(ts, stripped, fileName) > parseErrors(ts, text, fileName)) {
     throw new Error(`${fileName}: removing its comments would break it; remove them by hand`);
   }

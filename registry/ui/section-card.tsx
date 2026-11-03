@@ -5,17 +5,20 @@ import { Heading, type HeadingLevel } from "@/components/ui/heading"
 
 type SectionCardProps = Omit<React.ComponentProps<typeof Card>, "title"> & {
   title: React.ReactNode
-  label?: string
+  region?: boolean
   level?: HeadingLevel
   description?: React.ReactNode
   action?: React.ReactNode
 }
 
-function SectionCard({ title, label, level = 2, description, action, children, ...props }: SectionCardProps) {
+function SectionCard({ title, region = false, level = 2, description, action, children, ...props }: SectionCardProps) {
+  const headingId = React.useId()
   return (
-    <Card role={label ? "region" : undefined} aria-label={label} {...props}>
+    <Card role={region ? "region" : undefined} aria-labelledby={region ? headingId : undefined} {...props}>
       <CardHeader>
-        <Heading level={level}>{title}</Heading>
+        <Heading id={headingId} level={level}>
+          {title}
+        </Heading>
         {description ? <CardDescription>{description}</CardDescription> : null}
         {action ? <CardAction>{action}</CardAction> : null}
       </CardHeader>

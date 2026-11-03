@@ -1,11 +1,12 @@
 import * as React from "react"
-import type { UseQueryResult } from "@tanstack/react-query"
+import { useQueryClient, type UseQueryResult } from "@tanstack/react-query"
 
 import { ActionButton } from "@/components/ui/action-button"
 import { ProblemAlert } from "@/components/ui/problem-alert"
 import { Progress } from "@/components/ui/progress"
 import { QueryLoading } from "@/components/ui/query-state"
 import { isActive, type Job, type JobStatus } from "@/lib/job"
+import { jobQueryKeys } from "@/shared/api/job"
 
 const STATUS_TEXT: Record<JobStatus, string> = {
   queued: "Queued",
@@ -22,12 +23,16 @@ type JobPanelProps = {
 }
 
 function JobPanel({ job: query, label, children }: JobPanelProps) {
-  if (query.isPending) return <QueryLoading />
-  if (query.isError) return <ProblemAlert error={query.error} />
+  const queryClient = useQueryClient()
+  const [cancelError, setCancelError] = React.useState<unknown>()
+
+  if (query.isPending) return query.fetchStatus === "idle" ? null : <QueryLoading />
+  if (query.isError && query.data === undefined) return <ProblemAlert error={query.error} />
 
   const job = query.data
   const active = isActive(job)
   const fraction = job.progress.fraction
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: jobQueryKeys })
 
   return (
     <section aria-label={label} data-job-status={job.status} className="flex flex-col gap-2">
@@ -42,13 +47,21 @@ function JobPanel({ job: query, label, children }: JobPanelProps) {
       ) : null}
       {job.progress.step ? <p className="text-sm text-muted-foreground">{job.progress.step}</p> : null}
       {job.status === "failed" || job.status === "canceled" ? <ProblemAlert error={job.error ?? undefined} /> : null}
+      <ProblemAlert error={query.error ?? cancelError} />
       <ActionButton
         representation={job}
         action="cancel"
         variant="outline"
         size="sm"
         className="self-start"
-        onSuccess={() => void query.refetch()}
+        onSuccess={() => {
+          setCancelError(undefined)
+          refresh()
+        }}
+        onError={(error) => {
+          setCancelError(error)
+          refresh()
+        }}
       >
         Cancel
       </ActionButton>

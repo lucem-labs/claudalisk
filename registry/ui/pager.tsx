@@ -21,10 +21,10 @@ function Pager({ links, onNavigate, page, pageCount, label = "Pages" }: PagerPro
           {pageCount !== undefined ? `Page ${page} of ${pageCount}` : `Page ${page}`}
         </p>
       ) : null}
-      <Button variant="outline" size="sm" disabled={!prev} onClick={() => prev && onNavigate(prev.href)}>
+      <Button type="button" variant="outline" size="sm" disabled={!prev} onClick={() => prev && onNavigate(prev.href)}>
         Previous
       </Button>
-      <Button variant="outline" size="sm" disabled={!next} onClick={() => next && onNavigate(next.href)}>
+      <Button type="button" variant="outline" size="sm" disabled={!next} onClick={() => next && onNavigate(next.href)}>
         Next
       </Button>
     </nav>

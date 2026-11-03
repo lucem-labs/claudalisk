@@ -57,6 +57,13 @@ describe("problem details", () => {
     expect(problemMessage(validation)).toBe("Name is required.")
   })
 
+  it("prefers the detail to the field errors", () => {
+    const problem = { title: "T", detail: "D", errors: { Name: ["E"] } }
+
+    expect(problemMessage(problem)).toBe("D")
+    expect(new ProblemError(problem).message).toBe("D")
+  })
+
   it("falls back to the title, then to an ordinary error's message", () => {
     expect(problemMessage({ title: "Conflict", status: 409 })).toBe("Conflict")
     expect(problemMessage(new Error("network down"))).toBe("network down")

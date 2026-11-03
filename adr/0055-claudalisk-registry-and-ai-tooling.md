@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; `claude plugin validate`; CI's `registry` job; reviewer
-- **Issue:** #75
+- **Issue:** #38, #75
 
 ## Decision
 
@@ -20,8 +20,8 @@
     - `action-button`: a button that renders only when its action is in `_actions` (CLA-0044).
     - `query-state`: empty, loading and error states for TanStack Query results (CLA-0038).
     - `job`: the job component (CLA-0060). It polls a job until it ends and shows its status, progress, error and cancel action. When a newer job with the same dedupe key supersedes it (CLA-0058), it follows the newest active job of the same kind and input that the page finds, and starts a new one only when there is none.
-    - `heading` (`Heading` and `PageHeader`), `section-card`, `disclosure` and `pager`: real headings, a titled card that is a named region when it has a label, a collapsible section in place of `<details>`, and previous and next buttons for lists that are not tables.
-    - `table` and `badge`: shadcn's table with a `stacked` variant that turns rows into cards labelled by each cell's `data-label` on narrow screens, and shadcn's badge with `success` and `warning` variants on the theme's tokens of the same names.
+    - `heading` (`Heading` and `PageHeader`), `section-card`, `disclosure` and `pager`: real headings, a titled card that can be a region named by its heading, a collapsible section in place of `<details>`, and previous and next buttons for lists that are not tables.
+    - `table` and `badge`: shadcn's table with a `stacked` variant that turns rows into cards labelled by each cell's `data-label` in a narrow container, and shadcn's badge with `success` and `warning` variants on the theme's tokens of the same names. They replace shadcn's `table` and `badge` in `shared/ui`, so they are updated with `shadcn add @claudalisk/table` or `@claudalisk/badge`, never from `@shadcn` (CLA-0053).
   - The helpers they share:
     - `problem-details` in `shared/lib`;
     - `hypermedia`: types in `shared/lib`, and the requests that follow a link and send an action in `shared/api` (CLA-0014).

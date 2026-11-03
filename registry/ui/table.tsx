@@ -13,32 +13,41 @@ const STACKED_CLASSES = [
   "@max-md:[&_tbody_td:not([data-label])]:block",
 ].join(" ")
 
+const TableVariantContext = React.createContext<TableVariant>("default")
+
+function useStackedRole(role: string) {
+  return React.useContext(TableVariantContext) === "stacked" ? role : undefined
+}
+
 function Table({
   className,
   variant = "default",
   ...props
 }: React.ComponentProps<"table"> & { variant?: TableVariant }) {
   return (
-    <div
-      data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto", variant === "stacked" && "@container")}
-    >
-      <table
-        data-slot="table"
-        data-variant={variant}
-        className={cn("w-full caption-bottom text-sm", variant === "stacked" && STACKED_CLASSES, className)}
-        {...props}
-      />
-    </div>
+    <TableVariantContext.Provider value={variant}>
+      <div
+        data-slot="table-container"
+        className={cn("relative w-full overflow-x-auto", variant === "stacked" && "@container")}
+      >
+        <table
+          data-slot="table"
+          data-variant={variant}
+          role={variant === "stacked" ? "table" : undefined}
+          className={cn("w-full caption-bottom text-sm", variant === "stacked" && STACKED_CLASSES, className)}
+          {...props}
+        />
+      </div>
+    </TableVariantContext.Provider>
   )
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />
+  return <thead data-slot="table-header" role={useStackedRole("rowgroup")} className={cn("[&_tr]:border-b", className)} {...props} />
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
-  return <tbody data-slot="table-body" className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+  return <tbody data-slot="table-body" role={useStackedRole("rowgroup")} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
@@ -55,6 +64,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
+      role={useStackedRole("row")}
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
         className
@@ -68,6 +78,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
+      role={useStackedRole("columnheader")}
       className={cn(
         "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
         className
@@ -81,6 +92,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
+      role={useStackedRole("cell")}
       className={cn("p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
       {...props}
     />

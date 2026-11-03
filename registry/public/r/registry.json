@@ -180,7 +180,7 @@
       "name": "section-card",
       "type": "registry:ui",
       "title": "Section card",
-      "description": "A card with a real heading, a description and an action, which is a named region when it has a label.",
+      "description": "A card with a real heading, a description and an action, which is a region named by its heading when asked.",
       "registryDependencies": ["card", "@claudalisk/heading"],
       "files": [
         {

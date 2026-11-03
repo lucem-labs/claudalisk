@@ -66,8 +66,8 @@ function PagedTable<T>({
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} data-label={labelOf(cell.column.columnDef.header)}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <TableCell key={cell.id} data-label={labelOf(cell.column.columnDef)}>
+                      <div>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -87,8 +87,10 @@ function PagedTable<T>({
   )
 }
 
-function labelOf(header: unknown): string | undefined {
-  return typeof header === "string" && header.length > 0 ? header : undefined
+function labelOf<T>(column: ColumnDef<T>): string | undefined {
+  const meta = column.meta as { label?: string } | undefined
+  if (meta?.label) return meta.label
+  return typeof column.header === "string" && column.header.length > 0 ? column.header : undefined
 }
 
 export { PagedTable }

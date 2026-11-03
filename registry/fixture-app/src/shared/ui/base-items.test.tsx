@@ -30,18 +30,18 @@ describe("Heading", () => {
 })
 
 describe("SectionCard", () => {
-  it("is a named region with a heading when it has a label", () => {
+  it("is a region named by its heading when asked", () => {
     render(
-      <SectionCard title="Totals" label="Order totals">
+      <SectionCard title="Totals" region>
         <p>42</p>
       </SectionCard>
     )
 
-    const region = screen.getByRole("region", { name: "Order totals" })
+    const region = screen.getByRole("region", { name: "Totals" })
     expect(region.querySelector("h2")?.textContent).toBe("Totals")
   })
 
-  it("is no region without a label", () => {
+  it("is no region unless asked", () => {
     render(<SectionCard title="Totals">42</SectionCard>)
 
     expect(screen.queryByRole("region")).toBeNull()
@@ -80,6 +80,7 @@ describe("Pager", () => {
     fireEvent.click(screen.getByRole("button", { name: "Previous" }))
 
     expect(onNavigate).toHaveBeenCalledWith("/api/things?before=5")
+    expect(screen.getByRole("button", { name: "Next" }).getAttribute("type")).toBe("button")
   })
 
   it("renders nothing without prev or next", () => {
@@ -103,6 +104,22 @@ describe("Table", () => {
 
     expect(screen.getByRole("table").getAttribute("data-variant")).toBe("stacked")
     expect(screen.getByRole("cell", { name: "Shipped" }).getAttribute("data-label")).toBe("Status")
+    expect(screen.getByRole("row").getAttribute("role")).toBe("row")
+    expect(screen.getByRole("cell", { name: "Shipped" }).getAttribute("role")).toBe("cell")
+  })
+
+  it("adds no explicit roles to a default table", () => {
+    render(
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell>Shipped</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    )
+
+    expect(screen.getByRole("cell", { name: "Shipped" }).getAttribute("role")).toBeNull()
   })
 
   it("labels a stacked paged table's cells with their column headers", () => {
@@ -117,6 +134,20 @@ describe("Table", () => {
     )
 
     expect(screen.getByRole("table").getAttribute("data-variant")).toBe("stacked")
+    expect(screen.getByRole("cell", { name: "First" }).getAttribute("data-label")).toBe("Name")
+  })
+
+  it("labels a cell from the column's meta label when its header is not text", () => {
+    render(
+      <PagedTable
+        columns={[{ accessorKey: "name", header: () => <span>Name</span>, meta: { label: "Name" } }]}
+        items={[{ name: "First" }]}
+        links={undefined}
+        onNavigate={vi.fn()}
+        stacked
+      />
+    )
+
     expect(screen.getByRole("cell", { name: "First" }).getAttribute("data-label")).toBe("Name")
   })
 })
