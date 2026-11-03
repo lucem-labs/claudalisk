@@ -15,7 +15,7 @@ Without a hard rule, modules start to reach into the implementation types of oth
 - Only the Host (`<Root>.Api`, the composition root) and test projects reference implementation projects. The check reads `ProjectReference`s from the csproj files, so an unused reference also fails.
 - Implementation assemblies do not depend on other implementation assemblies.
 - Infrastructure with no business meaning comes from the claudalisk packages (CLA-0062), not from projects in the app: module registration (CLA-0004), and the data source, the per-scope connection and the unit of work (CLA-0007). Modules and their persistence projects reference those packages.
-- `<Root>.Shared` holds only app code that two modules need and that has no business meaning (CLA-0050). Any module project can reference it.
+- `<Root>.Shared` holds only app code that two modules need and that has no business meaning (CLA-0050). Any module project can reference it. It never holds DTOs or messages (CLA-0003, CLA-0005).
 
 ## Consequences
 

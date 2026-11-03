@@ -14,7 +14,7 @@
   - The tag comes from module registration (CLA-0004). A convention tags every controller in a module's assembly. Controllers do not set tags by hand.
   - The Host's endpoints, such as health, have the tag `Host`.
   - Each tag has a description of what the bounded context covers (CLA-0041).
-- **Schema names are unique.** Every request and response schema name is unique across the app and the claudalisk libraries it hosts, such as the jobs library's job resource (CLA-0060). Two features that both name a DTO `OrderResponse` collide, so one of them takes a more specific name. Building the OpenAPI document fails on a collision; the check is in the claudalisk web package. Schema names are never made unique automatically, for example with a counter or a namespace prefix, which would hide the collision.
+- **Schema names are unique.** Every request and response schema name is unique across the app and the claudalisk libraries it hosts, such as the jobs library's job resource (CLA-0060). Two features, or two modules' DTOs of the same shape (CLA-0005), that both name a DTO `OrderResponse` collide, so one of them takes a more specific name. Building the OpenAPI document fails on a collision; the check is in the claudalisk web package. Schema names are never made unique automatically, for example with a counter or a namespace prefix, which would hide the collision.
 - **Frontend API types are generated from the document.**
   - The types go into `shared/api`, and the `api` segment of each entity uses them (CLA-0014, CLA-0037).
   - `openapi-typescript` generates them (CLA-0065). Nobody edits the generated file by hand.
@@ -24,6 +24,6 @@
 
 - The API reference reads like the module map: one group for each bounded context, matching the frontend's entity slices.
 - The endpoints of a new module get the correct group without anyone remembering to tag them.
-- The request and response DTOs in each feature folder (CLA-0047) are the one source of truth for the shape of the API.
+- The request and response DTOs in each module's feature folders and `Shared/` folder (CLA-0047) are the one source of truth for the shape of the API.
 - DTOs need accurate nullability and names, because the frontend sees them as they are.
 - A schema name in the generated types always means one DTO, so the frontend never gets one module's shape under another's name.
