@@ -17,6 +17,7 @@ test('covers every file type CLA-0035 lists', () => {
     'compose.base.yml': 'yaml',
     '.github/workflows/ci.yml': 'yaml',
     'pyproject.toml': 'yaml',
+    'frontend/nginx.conf': 'yaml',
     '.gitignore': 'ignore',
     '.editorconfig': 'ini',
     'backend/api.Dockerfile': 'dockerfile',
@@ -203,6 +204,8 @@ test('YAML doubled quotes, multi-line quotes and block scalars', () => {
   assert.deepEqual(findCommentLines(code, 'a.yml'), [6, 9]);
   assert.deepEqual(findCommentLines('#!/usr/bin/env yq\na: 1\n', 'a.yml'), []);
   assert.deepEqual(findCommentLines('a = "#x" # why\n', 'pyproject.toml'), [1]);
+  const nginx = ['# why', 'server {', `    add_header X "a #b; 'self'" always;`, '    location ~ ^/(api|openapi)(/|$) {', '        try_files $uri =404; # why', '    }', '}', ''].join('\n');
+  assert.deepEqual(findCommentLines(nginx, 'frontend/nginx.conf'), [1, 5]);
 });
 
 test('ignore files and .editorconfig take comments only at the start of a line', () => {

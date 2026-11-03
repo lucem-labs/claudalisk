@@ -1,0 +1,6 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "lucem-labs/*": ref-pin
+        "*": hash-pin

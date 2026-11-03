@@ -28,6 +28,7 @@ export const SYNTAX_BY_EXTENSION = {
   '.yml': 'yaml',
   '.yaml': 'yaml',
   '.toml': 'yaml',
+  '.conf': 'yaml',
 };
 
 export const SYNTAX_BY_NAME = {
