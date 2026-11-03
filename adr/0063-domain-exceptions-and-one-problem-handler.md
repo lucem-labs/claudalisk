@@ -20,7 +20,7 @@ An exception filter for each module, each a long `switch` from error codes to a 
 - **One `IExceptionHandler` turns every error into Problem Details** (CLA-0045), using ASP.NET Core's `AddProblemDetails`. It comes from the claudalisk web package, not from `Claudalisk.Domain`, because Domain projects never reference ASP.NET Core (CLA-0048). The Host registers it (CLA-0001):
   - a `DomainException` becomes its kind's status with `type: /problems/<module>/<slug>`;
   - a validation failure from the pipeline becomes `400` `ValidationProblemDetails` (CLA-0057);
-  - an EF Core concurrency failure becomes `412` (CLA-0056);
+  - a stale `If-Match` becomes `412` and a missing one `428`, and a lost race that is still lost when the retries run out becomes the dispatching package's `409` problem type (CLA-0056);
   - any other exception becomes `500` with no internal details in the response.
 - Modules write no exception filters and never build `ProblemDetails` themselves.
 - Every problem `type` is listed in the OpenAPI document (CLA-0046), so the frontend can branch on it.
