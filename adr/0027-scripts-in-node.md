@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** code-standards
-- **Enforced by:** reviewer; the data scripts' `node:test` suites
+- **Enforced by:** reviewer; the `node:test` suites of the scripts that change an environment
 - **Issue:** #88
 
 ## Context
@@ -28,12 +28,12 @@ Logic written inline in a CI workflow has no tests and runs only on a pushed com
     - the pre-deploy backup, its manifest written last, is complete before any migration runs, except on the first deploy to an empty database (CLA-0030, CLA-0031);
     - the fingerprints are recorded right after the migrations run, even when a later step fails (CLA-0010, CLA-0030);
     - a restore verifies the checksums before it restores into a temporary database and swaps it in, and a uat restore first backs up the current uat data (CLA-0031);
-  - that a failing call stops every later step, apart from recording the fingerprints of migrations that ran. A failed backup stops the deploy before it migrates;
-  - that each refusal changes no data and no environment state. Before a refusal the script makes only reads, plus the image build and database start that CLA-0030 runs before its migration checks. The refusals are the CLA-0030 checks, an applied migration that changed, and applied migrations the commit lacks;
+  - that a failing call stops every later step, apart from recording the fingerprints of migrations that ran (CLA-0010). A failed backup stops the deploy before it migrates;
+  - that each refusal changes no data, backup or environment file. The CLA-0030 gate checks (confirmation, clean tree, latest `main`, open pull request, CI) refuse after reads only, before any build. Its two migration refusals, an applied migration that changed and applied migrations the commit lacks, follow only reads, the image build and the database start;
   - the target of every call that writes: the Compose project, environment file and database it addresses. A dev script never writes uat, so data never flows from dev to uat (CLA-0032). No script runs `docker compose down -v`, `docker volume rm`, `docker volume prune` or `docker system prune` against uat, and no script the agent runs restores uat (CLA-0029, CLA-0031).
 
 ## Consequences
 
 - Scripts behave the same on every OS and shell.
 - CI logic is tested before it is pushed, and a workflow reads as a list of named steps.
-- A test shows that each refusal changes nothing and that no script writes to an environment it shouldn't.
+- A test shows that each refusal changes no data and that no script writes to an environment it shouldn't.
