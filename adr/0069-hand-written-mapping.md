@@ -12,8 +12,9 @@ Mapping libraries such as AutoMapper match properties by name at runtime. A rena
 ## Decision
 
 - **Mapping at a boundary is internal extension methods in the consuming project.** This covers:
-  - DTOs to and from messages, next to the controller (CLA-0005);
+  - the module's own DTOs to and from messages, next to the controller (CLA-0005). A module never maps to or from another module's DTOs, because it never sees them;
   - the messages of one module to those of another;
+  - other modules' messages to Domain types, in the handler (CLA-0048);
   - aggregates to messages and results, in the implementation project (CLA-0048);
   - EF Core entities to and from aggregates or read models, in a persistence project (CLA-0007, CLA-0048).
 - **No mapping libraries.** Do not reference AutoMapper, Mapster, Mapperly, or any other package that maps objects by convention, reflection or code generation.

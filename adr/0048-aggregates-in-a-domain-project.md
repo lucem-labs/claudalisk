@@ -15,6 +15,11 @@ The aggregate decides which commands are allowed and which `_actions` a represen
   - It references only `<Root>.Shared` and the `Claudalisk.Domain` package. It never references EF Core, ASP.NET Core, the dispatcher, or any Interfaces project.
   - An aggregate enforces its own invariants, and refuses a command by throwing a `DomainException` (CLA-0063). It exposes each command as a method, such as `order.Cancel(reason)`. It also says which commands it allows now, such as `order.CanCancel`. Those answers produce `_actions` (CLA-0044).
   - An aggregate carries its version, which becomes the `ETag` (CLA-0045, CLA-0056).
+- **Algorithms with no IO live in the Domain project.** A stateless algorithm or domain service that reads no database, file or network goes in a folder of its own, such as `Engine/`, and its tests call it as plain C#.
+  - It takes and returns Domain types. It never takes a message or a DTO.
+  - The handler maps other modules' messages into those Domain types (CLA-0069).
+  - A Domain type that mirrors another module's message takes a name of its own, so that the two are never confused.
+- **A stored hash or fingerprint names its fields.** It is built from an explicit list of fields, in a fixed order. It is never built by serialising a message, DTO or entity whole, because then a new property would change every stored value.
 - **The Persistence project maps the aggregates.**
   - The store contracts in `<Root>.Modules.<Name>.Persistence.Interfaces` load and save aggregates.
   - The stores in `<Root>.Modules.<Name>.Persistence` map EF Core entities to and from aggregates. EF Core entities never leave the Persistence project.

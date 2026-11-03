@@ -19,10 +19,12 @@ The HTTP endpoints of a feature belong with the feature. If every endpoint lived
   - Request and response DTOs live next to the controller that uses them, in the feature's folder (CLA-0047).
   - They belong to the HTTP transport, so they can depend on ASP.NET Core MVC (for example binding attributes). They carry no validation attributes (CLA-0057).
   - They never depend on EF Core, and they are never messages (CLA-0003).
+  - **A module owns its DTOs and never shares them.** Another module never uses them, and no Interfaces project, `<Root>.Shared` or claudalisk package holds them. When two modules return the same shape, each defines its own DTO. Inside one module, a response DTO that several features return moves to the module's `Shared/` (CLA-0047).
 - Mapping between DTOs, messages, aggregates and entities follows CLA-0069.
 
 ## Consequences
 
 - The API, messages and rules of a module change together, in one project.
 - The controllers of a module reach its behaviour only by sending commands and queries through the dispatcher. They never call another module's internals (CLA-0002, CLA-0049).
+- Two modules that return the same shape carry two DTOs. Each can change its API without breaking the other.
 - If a reviewer finds a business rule in a controller, it moves into the aggregate or the feature's handler.

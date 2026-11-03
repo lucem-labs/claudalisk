@@ -20,7 +20,8 @@ This is the backend version of the import rule and the "pages first" rule of Fea
 - **Domain rules start in the aggregate.** An invariant, or a rule about which commands are allowed, belongs in the aggregate from the start (CLA-0048), even when only one feature uses it.
 - **All other code starts in the feature that needs it.** It moves down only on its second use:
   - a technical helper, such as a parser or a formatter, moves to the module's `Shared` folder
-  - code moves to `<Root>.Shared` only when a second module needs it, and only if it has no business meaning
+  - a response DTO moves to the module's `Shared` folder (CLA-0047)
+  - code moves to `<Root>.Shared` only when a second module needs it, and only if it has no business meaning. DTOs and messages never move there: each module defines its own (CLA-0003, CLA-0005)
 - Never create a folder or project for code that only one feature uses.
 
 ## Consequences

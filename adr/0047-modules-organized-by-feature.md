@@ -19,6 +19,8 @@ The .NET name for this is vertical slice architecture. In a modular monolith, th
   - `Shared/`, for code that two or more of the module's features use and that is not a domain rule (CLA-0050)
 
   The aggregates are in the module's Domain project (CLA-0048). Persistence is in its Persistence project (CLA-0007).
+- **DTOs that features share.** A response DTO that two or more of the module's features return lives in `Shared/`, with its mapping. A request DTO always stays in its feature. `Shared/` can have sub-folders, such as `Shared/Runs/`. It belongs to its module alone: another module never uses its DTOs (CLA-0005).
+- **A started job.** The module defines its own response DTO for an endpoint that starts a job (CLA-0060), mapped from `JobReference` (CLA-0067). It lives in the one feature that returns it, or in `Shared/` once several do. It never comes from a claudalisk package or another module.
 - **A feature is one use case**, named after it in the module's ubiquitous language (CLA-0041):
   - **A command** gets its own feature, named after the command, such as `Features/CancelOrder/` (CLA-0043).
   - **A query** gets its own feature, named after what it reads, such as `Features/GetOrderSummary/` (CLA-0042). A query for an aggregate or a page of a collection loads the aggregates, so that each item has its `version` and `_actions` (CLA-0044, CLA-0056). A query for a read model reads through a read store that projects straight to the response.
