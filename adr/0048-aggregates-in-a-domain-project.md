@@ -16,7 +16,7 @@ The aggregate decides which commands are allowed and which `_actions` a represen
   - An aggregate enforces its own invariants, and refuses a command by throwing a `DomainException` (CLA-0063). It exposes each command as a method, such as `order.Cancel(reason)`. It also says which commands it allows now, such as `order.CanCancel`. Those answers produce `_actions` (CLA-0044).
   - That answer may be a pure function of the aggregate's state, in the Domain project, such as `OrderRules.CanCancel(status)`. The aggregate's methods call it, and so does the mapping of a collection page read through a read store (CLA-0047), so the two cannot disagree.
   - An aggregate carries its version, which becomes the `ETag` (CLA-0045, CLA-0056).
-- **Algorithms with no IO live in the Domain project.** A stateless algorithm or domain service that reads no database, file or network goes in a folder of its own, such as `Engine/`, and its tests call it as plain C#.
+- **Algorithms with no IO live in the Domain project.** A stateless algorithm or domain service that reads no database, file or network goes in a folder of its own, such as `Engine/`, and its tests call it as plain C#. A pure function that answers one aggregate's command rules stays next to that aggregate; `Engine/` is for algorithms that are not one aggregate's rules.
   - It takes and returns Domain types. It never takes a message or a DTO.
   - The handler maps messages, its module's own and other modules', into those Domain types (CLA-0069).
   - A Domain type that mirrors another module's message takes a name of its own, so that the two are never confused.

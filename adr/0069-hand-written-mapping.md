@@ -16,6 +16,7 @@ Mapping libraries such as AutoMapper match properties by name at runtime. A rena
   - the messages of one module to those of another;
   - other modules' messages to Domain types, in the handler (CLA-0048);
   - aggregates to messages and results, in the implementation project (CLA-0048);
+  - the module's aggregates and read models to its response DTOs, in the feature or in `Dtos/`, calling the Domain project's pure rules for `_actions` (CLA-0047, CLA-0048);
   - EF Core entities to and from aggregates or read models, in a persistence project (CLA-0007, CLA-0048).
 - **No mapping libraries.** Do not reference AutoMapper, Mapster, Mapperly, or any other package that maps objects by convention, reflection or code generation.
 - **No mapper interfaces.** Do not write `IMapper<TFrom, TTo>` or similar abstractions. A mapping is a plain method that the compiler checks.
