@@ -3,7 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0002, CLA-0006), reviewer
+- **Enforced by:** architecture tests (CLA-0002, CLA-0006, and the module-name test), reviewer
+- **Issue:** #63
 
 ## Context
 
@@ -16,6 +17,10 @@ A second reason is low operational complexity. These are single-owner, local-fir
 - The backend is one deployable .NET 10 application. One Host project, `<Root>.Api`, is the composition root. It registers the modules and the app-wide concerns, and holds only endpoints with no business meaning. Endpoints and concerns that every app needs, such as health and the Problem Details handler, come from the claudalisk packages (CLA-0062).
 - **Business logic that several modules need gets its own module.** It never goes into the Host.
 - Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project, a `<Root>.Modules.<Name>.Interfaces` project for its public contracts, a `<Root>.Modules.<Name>.Domain` project (CLA-0048), and the persistence projects of CLA-0007.
+- **A module's name is a singular noun for its bounded context**, such as `Ordering`, `Billing` or `Inventory`. It is never a plural, such as `Orders`. A noun that names the context is better than the name of its main entity.
+  - The name sets many other names: the projects and namespaces, the schema (CLA-0007, CLA-0051), the job links (CLA-0060), the problem types (CLA-0063), the module a schedule names (CLA-0061), the OpenAPI tag (CLA-0046) and the frontend entity slice (CLA-0037).
+  - Steiger needs the entity slices to be all singular or all plural (CLA-0040). Singular module names keep that rule on.
+  - An architecture test checks that no module class name, minus `Module`, ends in a plural `s`. The test keeps a short allow-list of singular nouns that end in `s`, such as `Analysis`.
 - **The boundary is the contract, not the transport.** Modules talk only through their Interfaces projects (CLA-0002). Behind a contract, a call can be:
   - an in-process call (the default): a message sent through the dispatcher (CLA-0067);
   - queued background work, through jobs (CLA-0058);
@@ -27,4 +32,5 @@ A second reason is low operational complexity. These are single-owner, local-fir
 - Architecture tests and review enforce the boundaries. Deployment topology does not.
 - A module can move to queued work, its own database or a remote call without changes to its callers, if its contract stays the same.
 - Design each contract so that any of these transports can serve it. Contracts pass messages: plain data that belongs to one Interfaces project. They never pass shared object graphs or EF Core entities (CLA-0003). A contract can rely on a transaction shared with the caller only when it is called in-process inside a composition module's unit of work (CLA-0007). A module that moves to its own database or behind a remote call loses that guarantee, and its callers switch to queued work.
+- Renaming a module later is expensive. Its schema cannot be renamed by editing the baseline migration (CLA-0010), so a rename needs a step that moves the migration history table and a new migration that moves every table. The recipe belongs to the claudalisk packages (lucem-labs/claudalisk-dotnet#15).
 - Work that crosses a queue or a network boundary is asynchronous and can fail independently. The caller handles retries and idempotency. The transport does not.

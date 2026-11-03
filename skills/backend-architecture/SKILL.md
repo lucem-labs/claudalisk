@@ -12,7 +12,7 @@ user-invocable: false
 
 These are claudalisk's decisions for backend code. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). Before changing code that one of these decisions covers, read the ADR.
 
-- [CLA-0001](${CLAUDE_PLUGIN_ROOT}/adr/0001-modular-monolith.md) (accepted): one deployable app whose one Host, `<Root>.Api`, composes the modules and holds only business-neutral endpoints. Features are modules, shared business logic is a module too, and a call behind a module boundary may be in-process, queued or remote.
+- [CLA-0001](${CLAUDE_PLUGIN_ROOT}/adr/0001-modular-monolith.md) (accepted): one deployable app whose one Host, `<Root>.Api`, composes the modules and holds only business-neutral endpoints. Features are modules named by a singular noun for their bounded context, shared business logic is a module too, and a call behind a module boundary may be in-process, queued or remote.
 - [CLA-0002](${CLAUDE_PLUGIN_ROOT}/adr/0002-interfaces-projects.md) (accepted): modules reference only other modules' `*.Interfaces` projects. Only the Host and tests reference implementations; shared infrastructure comes from claudalisk packages.
 - [CLA-0003](${CLAUDE_PLUGIN_ROOT}/adr/0003-lean-interfaces-projects.md) (accepted): interfaces pass messages, which are logic-free POCOs owned by one Interfaces project. Never share them across Interfaces projects, never call them models. An Interfaces project references nothing, and callers name the result type when they send.
 - [CLA-0004](${CLAUDE_PLUGIN_ROOT}/adr/0004-module-registration.md) (accepted): modules register themselves idempotently, declare dependencies by marker classes, and add their controllers as application parts.

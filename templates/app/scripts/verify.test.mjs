@@ -74,7 +74,7 @@ test('parseArgs reads the message, layer flags, fail-fast and the timeout', () =
 
 test('layerOf reads the layer from the job name, e2e first', () => {
   assert.equal(layerOf('backend'), 'backend');
-  assert.equal(layerOf('Backend tests (Orders)'), 'backend');
+  assert.equal(layerOf('Backend tests (Ordering)'), 'backend');
   assert.equal(layerOf('frontend-e2e'), 'e2e');
   assert.equal(layerOf('frontend lint'), 'frontend');
   assert.equal(layerOf('base'), undefined);

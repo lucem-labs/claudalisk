@@ -10,7 +10,7 @@
 
 - The backend publishes an OpenAPI document with ASP.NET Core's built-in OpenAPI support. The document describes every resource, command, `_links` and `_actions` member, and Problem Details `type` (CLA-0044, CLA-0045).
 - **Endpoints are grouped by module.**
-  - Every operation is tagged with the name of the module that owns it, such as `Orders` for `<Root>.Modules.Orders`. The API reference UI, such as Swagger UI, shows one group for each module.
+  - Every operation is tagged with the name of the module that owns it, such as `Ordering` for `<Root>.Modules.Ordering`. The API reference UI, such as Swagger UI, shows one group for each module.
   - The tag comes from module registration (CLA-0004). A convention tags every controller in a module's assembly. Controllers do not set tags by hand.
   - The Host's endpoints, such as health, have the tag `Host`.
   - Each tag has a description of what the bounded context covers (CLA-0041).
