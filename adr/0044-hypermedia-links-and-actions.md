@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** reviewer; end-to-end tests
+- **Enforced by:** architecture test (every success response body has `_links` and `_actions`; an operation that answers `204` is skipped); reviewer; end-to-end tests
 
 ## Context
 
@@ -11,10 +11,11 @@ The UI never re-implements business rules (CLA-0015). Without hypermedia, it sti
 
 ## Decision
 
-- Every resource representation has two extra members. Each item in a collection page has them too, because the page loads its aggregates (CLA-0047):
+- Every resource representation has two extra members. Each item in a collection page has them too. The page loads its aggregates, or reads rows that hold everything the aggregate's rules need (CLA-0047, CLA-0048):
   - **`_links`**, in the HAL style: a map from link relation to `{ "href": "…" }`. It always has `self`. Collections have `next` and `prev` when more pages exist, and items link to their `collection`. Relation names are [IANA-registered](https://www.iana.org/assignments/link-relations/link-relations.xhtml) where one fits. Otherwise they use a word from the module's ubiquitous language.
   - **`_actions`**: a map from command name to `{ "href": "…", "method": "…" }`. It lists only the commands (CLA-0043) and edits that the aggregate allows right now. It does not list a command that the aggregate would refuse.
 - The aggregate decides what goes in `_actions`, through the same rules that run when a client posts the command. A controller never decides it.
+- **`_links` and `_actions` belong to representations.** A response with no body has neither. `DELETE` may answer `204 No Content` (CLA-0045). A write that leaves the aggregate in place returns it with its new version (CLA-0056). The client then follows the links it already holds, such as the item's `collection`.
 
 ```json
 {
