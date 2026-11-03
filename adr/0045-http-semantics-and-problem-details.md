@@ -18,6 +18,7 @@
   - `409 Conflict` when the aggregate refuses a command or an edit because of a domain rule.
   - `412 Precondition Failed` when `If-Match` does not match the current version.
   - `428 Precondition Required` when a write that needs `If-Match` does not send it.
+  - `503 Service Unavailable` with `Retry-After` when a third-party dependency is down (CLA-0063).
 - **Every error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details.** Each domain error has its own `type` URI in the module's language, such as `/problems/orders/already-shipped`. It also has a `title` and a `detail` that the UI can show as is. The frontend branches on `type`, never on the text.
 - One API-wide exception handler turns every error into Problem Details (CLA-0063). Modules and controller actions do not do it.
 - **Writes are conditional.** A `GET` of an aggregate returns an `ETag` built from its version (CLA-0048, CLA-0056). `PUT`, `PATCH`, `DELETE` and commands on an existing aggregate require `If-Match`, except a command that applies to any state, which CLA-0056 lets each command declare exempt. A stale version gets `412`, and the client reloads before it tries again.

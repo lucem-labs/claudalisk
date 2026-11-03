@@ -23,7 +23,7 @@ Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but n
   - A claim is a short transaction of its own. It sets the job to `running`, increments `attempts` and stamps the heartbeat.
   - The worker sends the command through the pipeline. The unit of work that runs the handler also marks the job `succeeded`, so the handler's writes and the job's completion commit together. Batch jobs commit per batch instead (CLA-0059).
   - On an exception, the unit of work rolls back. A separate transaction records the error and puts the job back in the queue with exponential backoff and jitter. After the last attempt (5 by default) the job stays `failed`.
-  - A validation failure (CLA-0057) or a `DomainException` (CLA-0063) fails the job at once, because it gives the same answer on every attempt. The job's error keeps the problem type and title. Every other exception is retried, including a third-party outage (`DependencyUnavailableException`, CLA-0063).
+  - A validation failure (CLA-0057) or a `DomainException` (CLA-0063) fails the job at once, because it gives the same answer on every attempt. The job's error keeps the problem type and title. Every other exception is retried. A third-party outage (`DependencyUnavailableException`, CLA-0063) is retried no sooner than the wait it carries.
   - A heartbeat runs on its own connection every 15 seconds by default. A running job whose heartbeat is older than 2 minutes goes back in the queue.
   - A cancel request reaches the handler through its cancellation token. Progress is written on its own connection, so the UI sees it before the job commits.
   - A dedupe key replaces older queued jobs with the same key.
