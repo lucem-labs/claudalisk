@@ -15,6 +15,7 @@
 - **Failure:**
   - `400` for a request that fails validation, as ASP.NET Core's `ValidationProblemDetails`.
   - `404` for a resource that does not exist.
+  - `413 Content Too Large` when the request body is over the endpoint's size limit (CLA-0057).
   - `409 Conflict` when the aggregate refuses a command or an edit because of a domain rule.
   - `412 Precondition Failed` when `If-Match` does not match the current version.
   - `428 Precondition Required` when a write that needs `If-Match` does not send it.

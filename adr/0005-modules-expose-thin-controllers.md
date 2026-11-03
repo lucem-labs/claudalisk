@@ -14,12 +14,12 @@ The HTTP endpoints of a feature belong with the feature. If every endpoint lived
 - **Who owns controllers.** Endpoints use attribute-routed ASP.NET Core controllers.
   - A module can expose its own API. Its controllers live in its feature folders (CLA-0047), and module registration adds them (CLA-0004).
   - The Host (`<Root>.Api`) holds only endpoints with no business meaning, such as health, and registers app-wide concerns such as the Problem Details handler (CLA-0001, CLA-0063). Business logic that several modules need gets its own module.
-- **Controllers stay thin.** They handle only HTTP binding and status codes. Behaviour and business rules live in the module's handlers and aggregates. Each feature has one small controller, which sends its command or query through the dispatcher (CLA-0047, CLA-0049).
+- **Controllers stay thin.** They handle only HTTP binding and status codes. A limit that protects one endpoint, such as its body size or items per request, is an HTTP concern and is set on the controller (CLA-0057). Behaviour and business rules live in the module's handlers and aggregates. Each feature has one small controller, which sends its command or query through the dispatcher (CLA-0047, CLA-0049).
 - **DTOs.**
   - A request DTO lives next to the controller that uses it, in the feature's folder. A response DTO does too, until a second feature of the module returns it. Then it moves to the module's `Dtos/` folder (CLA-0047, CLA-0050).
   - They belong to the HTTP transport, so they can depend on ASP.NET Core MVC (for example binding attributes). They carry no validation attributes (CLA-0057).
   - They never depend on EF Core, and they are never messages (CLA-0003).
-  - **A module owns its DTOs and never shares them.** Another module never uses them, and no Interfaces project, `<Root>.Shared` or claudalisk package holds them. When two modules return the same shape, each defines its own DTO.
+  - **A module owns its DTOs and never shares them.** Another module never uses them, and no Interfaces project, `<Root>.Shared` or claudalisk package holds them. When two modules return the same shape, each defines its own DTO, under a schema name of its own (CLA-0046).
 - Mapping between DTOs, messages, aggregates and entities follows CLA-0069.
 
 ## Consequences
