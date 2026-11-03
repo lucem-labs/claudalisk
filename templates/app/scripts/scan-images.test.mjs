@@ -1,17 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { UsageError, buildImages, parseArgs, parseImage, scanImages } from './scan-images.mjs';
+import { UsageError, buildImages, main, parseArgs, parseImage, runner, scanImages } from './scan-images.mjs';
 
 const root = join('repo');
 const work = join('work');
 const images = [parseImage('api=backend/Shop.Api/Dockerfile'), parseImage('frontend=frontend/Dockerfile')];
 
-function recorder(codes = {}) {
+function recorder(fail = () => false) {
   const calls = [];
   const run = (command, args) => {
     calls.push([command, ...args]);
-    return { code: codes[`${command} ${args.at(-1)}`] ?? codes[`${command} ${args[2]}`] ?? 0 };
+    return { code: fail(command, args) ? 1 : 0 };
   };
   return { calls, run };
 }
@@ -22,14 +24,13 @@ test('parseImage takes the build context from the Dockerfile folder at the root'
 });
 
 test('parseImage refuses a Dockerfile outside backend/ and frontend/', () => {
-  assert.throws(() => parseImage('api=Dockerfile'), UsageError);
-  assert.throws(() => parseImage('api=../other/Dockerfile'), UsageError);
-  assert.throws(() => parseImage('Api=backend/Dockerfile'), UsageError);
-  assert.throws(() => parseImage(undefined), UsageError);
+  for (const value of ['api=Dockerfile', 'api=../other/Dockerfile', 'api=backend/../../x/Dockerfile', 'api=backend/./Dockerfile', 'api=backend//Dockerfile', 'Api=backend/Dockerfile', undefined]) {
+    assert.throws(() => parseImage(value), UsageError, String(value));
+  }
 });
 
-test('parseArgs needs a mode and an image', () => {
-  assert.throws(() => parseArgs(['--image', 'api=backend/Dockerfile']), UsageError);
+test('parseArgs needs a mode and an image, and names the usage', () => {
+  assert.throws(() => parseArgs(['--image', 'api=backend/Dockerfile']), /\nUsage: node scripts\/scan-images\.mjs/);
   assert.throws(() => parseArgs(['--build']), UsageError);
   const options = parseArgs(['--build', '--scan', '--image', 'api=backend/Dockerfile']);
   assert.equal(options.build, true);
@@ -47,7 +48,7 @@ test('buildImages builds each image from its context, pulling the base images', 
 });
 
 test('buildImages stops at the first failed build', () => {
-  const { calls, run } = recorder({ [`docker ${join(root, 'backend')}`]: 1 });
+  const { calls, run } = recorder((command, args) => args.includes('api:security'));
   assert.throws(() => buildImages({ images, root, run }), /Building api:security/);
   assert.equal(calls.length, 1);
 });
@@ -69,13 +70,39 @@ test('scanImages scans each image from a docker save archive', () => {
 });
 
 test('scanImages scans every image and then fails on the ones with findings', () => {
-  const { calls, run } = recorder({ [`trivy ${join(work, 'api-security.tar')}`]: 1 });
+  const { calls, run } = recorder((command, args) => command === 'trivy' && args.includes(join(work, 'api-security.tar')));
   assert.throws(() => scanImages({ images, root, run, work }), /vulnerabilities in api:security\.$/);
   assert.equal(calls.length, 4);
 });
 
 test('scanImages stops when an image was not built', () => {
-  const { calls, run } = recorder({ 'docker api:security': 1 });
+  const { calls, run } = recorder((command, args) => command === 'docker' && args[0] === 'save');
   assert.throws(() => scanImages({ images, root, run, work }), /build it first with --build/);
   assert.equal(calls.length, 1);
+});
+
+test('main builds every image before it saves any, and each mode alone does only its part', () => {
+  const kinds = (argv) => {
+    const { calls, run } = recorder();
+    main([...argv, '--image', 'api=backend/Dockerfile', '--image', 'web=frontend/Dockerfile'], { root, run, makeWork: () => mkdtempSync(join(tmpdir(), 'scan-images-test-')) });
+    return calls.map((call) => `${call[0]} ${call[1]}`);
+  };
+  assert.deepEqual(kinds(['--build', '--scan']), ['docker build', 'docker build', 'docker save', 'trivy image', 'docker save', 'trivy image']);
+  assert.deepEqual(kinds(['--scan']), ['docker save', 'trivy image', 'docker save', 'trivy image']);
+  assert.deepEqual(kinds(['--build']), ['docker build', 'docker build']);
+});
+
+test('main removes its work folder when a scan fails', () => {
+  const made = [];
+  const makeWork = () => { const path = mkdtempSync(join(tmpdir(), 'scan-images-test-')); made.push(path); return path; };
+  const { run } = recorder((command) => command === 'trivy');
+  assert.throws(() => main(['--scan', '--image', 'api=backend/Dockerfile'], { root, run, makeWork }), /vulnerabilities/);
+  assert.equal(made.length, 1);
+  assert.equal(existsSync(made[0]), false);
+});
+
+test('runner reports a missing command and counts a signal kill as a failure', () => {
+  assert.throws(() => runner(() => ({ error: new Error('ENOENT') }))('trivy', [], { inherit: true }), /trivy could not start: ENOENT/);
+  assert.deepEqual(runner(() => ({ status: null, signal: 'SIGKILL' }))('docker', [], { inherit: true }), { code: 1 });
+  assert.deepEqual(runner(() => ({ status: 0 }))('docker', [], { inherit: true }), { code: 0 });
 });

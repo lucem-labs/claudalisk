@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+export const USAGE = 'Usage: node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]';
+
 export const SECURITY_TOOLS = {
   gitleaks: {
     url: 'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz',
@@ -34,18 +36,26 @@ export const SECURITY_TOOLS = {
   },
 };
 
-export class UsageError extends Error {}
+export class UsageError extends Error {
+  constructor(message) {
+    super(`${message}\n${USAGE}`);
+  }
+}
 
 export function parseArgs(argv) {
-  const options = { tools: [], destination: join(tmpdir(), 'security-tools') };
+  const options = { tools: [], destination: undefined };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--tool') options.tools.push(...String(argv[++i] ?? '').split(',').map((name) => name.trim()).filter(Boolean));
-    else if (arg === '--destination') options.destination = argv[++i];
-    else throw new UsageError(`Unknown argument '${arg}'.`);
+    if (arg === '--tool') {
+      const names = String(argv[++i] ?? '').split(',').map((name) => name.trim()).filter(Boolean);
+      if (names.length === 0) throw new UsageError('--tool needs a tool name.');
+      options.tools.push(...names);
+    } else if (arg === '--destination') {
+      options.destination = argv[++i];
+      if (!options.destination) throw new UsageError('--destination needs a folder.');
+    } else throw new UsageError(`Unknown argument '${arg}'.`);
   }
   if (options.tools.length === 0) throw new UsageError('Name at least one tool with --tool.');
-  if (!options.destination) throw new UsageError('--destination needs a folder.');
   return options;
 }
 
@@ -57,7 +67,7 @@ function* filesIn(folder) {
   }
 }
 
-export async function installTool({ name, destination, download, untar, tools = SECURITY_TOOLS }) {
+export async function installTool({ name, destination, download, untar, chmod = chmodSync, tools = SECURITY_TOOLS }) {
   const tool = Object.hasOwn(tools, name) ? tools[name] : undefined;
   if (!tool) throw new UsageError(`Unknown security tool '${name}'. Known tools: ${Object.keys(tools).join(', ')}.`);
   const content = await download(tool.url);
@@ -76,8 +86,9 @@ export async function installTool({ name, destination, download, untar, tools = 
     }
     mkdirSync(destination, { recursive: true });
     const target = join(destination, tool.binary);
+    rmSync(target, { force: true });
     copyFileSync(binary, target);
-    chmodSync(target, 0o755);
+    chmod(target, 0o755);
     return target;
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -95,12 +106,14 @@ function untar(archive, folder) {
   if (result.status !== 0) throw new Error(`Unpacking ${archive} failed: ${result.stderr || result.error?.message}`);
 }
 
-export async function main(argv, { env = process.env, log = console.log } = {}) {
+export async function main(argv, { env = process.env, log = console.log, io = { download, untar } } = {}) {
   const options = parseArgs(argv);
+  const destination = options.destination ?? mkdtempSync(join(env.RUNNER_TEMP || tmpdir(), 'security-tools-'));
   for (const name of options.tools) {
-    log(`Installed ${name} at ${await installTool({ name, destination: options.destination, download, untar })}`);
+    log(`Installed ${name} at ${await installTool({ name, destination, ...io })}`);
   }
-  if (env.GITHUB_PATH) appendFileSync(env.GITHUB_PATH, `${options.destination}\n`);
+  if (env.GITHUB_PATH) appendFileSync(env.GITHUB_PATH, `${destination}\n`);
+  return destination;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
