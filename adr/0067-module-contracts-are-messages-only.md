@@ -11,7 +11,7 @@ Every feature sends its commands and queries through the dispatcher (CLA-0049). 
 
 ## Decision
 
-- **An Interfaces project holds only messages and the module marker:** commands, queries, their results, events, and the module's empty marker class (CLA-0004). It has no service interfaces, and it references no package (CLA-0003).
+- **An Interfaces project holds only messages and the module marker:** commands, queries, their results, events, and the module's empty marker class (CLA-0004). It has no service interfaces and no DTOs, and it references no package (CLA-0003). A module's HTTP DTOs stay in its implementation project, and no other module uses them (CLA-0005).
 - **A module calls another module only by sending that module's commands and queries through the dispatcher.** The call goes through the same pipeline as any other: logging, validation, and the caller's unit of work (CLA-0007, CLA-0049).
 - **Now or later is part of the contract.** `SendAsync` always runs the target's handler and waits for it.
   - A query or command whose result is the answer, such as `GetOrderSummaryQuery` sent as `SendAsync<OrderSummaryResult>`, runs to completion.
