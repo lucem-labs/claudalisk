@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** session-economy
-- **Enforced by:** `scripts/verify.mjs` in the app (CLA-0076); `implementer` agent; session-economy and workflow skills; reviewer. No hook yet: the plugin has no hooks.
+- **Enforced by:** `scripts/verify.mjs` in the app (CLA-0076); `implementer` agent; session-economy and workflow skills; reviewer. No hook yet.
 - **Issue:** #96
 
 ## Context

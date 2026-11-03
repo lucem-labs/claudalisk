@@ -23,7 +23,7 @@ jobs:
       - name: ADR index check
         run: node tools/check-adrs.mjs
       - name: Tool tests
-        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs
+        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs
 
   registry:
     runs-on: ubuntu-latest
