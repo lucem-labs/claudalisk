@@ -8,19 +8,19 @@ import { annotations, failedTests, location, report, summary } from './trx-annot
 const TRX = `<?xml version="1.0" encoding="utf-8"?>
 <TestRun>
   <Results>
-    <UnitTestResult testName="Orders.CancelOrderTests.Cancels_an_open_order" outcome="Passed" />
-    <UnitTestResult testName="Orders.CancelOrderTests.Refuses_a_shipped_order" outcome="Failed">
+    <UnitTestResult testName="Ordering.CancelOrderTests.Cancels_an_open_order" outcome="Passed" />
+    <UnitTestResult testName="Ordering.CancelOrderTests.Refuses_a_shipped_order" outcome="Failed">
       <Output>
         <ErrorInfo>
           <Message>Assert.Equal() Failure: Values differ
 Expected: &quot;Cancelled&quot;
 Actual:   &quot;Shipped&quot;</Message>
           <StackTrace>   at Xunit.Assert.Equal() in /_/src/Assert.cs:line 9
-   at Orders.CancelOrderTests.Refuses_a_shipped_order() in /home/runner/work/shop/shop/backend/Orders.Tests/CancelOrderTests.cs:line 42</StackTrace>
+   at Ordering.CancelOrderTests.Refuses_a_shipped_order() in /home/runner/work/shop/shop/backend/Ordering.Tests/CancelOrderTests.cs:line 42</StackTrace>
         </ErrorInfo>
       </Output>
     </UnitTestResult>
-    <UnitTestResult testName="Orders.CancelOrderTests.Skipped" outcome="NotExecuted" />
+    <UnitTestResult testName="Ordering.CancelOrderTests.Skipped" outcome="NotExecuted" />
   </Results>
 </TestRun>`;
 
@@ -36,9 +36,9 @@ test('failedTests counts passes and keeps each failure with its message and loca
   const { passed, failures } = failedTests(TRX, WORKSPACE);
   assert.equal(passed, 1);
   assert.deepEqual(failures, [{
-    name: 'Orders.CancelOrderTests.Refuses_a_shipped_order',
+    name: 'Ordering.CancelOrderTests.Refuses_a_shipped_order',
     message: 'Assert.Equal() Failure: Values differ\nExpected: "Cancelled"\nActual:   "Shipped"',
-    file: 'backend/Orders.Tests/CancelOrderTests.cs',
+    file: 'backend/Ordering.Tests/CancelOrderTests.cs',
     line: 42,
   }]);
 });
@@ -70,7 +70,7 @@ test('report reads every TRX file in the folder', () => {
   const summaries = [];
   report(dir, { workspace: WORKSPACE, write: (l) => out.push(l), appendSummary: (s) => summaries.push(s) });
   assert.equal(out.length, 2);
-  assert.match(out[0], /^::error file=backend\/Orders.Tests\/CancelOrderTests.cs,line=42,title=Orders.CancelOrderTests.Refuses_a_shipped_order::Assert/);
+  assert.match(out[0], /^::error file=backend\/Ordering.Tests\/CancelOrderTests.cs,line=42,title=Ordering.CancelOrderTests.Refuses_a_shipped_order::Assert/);
   assert.match(summaries[0], /2 passed, 2 failed/);
 });
 
