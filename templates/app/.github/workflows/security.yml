@@ -1,0 +1,83 @@
+name: security
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: security
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        if: runner.environment == 'github-hosted'
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install scanners
+        id: tools
+        run: node scripts/install-security-tools.mjs --tool osv-scanner
+
+      - name: NuGet packages
+        if: ${{ !cancelled() }}
+        uses: lucem-labs/nuget-audit-action@v1
+        env:
+          NuGetAudit: "false"
+        with:
+          path: backend/<Root>.slnx
+
+      - name: npm packages (OSV-Scanner)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: osv-scanner scan --config osv-scanner.toml --lockfile frontend/package-lock.json
+
+  images:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install scanners
+        run: node scripts/install-security-tools.mjs --tool trivy
+
+      - name: Build the images
+        run: node scripts/scan-images.mjs --build --image <app>-api=backend/<Root>.Api/Dockerfile --image <app>-frontend=frontend/Dockerfile
+
+      - name: Scan the images (Trivy)
+        run: node scripts/scan-images.mjs --scan --image <app>-api=backend/<Root>.Api/Dockerfile --image <app>-frontend=frontend/Dockerfile
+
+  zap:
+    runs-on: [self-hosted, linux, ci]
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: ZAP baseline against dev
+        run: node scripts/zap-baseline.mjs --target http://<app>.dev.localhost

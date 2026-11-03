@@ -8,7 +8,14 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/check-e2e-locators.mjs` | `node scripts/check-e2e-locators.mjs [<folder>]`: fails on CSS and element locators in the end-to-end tests ([CLA-0070](../adr/0070-testing-layers.md)). Without a folder it checks `frontend/e2e`, found from the script's own location. Add `node ../scripts/check-e2e-locators.mjs` to the frontend's `lint` script |
 | `app/scripts/trx-annotations.mjs` | Run in CI: turns the failing tests of .NET TRX reports into annotations and a job summary |
 | `app/scripts/no-comments.mjs` | `node scripts/no-comments.mjs [<root>] [--skip <path>]...`: fails when a tracked file has a comment ([CLA-0035](../adr/0035-no-code-comments.md)) |
+| `app/scripts/install-security-tools.mjs` | `node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a pinned release, refuses a download whose SHA-256 differs, and adds the folder to `GITHUB_PATH` ([CLA-0071](../adr/0071-security-scans.md)) |
+| `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
+| `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <host>]`: runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
+| `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
+| `app/.zap/rules.tsv` | The ZAP rules file, with the three informational rules every single-page app trips set to `INFO` |
+| `app/backend/Root.Api/Dockerfile` | The API image, at `backend/<Root>.Api/Dockerfile` in the app |
+| `app/frontend/Dockerfile`, `app/frontend/nginx.conf` | The frontend image and its server |
 
 ## Comment check
 
@@ -62,3 +69,82 @@ When a file type the app uses isn't in the table, add it to the checker in claud
 - Run `node --test scripts/*.test.mjs` in a job of its own.
 - Run `node scripts/no-comments.mjs` as a step of its own, with a `--skip` for each generated or vendored path.
 - Keep every step's `run` to one line ([CLA-0027](../adr/0027-scripts-in-node.md)). Anything longer goes into a tested script under `scripts/`.
+
+## Security jobs
+
+CLA-0071's scans run on the shared self-hosted runners (CLA-0033). Those runners use a Docker-in-Docker sidecar, which doesn't share the job's workspace with the Docker daemon: container actions and `docker run -v "$PWD"` see an empty folder. So the scanners avoid mounts:
+
+- gitleaks, OSV-Scanner, Trivy, zizmor and uv are release binaries that `install-security-tools.mjs` checks against a SHA-256 before they run. To move a scanner to a new release, change its URL and SHA-256 in that script, in claudalisk first.
+- Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for.
+- Trivy scans images from `docker save` archives, not from the daemon.
+- ZAP gets its rules on stdin and writes its report to a `tmpfs` folder. The script prints the report to the log and the job summary.
+
+The `security` job in `ci.yml` runs beside the test jobs. Add the app's forbidden-file, source-hygiene and suppression checks to it as steps of their own:
+
+```yaml
+security:
+  runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+  timeout-minutes: 30
+  defaults:
+    run:
+      shell: bash
+  env:
+    DOTNET_NOLOGO: "1"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    SEMGREP_VERSION: "1.182.0"
+  steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+      if: runner.environment == 'github-hosted'
+      with:
+        dotnet-version: 10.0.x
+    - name: Install scanners
+      id: tools
+      run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
+    - name: NuGet packages
+      if: ${{ !cancelled() }}
+      uses: lucem-labs/nuget-audit-action@v1
+      env:
+        NuGetAudit: "false"
+      with:
+        path: backend/<Root>.slnx
+    - name: npm packages (OSV-Scanner)
+      if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      run: osv-scanner scan --config osv-scanner.toml --lockfile frontend/package-lock.json
+    - name: Code (Semgrep)
+      if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      run: uv tool run --python 3.13 --from "semgrep==$SEMGREP_VERSION" semgrep scan --config p/csharp --config p/typescript --metrics=off --error --quiet
+    - name: Workflows (zizmor)
+      if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: zizmor --config .github/zizmor.yml .github/workflows
+    - name: Dockerfiles (Trivy)
+      if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+      run: trivy config --exit-code 1 --ignorefile .trivyignore.yaml .
+```
+
+- `NuGetAudit: "false"` stays on the audit step until lucem-labs/nuget-audit-action#1 is fixed. With warnings as errors, the action's second restore fails on a vulnerable package and reports "Restore failed" instead of the advisory. The build's own NuGet audit (NU1901 to NU1904) stays on, so a vulnerable package still fails the build.
+- `!cancelled()` lets every scan run after another one fails, so one run shows all the findings.
+- The weekly `security.yml` repeats the dependency scans, builds and scans the images, and runs the ZAP baseline on the runner on the owner's PC, where dev runs. GitHub dispatches a workflow only once it is on the default branch. To try a change to it before the merge, push it to a throwaway branch with a temporary `push` trigger, and delete the branch afterwards.
+
+## Images
+
+Trivy's config scan fails on a container that runs as root and on an image without a `HEALTHCHECK`. The template images pass it:
+
+- The API runs as the ASP.NET image's non-root `app` user (`USER $APP_UID`) on port 8080. Its `HEALTHCHECK` runs the API's own binary with `--health-check`, which calls the health endpoint and exits 0 or 1. The runtime image has no `curl`, so the check needs no extra tools. The argument comes from `Claudalisk.AspNetCore` (lucem-labs/claudalisk-dotnet#9); until that package ships it, the Host handles the argument before it builds the app.
+- The one-shot `migrate` service runs the API image with `healthcheck: disable: true` in Compose.
+- The frontend is served by `nginx/nginx-unprivileged` on port 8080, as the `nginx` user, and its `HEALTHCHECK` is a `wget` of the page.
+- `nginx.conf` sends the security headers the ZAP baseline checks for, a Content Security Policy among them, on every response. nginx drops the server's `add_header` lines in a `location` that has its own, so the locations add none. When the app loads images or fonts from another host, add that host to `img-src` or `font-src`, and nothing wider.
+
+## Running the ZAP baseline by hand
+
+In CI the script reaches dev through `host.docker.internal`, which the containers resolve to the machine-wide proxy (CLA-0033). On a Windows host with Docker Desktop that name resolves inside containers but not on the host, and the proxy listens only on `127.0.0.1`, so the host's LAN address doesn't work either. Pass the address Docker Desktop gives containers for the host:
+
+```powershell
+$proxy = (docker run --rm --entrypoint getent ghcr.io/zaproxy/zaproxy:2.17.0 hosts host.docker.internal).Split(' ')[0]
+node scripts/zap-baseline.mjs --target http://<app>.dev.localhost --proxy-host $proxy
+```
