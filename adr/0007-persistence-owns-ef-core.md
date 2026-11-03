@@ -24,7 +24,7 @@ A **schema per module in one physical database** keeps the ownership and keeps a
   - its stores, which map EF Core entities to messages (CLA-0003), or to the module's aggregates under CLA-0048.
 
   The store contracts live in `<Root>.Modules.<Name>.Persistence.Interfaces`. Only the module uses them.
-- **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to the data of other modules by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema.
+- **Nothing crosses a schema.** No module reads or writes another module's tables: no joins, no views and no foreign keys across schemas. Modules refer to the data of other modules by ID and get it through contracts (CLA-0002). Migration SQL qualifies table names with the schema and names only its own module's schema (CLA-0012).
 - **The claudalisk persistence package is the shared infrastructure** (CLA-0062). It holds no data of a module. It provides:
   - the app's single `NpgsqlDataSource`;
   - one connection per DI scope (a request or a background job), which every module DbContext in that scope shares;

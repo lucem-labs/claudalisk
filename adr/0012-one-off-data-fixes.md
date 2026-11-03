@@ -3,15 +3,21 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** add-migration skill, reviewer; guardrail hook (no SQL against uat by hand, CLA-0029)
+- **Enforced by:** add-migration skill, reviewer; guardrail hook (no SQL against uat by hand, CLA-0029); architecture test (no module code, its migrations included, names another module's schema)
+- **Issue:** #80
 
 ## Context
 
 Data cleanups done with SQL by hand are not reviewed, backed up first, or tried on dev. Separate one-off scripts would add a second path for data changes, with its own ordering, tracking and deploy step. Migrations already have all of that. They are reviewed, versioned, run once per database and ordered with the schema changes around them. The deploy step runs them after the pre-deploy backup (CLA-0008).
 
+The Host migrates the modules in a fixed order. A database restored from an old backup migrates every module in one run, so when one module's migration runs, another module may not have moved its tables yet. A backfill that read another module's tables and skipped when they were missing once left a read model empty, and only a restored uat backup showed it.
+
 ## Decision
 
 - **Cleanups, backfills and corrections are EF Core migrations**, like schema changes. Put the data change in `Up()` through `migrationBuilder.Sql(...)`. Do not use one-off data scripts or hand-run SQL.
+- **A migration reads and writes only its own module's schema,** not even once for a backfill (CLA-0007).
+- **A read model that another module feeds is seeded by a rebuild job.** The migration that creates the read model queues that job in its own module's jobs table (CLA-0058). The job runs after the deploy, reads through the other module's contract and is safe to run twice (CLA-0068).
+- **A backfill whose precondition is missing fails.** When a table or the rows it needs are not there, its SQL raises an error, so the migration and the deploy stop. It never skips silently. An empty table on a fresh database is not a missing precondition.
 - **Raw SQL only.** A migration never uses the DbContext or entity classes. It is a snapshot of the schema at that point, so write its SQL against the schema as it exists at that step. Code that uses today's model breaks when the model changes.
 - **Order the steps inside the migration.** The usual pattern is:
   1. add the column or table as nullable or unconstrained
@@ -24,9 +30,11 @@ Data cleanups done with SQL by hand are not reviewed, backed up first, or tried 
 - **One-way is acceptable.** `Down()` undoes the schema change but cannot bring deleted rows back. When the data matters, the migration first copies the affected rows to a backup table. Otherwise the pre-deploy backup (CLA-0031) is the way back.
 - **Safe on an empty database.** The SQL of the fix is a no-op on an empty database, so the fresh-database test (CLA-0011) still passes.
 - **Try it on real data first.** Refresh dev from uat (CLA-0032) and deploy dev, which runs the migration. Check the result before you open the pull request. Real data often shows surprises in cleanup SQL.
-- **Not migrations:** changes that need C# logic or calls to other services. They become an explicit, owner-triggered action (like CLA-0013), with their own design issue.
+- **Not migrations:** changes that need C# logic or calls to other services. They become an explicit, owner-triggered action (like CLA-0013), with their own design issue. A read-model rebuild is the one exception: its migration queues it.
 
 ## Consequences
 
 - Every data change in uat is reviewed, versioned and recorded in the migration history. It runs after a backup.
 - Data-fix migrations are immutable once applied, like any other migration (CLA-0010).
+- A read model fed by another module is seeded the same way whatever order the modules migrate in, including on a database restored from an old backup.
+- A backfill that cannot do its work stops the deploy before it leaves wrong data behind.
