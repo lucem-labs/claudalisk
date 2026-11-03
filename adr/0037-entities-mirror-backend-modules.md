@@ -3,11 +3,11 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
-- **Enforced by:** reviewer
+- **Enforced by:** Steiger (CLA-0040), reviewer
 
 ## Decision
 
-- Each backend module the frontend uses has one entity slice, named after the module in kebab-case: `<Root>.Modules.OrderHistory` becomes `entities/order-history`.
+- Each backend module the frontend uses has one entity slice, named after the module in kebab-case: `<Root>.Modules.OrderHistory` becomes `entities/order-history`. Module names are singular nouns (CLA-0001), so the entity slices are singular too, and Steiger's naming rule passes (CLA-0040).
 - An entity's `api` segment calls only that module's endpoints, and its types match that module's DTOs.
 - A page, widget or feature combines data from several modules. An entity never does. An entity that only references another entity's data uses `@x` (CLA-0036).
 - An entity has no slice for a backend module the frontend never calls.

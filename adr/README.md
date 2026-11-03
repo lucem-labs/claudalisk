@@ -86,6 +86,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | session-economy |
 | [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | session-economy |
 | [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | session-economy |
+| [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | session-economy |
 
 ## Format
 

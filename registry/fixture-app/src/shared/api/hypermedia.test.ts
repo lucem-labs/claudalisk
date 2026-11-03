@@ -37,21 +37,21 @@ describe("hypermedia client", () => {
   })
 
   it("returns the Location of a queued job", async () => {
-    respond(202, undefined, { Location: "/api/jobs/orders/7" })
+    respond(202, undefined, { Location: "/api/jobs/ordering/7" })
 
     const response = await sendAction({ href: "/api/orders/1/export", method: "POST" })
 
-    expect(response.location).toBe("/api/jobs/orders/7")
+    expect(response.location).toBe("/api/jobs/ordering/7")
     expect(response.data).toBeUndefined()
   })
 
   it("throws the Problem Details of a refused action", async () => {
-    respond(409, { type: "/problems/orders/already-shipped", title: "Already shipped", status: 409 })
+    respond(409, { type: "/problems/ordering/already-shipped", title: "Already shipped", status: 409 })
 
     const failure = sendAction({ href: "/api/orders/1/cancel", method: "POST" })
 
     await expect(failure).rejects.toBeInstanceOf(ProblemError)
-    await expect(failure).rejects.toMatchObject({ problem: { type: "/problems/orders/already-shipped" } })
+    await expect(failure).rejects.toMatchObject({ problem: { type: "/problems/ordering/already-shipped" } })
   })
 
   it("follows a link and returns its representation", async () => {
