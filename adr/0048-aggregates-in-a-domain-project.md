@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0006), reviewer
+- **Enforced by:** architecture tests (Domain projects reference only `<Root>.Shared` and `Claudalisk.Domain`), reviewer
 
 ## Context
 
