@@ -1,18 +1,27 @@
 ---
 name: workflow
-description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, one branch and pull request per issue, no drafts, bugs found along the way, when a pull request is ready, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
+description: Claudalisk workflow and session decisions (ADRs). Covers issue-driven work, one branch, pull request and session per issue, handoff notes, the implementer and scout subagents and their models, the verify script and waiting for CI, reading by range, compaction, the review before a pull request opens, owner review on uat and merging, Dependabot, secrets in git, and AGENTS.md deviations. Use when starting or picking up an issue, starting a subagent, building, testing or waiting for CI, reading code, opening or merging a pull request, filing an issue, stopping for the day, or when the context is getting large in a claudalisk app.
 user-invocable: false
 ---
 
 # Workflow
 
-These are claudalisk's decisions for how work moves from an issue to `main`. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). Before acting on one of these steps, read the ADR.
+These are claudalisk's decisions for how work moves from an issue to `main`, and how sessions stay small. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). Before acting on one of these steps, read the ADR.
 
-- [CLA-0021](${CLAUDE_PLUGIN_ROOT}/adr/0021-issue-driven-work.md) (accepted): every change starts from an issue and becomes one branch in a worktree and one pull request. Open the pull request only when it is ready, and never as a draft.
-- [CLA-0022](${CLAUDE_PLUGIN_ROOT}/adr/0022-bugs-found-become-issues.md) (accepted): bugs found along the way become new `needs-design-review` issues, not inline fixes.
-- [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request (never a draft) when CI is green and dev is verified. CD puts it on uat, and the owner reviews there and merges.
+- [CLA-0021](${CLAUDE_PLUGIN_ROOT}/adr/0021-issue-driven-work.md) (accepted): every change starts from an issue and becomes one branch in a worktree and one pull request. Open the pull request only when it is ready, and never as a draft. Dependabot pull requests are the one exception.
+- [CLA-0073](${CLAUDE_PLUGIN_ROOT}/adr/0073-one-session-per-issue.md) (accepted): one session works on one issue. To hand over, post a handoff note as a comment on the issue and stop; the next session starts from the issue and its latest handoff note.
+- [CLA-0074](${CLAUDE_PLUGIN_ROOT}/adr/0074-main-thread-plans-subagent-iterates.md) (accepted): the main thread plans and reviews; on a scoped issue the `claudalisk:implementer` subagent runs the build, test and fix loop, pushes only through the verify script, stops on design questions and reports in at most 300 words.
+- [CLA-0072](${CLAUDE_PLUGIN_ROOT}/adr/0072-dependabot-updates.md) (accepted): Dependabot opens security updates and weekly grouped version updates for NuGet, npm, actions and Docker. Nothing auto-merges; the owner merges. When CI fails, the agent fixes the Dependabot branch.
+- [CLA-0022](${CLAUDE_PLUGIN_ROOT}/adr/0022-bugs-found-become-issues.md) (accepted): bugs found along the way become new `needs-design-review` issues, not inline fixes. An unexplained test failure is rerun once: a pass files a flaky-test issue, and a second failure is investigated as a bug. CI never retries tests.
+- [CLA-0023](${CLAUDE_PLUGIN_ROOT}/adr/0023-ready-signoff-and-merge.md) (accepted): open the pull request, never a draft, when CI is green, dev is verified and the scripted review is done: Sonnet agents, `/code-review`, and a quorum only on high-risk uat data changes. Then review-deploy it to uat; the owner merges.
+- [CLA-0077](${CLAUDE_PLUGIN_ROOT}/adr/0077-wait-for-ci-in-one-call.md) (accepted): wait for CI in one blocking call, never by polling: the main thread runs `verify.mjs --timeout 60` in the background and the implementer in the foreground; once the pull request is open, the host's monitor is enough.
 - [CLA-0024](${CLAUDE_PLUGIN_ROOT}/adr/0024-owner-merges.md) (accepted): only the owner merges, in GitHub. The agent never merges.
 - [CLA-0026](${CLAUDE_PLUGIN_ROOT}/adr/0026-no-real-data-or-secrets-in-git.md) (accepted): env files, backups, dumps and real data never go into commits, pull requests or issues; CI runs gitleaks and a forbidden-file check.
 - [CLA-0028](${CLAUDE_PLUGIN_ROOT}/adr/0028-app-agents-md-wins.md) (accepted): the app's `AGENTS.md` holds app facts and lists deviations by ADR id.
-- [CLA-0016](${CLAUDE_PLUGIN_ROOT}/adr/0016-every-change-ships-with-tests.md) (accepted): done includes the tests and their results.
-- [CLA-0066](${CLAUDE_PLUGIN_ROOT}/adr/0066-environment-state-outside-the-checkout.md) (accepted): env files live outside the checkout, so worktrees need nothing copied; remove an issue's worktree after its merge.
+- [CLA-0016](${CLAUDE_PLUGIN_ROOT}/adr/0016-every-change-ships-with-tests.md) (accepted): Every behaviour change ships with tests.
+- [CLA-0066](${CLAUDE_PLUGIN_ROOT}/adr/0066-environment-state-outside-the-checkout.md) (accepted): Environment files and backups live outside the checkout, per app and machine.
+- [CLA-0075](${CLAUDE_PLUGIN_ROOT}/adr/0075-compact-at-task-boundaries.md) (accepted): compact after a milestone, never mid-task, by about 40% of the context window and never waiting for automatic compaction; for a new issue, start a new session instead.
+- [CLA-0076](${CLAUDE_PLUGIN_ROOT}/adr/0076-one-verify-script-per-cycle.md) (accepted): CI is the only verifier: check a change with one `node scripts/verify.mjs -m "<message>"` (layer flags `--backend`, `--frontend`, `--e2e`), which commits, pushes, waits for CI and prints only the failures.
+- [CLA-0078](${CLAUDE_PLUGIN_ROOT}/adr/0078-read-by-range-never-re-read.md) (accepted): find lines with Grep (the main thread through the scout), read large files by range with `Read`, never with `cat` or `sed`, and never re-read a file that is unchanged or just edited.
+- [CLA-0079](${CLAUDE_PLUGIN_ROOT}/adr/0079-subagent-model-and-effort-follow-the-role.md) (accepted): a subagent's model and effort follow its role: implementers on Sonnet at medium, the scout on Haiku at low, reviewers on Sonnet at medium, design agents on Opus, watchers on Haiku; the plugin's agents declare both in frontmatter.
+- [CLA-0080](${CLAUDE_PLUGIN_ROOT}/adr/0080-code-discovery-goes-through-the-scout.md) (accepted): the main thread sends code searches and exploratory reads to the Haiku `claudalisk:scout` and reads code itself only by range; the `scout-gate` hook denies its project-wide searches, large whole-file reads and shell reads.

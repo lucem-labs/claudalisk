@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (CLA-0006), reviewer
+- **Enforced by:** architecture tests (Domain projects reference only `<Root>.Shared` and `Claudalisk.Domain`), reviewer
 
 ## Context
 
@@ -14,11 +14,17 @@ The aggregate decides which commands are allowed and which `_actions` a represen
 - Each module has a `<Root>.Modules.<Name>.Domain` project. It holds the aggregates, entities and value objects as plain C#.
   - It references only `<Root>.Shared` and the `Claudalisk.Domain` package. It never references EF Core, ASP.NET Core, the dispatcher, or any Interfaces project.
   - An aggregate enforces its own invariants, and refuses a command by throwing a `DomainException` (CLA-0063). It exposes each command as a method, such as `order.Cancel(reason)`. It also says which commands it allows now, such as `order.CanCancel`. Those answers produce `_actions` (CLA-0044).
+  - That answer may be a pure function of the aggregate's state, in the Domain project, such as `OrderRules.CanCancel(status)`. The aggregate's methods call it, and so does the mapping of a collection page read through a read store (CLA-0047), so the two cannot disagree.
   - An aggregate carries its version, which becomes the `ETag` (CLA-0045, CLA-0056).
+- **Algorithms with no IO live in the Domain project.** A stateless algorithm or domain service that reads no database, file or network goes in a folder of its own, such as `Engine/`, and its tests call it as plain C#. A pure function that answers one aggregate's command rules stays next to that aggregate; `Engine/` is for algorithms that are not one aggregate's rules.
+  - It takes and returns Domain types. It never takes a message or a DTO.
+  - The handler maps messages, its module's own and other modules', into those Domain types (CLA-0069).
+  - A Domain type that mirrors another module's message takes a name of its own, so that the two are never confused.
+- **A stored hash or fingerprint names its fields.** It is built from an explicit list of fields, in a fixed order. It is never built by serialising a message, DTO or entity whole, because then a new property would change every stored value.
 - **The Persistence project maps the aggregates.**
   - The store contracts in `<Root>.Modules.<Name>.Persistence.Interfaces` load and save aggregates.
   - The stores in `<Root>.Modules.<Name>.Persistence` map EF Core entities to and from aggregates. EF Core entities never leave the Persistence project.
-  - Read stores return read models, and serve only read-model resources (CLA-0042, CLA-0047). A `GET` of an aggregate or a collection page loads the aggregates.
+  - Read stores return read models. They serve read-model resources (CLA-0042) and, under the rule below, collection pages (CLA-0047). A `GET` of an aggregate loads the aggregate. A collection page loads the aggregates, or reads through a read store when its `_actions` come from such a pure function and each row holds the version and everything the function needs (CLA-0047).
 - The projects of a module reference each other in one direction:
 
   | Project | References |
@@ -34,4 +40,5 @@ The aggregate decides which commands are allowed and which `_actions` a represen
 
 - Tests check domain rules as plain C#, without a database or HTTP.
 - Each aggregate has a mapping in its store. This is more code than a direct mapping of EF Core entities. In exchange, the rules do not depend on the database.
+- A new property on a message or DTO never changes a stored hash.
 - A module has five projects: Interfaces, Domain, the implementation, Persistence.Interfaces and Persistence. The scaffold generates them together.

@@ -19,7 +19,15 @@ Vibe-coding is fast but drifts. Claudalisk keeps the speed and adds the craft: y
 
 ## Standards
 
-The standards are architecture decision records in [`adr/`](adr/README.md). Each one is written once. Knowledge skills in [`skills/`](skills) index them by area: backend architecture, data and migrations, frontend, testing, workflow and environments. Code standards apply to every file. A skill loads when Claude works with files in its area, and Claude opens an ADR only when the work needs it. An app's `AGENTS.md` wins, and it lists each deviation by ADR id.
+The standards are architecture decision records in [`adr/`](adr/README.md). Each one is written once. Knowledge skills in [`skills/`](skills) index them by area: backend architecture, data and migrations, frontend, testing, workflow and environments. Code standards apply to every file, and the workflow skill also covers how sessions stay small. A skill loads when Claude works with files in its area or on a task it covers, and Claude opens an ADR only when the work needs it. An app's `AGENTS.md` wins, and it lists each deviation by ADR id.
+
+## Design system
+
+Apps use shadcn/ui on Tailwind CSS v4. The [`@claudalisk` registry](registry/README.md) ships claudalisk's theme and the base components that connect the UI to the API conventions. The plugin starts shadcn's MCP server, so Claude can search and add components from both registries.
+
+## App templates
+
+Files an app needs, such as `scripts/verify.mjs`, which pushes a change, waits for CI and prints only the failures, are in [`templates/`](templates/README.md). Until the scaffold generates them, an app copies them in.
 
 ## Security
 

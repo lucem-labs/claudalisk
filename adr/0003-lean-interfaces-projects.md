@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests
+- **Enforced by:** architecture tests (messages implement no interface, have no base type and reference no EF Core, MVC or service types; Interfaces projects reference no project or package)
 
 ## Context
 
@@ -22,7 +22,7 @@ If the objects passed through an interface are called "models", people confuse t
 - **The dispatcher checks the pairing.** At startup it fails when a message type in an Interfaces project has no handler or more than one. A send whose result type does not match the handler's fails with an error that names both types.
 - **Layout.** Use one message per file. An Interfaces project holds only messages and the module marker, an empty class (CLA-0004), with no service interfaces (CLA-0067).
 - **Persistence.** A module reaches its data through store contracts in its own `<Root>.Modules.<Name>.Persistence.Interfaces` project (CLA-0007). Modules never see EF Core types. A store maps EF Core entities to aggregates (CLA-0048), or to read models.
-- **Messages are not HTTP DTOs.** The request and response DTOs of a controller (CLA-0005) are separate types. Controllers map between DTOs and messages.
+- **Messages are not HTTP DTOs.** The request and response DTOs of a controller (CLA-0005) are separate types. Controllers map between DTOs and messages. An Interfaces project never holds a DTO, so a contract never carries one module's DTOs to another.
 
 ## Consequences
 

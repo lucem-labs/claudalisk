@@ -110,3 +110,24 @@ test('an accepted ADR that cites a proposed one without saying so fails', () => 
   files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', '- Do it as in the proposed CLA-0002.');
   assert.deepEqual(check(files), []);
 });
+
+test('an own-area line over the word limit fails', () => {
+  const files = valid();
+  const long = Array.from({ length: 41 }, () => 'word').join(' ');
+  files['skills/testing/SKILL.md'] = skill('testing', [`- [CLA-0001](\${CLAUDE_PLUGIN_ROOT}/adr/0001-a.md) (accepted): ${long}`]);
+  assert.match(check(files).join('\n'), /CLA-0001 has 41 words/);
+});
+
+test('a line outside the ADR\'s area must be the README decision', () => {
+  const files = valid();
+  files['skills/workflow/SKILL.md'] = skill('workflow', [line('CLA-0001', '0001-a.md')]);
+  assert.match(check(files).join('\n'), /outside its area \(testing\), so its text must be the README decision: "A decision"/);
+  files['skills/workflow/SKILL.md'] = skill('workflow', ['- [CLA-0001](${CLAUDE_PLUGIN_ROOT}/adr/0001-a.md) (accepted): A decision.']);
+  assert.deepEqual(check(files), []);
+});
+
+test('an ADR indexed twice by one skill fails', () => {
+  const files = valid();
+  files['skills/testing/SKILL.md'] = skill('testing', [line('CLA-0001', '0001-a.md'), line('CLA-0001', '0001-a.md')]);
+  assert.match(check(files).join('\n'), /CLA-0001 is indexed twice/);
+});

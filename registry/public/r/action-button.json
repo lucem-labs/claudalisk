@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "action-button",
+  "title": "Action button",
+  "description": "A button that renders only when its action is in a representation's _actions, and sends the action's method to its href.",
+  "dependencies": [
+    "@tanstack/react-query@^5"
+  ],
+  "registryDependencies": [
+    "button",
+    "spinner",
+    "@claudalisk/hypermedia"
+  ],
+  "files": [
+    {
+      "path": "ui/action-button.tsx",
+      "content": "import * as React from \"react\"\nimport { useMutation } from \"@tanstack/react-query\"\n\nimport { Button } from \"@/components/ui/button\"\nimport { Spinner } from \"@/components/ui/spinner\"\nimport { actionOf, type Representation } from \"@/lib/hypermedia\"\nimport { sendAction, type ActionResponse } from \"@/shared/api/hypermedia\"\n\ntype ActionButtonProps<T> = Omit<React.ComponentProps<typeof Button>, \"onClick\" | \"onError\"> & {\n  representation: Representation | undefined\n  action: string\n  body?: unknown\n  ifMatch?: string\n  onSuccess?: (response: ActionResponse<T>) => void\n  onError?: (error: unknown) => void\n}\n\nfunction ActionButton<T = unknown>({\n  representation,\n  action,\n  body,\n  ifMatch,\n  onSuccess,\n  onError,\n  disabled,\n  children,\n  ...props\n}: ActionButtonProps<T>) {\n  const control = actionOf(representation, action)\n  const mutation = useMutation({\n    mutationFn: () => {\n      if (!control) throw new Error(`The action ${action} is not available.`)\n      return sendAction<T>(control, { body, ifMatch })\n    },\n    onSuccess,\n    onError,\n  })\n\n  if (!control) return null\n\n  return (\n    <Button\n      data-action={action}\n      disabled={disabled || mutation.isPending}\n      onClick={() => mutation.mutate()}\n      {...props}\n    >\n      {mutation.isPending ? <Spinner data-icon=\"inline-start\" /> : null}\n      {children}\n    </Button>\n  )\n}\n\nexport { ActionButton }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

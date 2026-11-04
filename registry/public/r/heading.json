@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "heading",
+  "title": "Heading",
+  "description": "Heading, a real h1 to h4 in the theme's type scale, and PageHeader, a page's h1 with its description and actions.",
+  "dependencies": [
+    "cn"
+  ],
+  "files": [
+    {
+      "path": "ui/heading.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"cn\"\n\ntype HeadingLevel = 1 | 2 | 3 | 4\n\nconst LEVEL_CLASSES: Record<HeadingLevel, string> = {\n  1: \"text-2xl font-semibold\",\n  2: \"text-xl font-semibold\",\n  3: \"text-lg font-medium\",\n  4: \"text-base font-medium\",\n}\n\ntype HeadingProps = React.ComponentProps<\"h2\"> & {\n  level?: HeadingLevel\n}\n\nfunction Heading({ level = 2, className, ...props }: HeadingProps) {\n  const Tag = `h${level}` as const\n  return (\n    <Tag\n      data-slot=\"heading\"\n      className={cn(\"font-heading tracking-tight text-foreground\", LEVEL_CLASSES[level], className)}\n      {...props}\n    />\n  )\n}\n\ntype PageHeaderProps = Omit<React.ComponentProps<\"header\">, \"title\"> & {\n  title: React.ReactNode\n  description?: React.ReactNode\n  actions?: React.ReactNode\n}\n\nfunction PageHeader({ title, description, actions, className, ...props }: PageHeaderProps) {\n  return (\n    <header\n      data-slot=\"page-header\"\n      className={cn(\"flex flex-wrap items-start justify-between gap-4\", className)}\n      {...props}\n    >\n      <div className=\"flex min-w-0 flex-col gap-1\">\n        <Heading level={1}>{title}</Heading>\n        {description ? <p className=\"text-sm text-muted-foreground\">{description}</p> : null}\n      </div>\n      {actions ? <div className=\"flex flex-wrap items-center gap-2\">{actions}</div> : null}\n    </header>\n  )\n}\n\nexport { Heading, PageHeader }\nexport type { HeadingLevel }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

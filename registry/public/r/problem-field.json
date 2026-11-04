@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "problem-field",
+  "title": "Problem field",
+  "description": "A labelled form field that shows the validation errors a Problem Details response gives for its name.",
+  "registryDependencies": [
+    "field",
+    "@claudalisk/problem-details"
+  ],
+  "files": [
+    {
+      "path": "ui/problem-field.tsx",
+      "content": "import * as React from \"react\"\n\nimport { Field, FieldDescription, FieldError, FieldLabel } from \"@/components/ui/field\"\nimport { fieldErrors } from \"@/lib/problem-details\"\n\ntype ProblemFieldProps = {\n  name: string\n  label: React.ReactNode\n  error: unknown\n  description?: React.ReactNode\n  children: React.ReactElement<{ id?: string; name?: string; \"aria-invalid\"?: boolean }>\n}\n\nfunction ProblemField({ name, label, error, description, children }: ProblemFieldProps) {\n  const id = React.useId()\n  const messages = fieldErrors(error, name)\n  const invalid = messages.length > 0\n  const control = React.cloneElement(children, {\n    id,\n    name,\n    \"aria-invalid\": invalid || undefined,\n  })\n\n  return (\n    <Field data-invalid={invalid || undefined}>\n      <FieldLabel htmlFor={id}>{label}</FieldLabel>\n      {control}\n      {description ? <FieldDescription>{description}</FieldDescription> : null}\n      {invalid ? <FieldError errors={messages.map((message) => ({ message }))} /> : null}\n    </Field>\n  )\n}\n\nexport { ProblemField }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

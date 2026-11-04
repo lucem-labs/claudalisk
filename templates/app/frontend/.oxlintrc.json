@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "ignorePatterns": [".claude/**"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "fetch",
+        "message": "Call the backend through src/shared/api (CLA-0014)."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/shared/ui/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["src/shared/api/**", "e2e/**", "playwright.config.ts", "vite.config.ts"],
+      "rules": {
+        "no-restricted-globals": "off"
+      }
+    }
+  ]
+}

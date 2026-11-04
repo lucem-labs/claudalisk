@@ -7,7 +7,8 @@ const ADR_FILE = /^(\d{4})-[a-z0-9-]+\.md$/;
 const STATUS = /^(proposed|accepted|superseded by CLA-\d{4})$/;
 const SKILL_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\) \(([^)]+)\): \S/;
 const SKILL_LINK = /\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)\s`]+)/g;
-const README_ROW = /^\| \[(CLA-\d{4})\]\(([^)]+)\) \| [^|]+ \| ([^|]+?) \| ([^|]+?) \|$/;
+const README_ROW = /^\| \[(CLA-\d{4})\]\(([^)]+)\) \| ([^|]+?) \| ([^|]+?) \| ([^|]+?) \|$/;
+export const MAX_WORDS = 40;
 
 const field = (text, name) => text.match(new RegExp(`^- \\*\\*${name}:\\*\\* (.+)$`, 'm'))?.[1].trim();
 
@@ -72,15 +73,17 @@ export function checkAdrs(root) {
 
   const readmePath = join(root, 'adr', 'README.md');
   const indexed = new Set();
+  const decisionByFile = new Map();
   if (!existsSync(readmePath)) errors.push('adr/README.md is missing');
   else {
     for (const line of readFileSync(readmePath, 'utf8').replace(/\r\n/g, '\n').split('\n')) {
       const m = line.match(README_ROW);
       if (!m) continue;
-      const [, id, file, status, area] = m;
+      const [, id, file, decision, status, area] = m;
       const adr = byFile.get(file);
       if (!adr) { errors.push(`adr/README.md: ${id} links ${file}, which doesn't exist`); continue; }
       indexed.add(file);
+      decisionByFile.set(file, decision);
       if (adr.id !== id) errors.push(`adr/README.md: row ${id} links ${file}, which is ${adr.id}`);
       if (adr.status !== status) errors.push(`adr/README.md: ${id} status "${status}" doesn't match the ADR ("${adr.status}")`);
       if (adr.area !== area) errors.push(`adr/README.md: ${id} area "${area}" doesn't match the ADR ("${adr.area}")`);
@@ -103,7 +106,15 @@ export function checkAdrs(root) {
       const [, id, file, status] = m;
       const adr = byFile.get(file);
       if (!adr) continue;
+      if (skillsFor.get(file).has(s.name)) errors.push(`${where}: ${id} is indexed twice`);
       skillsFor.get(file).add(s.name);
+      const text = line.slice(line.indexOf('): ') + 3).trim();
+      if (adr.area === s.name) {
+        const words = text.split(/\s+/).length;
+        if (words > MAX_WORDS) errors.push(`${where}: ${id} has ${words} words; an ADR's line in its own area's skill has at most ${MAX_WORDS}`);
+      } else if (decisionByFile.has(file) && text.replace(/\.$/, '') !== decisionByFile.get(file)) {
+        errors.push(`${where}: ${id} is outside its area (${adr.area}), so its text must be the README decision: "${decisionByFile.get(file)}"`);
+      }
       if (adr.id !== id) errors.push(`${where}: ${id} links ${file}, which is ${adr.id}`);
       if (adr.status !== status) errors.push(`${where}: ${id} status "${status}" doesn't match the ADR ("${adr.status}")`);
     }

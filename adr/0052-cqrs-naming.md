@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** backend-architecture
-- **Enforced by:** architecture tests (suffixes match the dispatcher's interfaces), reviewer
+- **Enforced by:** architecture tests (suffixes match the dispatcher's interfaces; every aggregate root has an `<Aggregate>Entity`), reviewer
 
 ## Context
 
@@ -25,6 +25,7 @@ Every feature sends a command or a query through the dispatcher (CLA-0047, CLA-0
 | HTTP DTOs | `<Feature>Request` and `<Thing>Response` | `CancelOrderRequest`, `OrderSummaryResponse` |
 | Read model | the thing it describes, no suffix | `OrderSummary` |
 | Aggregate command and guard | imperative verb; `Can` + verb (CLA-0048) | `order.Cancel(reason)`, `order.CanCancel` |
+| Aggregate root's EF Core entity | the aggregate's name + `Entity` | `OrderEntity` |
 | Stores | `I<Aggregate>Store` for writes, `I<Aggregate>ReadStore` for reads | `IOrderStore`, `IOrderReadStore` |
 | Asynchronous method | `Async` suffix | `SaveAsync` |
 
@@ -36,4 +37,5 @@ Every feature sends a command or a query through the dispatcher (CLA-0047, CLA-0
 
 - The suffix stops a command or query from having the same name as its feature's namespace (`Features.CancelOrder`), which C# handles badly.
 - An architecture test can check three rules. Every type that implements the dispatcher's command interface ends in `Command`. Every query ends in `Query`. Every handler ends in `Handler`.
+- An architecture test pairs each aggregate root in a Domain project with its `<Aggregate>Entity` in the Persistence project, so it can check the `version` concurrency token (CLA-0056).
 - A search for a use case's name finds its folder, controller, command, handler, validator and tests together.

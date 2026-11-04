@@ -13,7 +13,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
 | [CLA-0005](0005-modules-expose-thin-controllers.md) | Modules may expose their own API, and controllers stay thin | accepted | backend-architecture |
-| [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention | accepted | backend-architecture |
+| [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention and prove that each rule can fail | accepted | backend-architecture |
 | [CLA-0007](0007-persistence-owns-ef-core.md) | Each module owns its schema; cross-module work uses a unit of work or the queue | accepted | data-and-migrations |
 | [CLA-0008](0008-migrations-are-a-deploy-step.md) | Migrations are an explicit deploy step | accepted | data-and-migrations |
 | [CLA-0009](0009-no-data-changes-at-startup.md) | No data changes at startup | accepted | data-and-migrations |
@@ -30,13 +30,13 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0020](0020-no-wall-clock-assertions.md) | No wall-clock assertions in tests | accepted | testing |
 | [CLA-0021](0021-issue-driven-work.md) | All work is issue-driven | accepted | workflow |
 | [CLA-0022](0022-bugs-found-become-issues.md) | Bugs found along the way become new issues | accepted | workflow |
-| [CLA-0023](0023-ready-signoff-and-merge.md) | Open the pull request when CI is green and dev is verified; the owner reviews on uat and merges | accepted | workflow |
+| [CLA-0023](0023-ready-signoff-and-merge.md) | Open the pull request when CI is green, dev is verified and the review is done; the owner reviews on uat and merges | accepted | workflow |
 | [CLA-0024](0024-owner-merges.md) | Only the owner merges, in GitHub | accepted | workflow |
 | [CLA-0026](0026-no-real-data-or-secrets-in-git.md) | Real data and secrets never go into commits, pull requests or issues | accepted | workflow |
 | [CLA-0027](0027-scripts-in-node.md) | Scripts are written in Node.js | accepted | code-standards |
 | [CLA-0028](0028-app-agents-md-wins.md) | The app's AGENTS.md wins, and deviations cite ADR ids | accepted | workflow |
 | [CLA-0029](0029-dev-and-uat-environments.md) | Two local environments: dev for the agent, uat for the owner's real data | accepted | environments |
-| [CLA-0030](0030-cd-deploys-dev-and-uat.md) | CD deploys dev and uat together, backing up uat first | accepted | environments |
+| [CLA-0030](0030-guarded-uat-deploys.md) | The agent deploys pull requests to uat with a guarded deploy script | accepted | environments |
 | [CLA-0031](0031-backups-and-restores.md) | Uat backups are versioned; restores are verified and swapped in | accepted | environments |
 | [CLA-0032](0032-dev-refreshed-from-uat.md) | Dev is refreshed one way from uat | accepted | environments |
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
@@ -77,6 +77,16 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0068](0068-events-fan-out-as-jobs.md) | Events fan out to every subscriber as a job after the commit | accepted | backend-architecture |
 | [CLA-0069](0069-hand-written-mapping.md) | Mapping is hand-written, with no AutoMapper or other mapping library | accepted | backend-architecture |
 | [CLA-0070](0070-testing-layers.md) | Each rule is tested at the lowest layer that can see it | accepted | testing |
+| [CLA-0071](0071-security-scans.md) | Security scans run in CI at three levels, and every suppression expires | accepted | environments |
+| [CLA-0072](0072-dependabot-updates.md) | Dependabot opens grouped dependency updates, and the owner merges them | accepted | workflow |
+| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | workflow |
+| [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | workflow |
+| [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | workflow |
+| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | workflow |
+| [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | workflow |
+| [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | workflow |
+| [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | workflow |
+| [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
 
 ## Format
 
