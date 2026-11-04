@@ -2,8 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-01
-- **Area:** session-economy
-- **Enforced by:** `implementer` and `scout` agents; session-economy and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`; in the main thread, the plugin's `scout-gate` hook (CLA-0080) for whole-file reads of large files and shell reads. No hook for repeat reads (see Decision).
+- **Area:** workflow
+- **Enforced by:** `implementer` and `scout` agents; workflow and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`; in the main thread, the plugin's `scout-gate` hook (CLA-0080) for whole-file reads of large files and shell reads. No hook for repeat reads (see Decision).
 - **Issue:** #97
 
 ## Context
