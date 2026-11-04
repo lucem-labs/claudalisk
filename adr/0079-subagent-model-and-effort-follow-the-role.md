@@ -4,7 +4,7 @@
 - **Date:** 2026-11-01
 - **Area:** workflow
 - **Enforced by:** the `model` and `effort` frontmatter of the plugin's agents (`claude plugin validate` checks it); workflow skill; reviewer
-- **Issue:** #98
+- **Issue:** #98, #127
 
 ## Context
 
@@ -16,7 +16,8 @@ Roles differ in what they need. A build, test and fix loop or a search takes man
 
 - **Implementers and research agents run on Sonnet at medium effort.** This covers the build, test and fix loop (CLA-0074) and agents that read and summarise docs or logs.
 - **Code discovery runs on Haiku at low effort.** The `claudalisk:scout` agent searches and reads code for the main thread (CLA-0080). On that task Haiku found the same code as Sonnet for less.
-- **Review and design agents run on Opus, or at max effort.** They take few steps, and judgement matters more than the cost per step. Max effort is for these roles only, never for a role that loops.
+- **Review agents run on Sonnet at medium effort.** They get their slice of the diff and their ADRs from the review plan (CLA-0023), so they check rather than explore. The plugin's `claudalisk:reviewer` agent declares it.
+- **Design agents run on Opus, or at max effort.** They take few steps, and judgement matters more than the cost per step. Max effort is for design only, never for a role that loops.
 - **Watchers that only wait and report run on Haiku.** A watcher runs a command, waits and returns what it saw. It needs no judgement.
 - **The plugin's agents declare their model and effort in frontmatter,** so the default is right without a choice each time. `claudalisk:implementer` declares `model: sonnet` and `effort: medium`, and `claudalisk:scout` declares `model: haiku` and `effort: low`. A new agent in the plugin states both.
 - **An agent without that frontmatter gets them from the call.** When the main thread starts a built-in or general agent, it passes the model and effort of the agent's role, instead of letting it inherit the main thread's.
@@ -26,6 +27,7 @@ Roles differ in what they need. A build, test and fix loop or a search takes man
 ## Consequences
 
 - The many requests of a loop run on the cheaper model at the effort that fits, so a long loop costs a fraction of what it cost at max effort.
-- Review and design keep the stronger model where it changes the outcome.
+- Design keeps the stronger model where it changes the outcome, and the review quorum (CLA-0023) brings Opus in where uat data is at risk.
+- The Sonnet review default is measured on past pull requests when the review skill is built (#53), and goes back to Opus if Sonnet misses findings the quorum counts.
 - A new agent in the plugin is checked against this ADR in review, and `claude plugin validate` rejects frontmatter it cannot read.
 - A role this ADR does not name takes the nearest one: an agent that loops is an implementer, and an agent that judges is a reviewer.
