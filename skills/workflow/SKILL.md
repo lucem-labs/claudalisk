@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch, pull request and session per issue, handoff notes, the implementer subagent, no drafts, bugs found along the way, when a pull request is ready, the multi-agent review before it opens, waiting for CI in one call, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening, marking ready or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
+description: Claudalisk workflow decisions (ADRs). Covers issue-driven work, Dependabot updates, one branch, pull request and session per issue, handoff notes, the implementer subagent, no drafts, bugs found along the way, when a pull request is ready, the multi-agent review before it opens, waiting for CI in one call, owner review on uat, who merges, keeping real data and secrets out of git, and how an app's AGENTS.md records deviations. Use when starting an issue, branching, opening or merging a pull request, filing an issue, or editing AGENTS.md in a claudalisk app.
 user-invocable: false
 ---
 
