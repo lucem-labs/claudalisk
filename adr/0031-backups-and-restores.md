@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** backup library and its tests; guardrail hook (no uat restore by the agent)
-- **Issue:** #14
+- **Issue:** #14, #86
 
 ## Decision
 
@@ -22,10 +22,13 @@
 - **Restores.**
   - A restore verifies the checksums, restores into a temporary database and swaps it in by rename. `pg_restore --clean` alone leaves extra tables behind.
   - Restoring uat first backs up the current uat data.
+  - **Order:** a restore stops the API, swaps the database in, migrates it with the deployed image's `migrate` service (CLA-0008), and only then starts the API. If the migration fails, the restore says so and leaves the API stopped.
+  - The API's restart policy does not loop on pending migrations: an API that refuses to start because migrations are pending stays stopped.
   - **Who restores uat:** only the owner. The agent never restores uat. When a deploy finds migrations the commit lacks, it refuses and prints the owner's restore command (CLA-0030).
 - **Deleting backups** is the owner's decision.
 
 ## Consequences
 
 - A failed restore leaves the database unchanged.
+- A restored backup older than the deployed commit is brought up to that commit's schema before anyone uses it, and a backup the deployed image can't migrate never serves traffic.
 - Every uat change can be undone, at the cost of data entered after the backup.
