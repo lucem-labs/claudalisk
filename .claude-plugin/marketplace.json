@@ -1,0 +1,11 @@
+{
+  "name": "claudalisk",
+  "description": "The claudalisk plugin for .NET + React apps.",
+  "owner": { "name": "lucem-labs", "url": "https://github.com/lucem-labs" },
+  "plugins": [
+    {
+      "name": "claudalisk",
+      "source": "./"
+    }
+  ]
+}
