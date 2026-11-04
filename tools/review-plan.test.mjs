@@ -136,10 +136,15 @@ test('the app config adds its own uat data and security paths', () => {
 });
 
 test('the deviations section of AGENTS.md is read', () => {
-  const root = tempDir({ 'AGENTS.md': '# App\n\n## Deviations\n\n- CLA-0035: generated files keep their header.\n\n## Commands\n\n- npm test\n' });
+  const root = tempDir({ 'AGENTS.md': '# App\n\n## Deviations\n\n- CLA-0035: generated files keep their header.\n\n### Backend\n\n- CLA-0069: one mapper.\n\n## Commands\n\n- npm test\n' });
+  const nested = tempDir({ 'AGENTS.md': '# App\n\n## Rules\n\n### Deviations\n\n- CLA-0035: kept.\n\n### Commands\n\n- npm test\n' });
   try {
-    assert.equal(readDeviations(root), '- CLA-0035: generated files keep their header.');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+    assert.equal(readDeviations(root), '- CLA-0035: generated files keep their header.\n\n### Backend\n\n- CLA-0069: one mapper.');
+    assert.equal(readDeviations(nested), '- CLA-0035: kept.');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(nested, { recursive: true, force: true });
+  }
   assert.equal(readDeviations(join(tmpdir(), 'no-such-app')), '');
 });
 
@@ -164,6 +169,11 @@ test('briefs carry the ADRs, the deviations and only their own hunks', () => {
     const conformance = readFileSync(join(out, 'adr-conformance.md'), 'utf8');
     assert.match(conformance, /generated files keep their header/);
     assert.match(conformance, /useEffect/);
+    writeFileSync(join(out, 'notes.txt'), 'keep');
+    const fix = writeBriefs(planReview({ diff: change('frontend/src/app/main.tsx'), knowledge, config, round: 'fix' }), out, pluginRoot);
+    assert.deepEqual(fix.agents.map((a) => a.domain), ['adr-conformance']);
+    assert.ok(!existsSync(join(out, 'uat-data-opus.md')));
+    assert.ok(existsSync(join(out, 'notes.txt')));
   } finally { rmSync(out, { recursive: true, force: true }); }
 });
 
@@ -177,8 +187,49 @@ test('arguments pick the diff source', () => {
   readDiff(parseArgs(['--since', 'abc123']), run);
   readDiff(parseArgs(['--pr', '42']), run);
   assert.deepEqual(calls, [
-    'git diff --no-color --find-renames origin/main...HEAD',
-    'git diff --no-color --find-renames abc123...HEAD',
+    'git -c core.quotePath=false diff --no-color --no-ext-diff --find-renames origin/main...HEAD',
+    'git -c core.quotePath=false diff --no-color --no-ext-diff --find-renames abc123...HEAD',
     'gh pr diff 42',
   ]);
+  assert.deepEqual(parseArgs(['--pr', '7', '--comment']), { base: 'origin/main', head: 'HEAD', pr: '7' });
+  assert.throws(() => parseArgs(['--base', '--pr', '7']), /needs a value/);
+});
+
+test('paths with spaces, quotes and renames come from the file lines', () => {
+  const diff = [
+    'diff --git a/docs/a b/c.md b/docs/a b/c.md',
+    '--- a/docs/a b/c.md',
+    '+++ b/docs/a b/c.md',
+    '@@ -1 +1 @@',
+    '+--- not a header',
+    'diff --git "a/frontend/src/\\303\\274.tsx" "b/frontend/src/\\303\\274.tsx"',
+    '--- "a/frontend/src/q\\"x.tsx"',
+    '+++ "b/frontend/src/q\\"x.tsx"',
+    '@@ -1 +1 @@',
+    '+x',
+    'diff --git a/scripts/old.mjs b/scripts/deploy.mjs',
+    'similarity index 90%',
+    'rename from scripts/old.mjs',
+    'rename to scripts/deploy.mjs',
+  ].join('\n');
+  const files = parseDiff(diff);
+  assert.deepEqual(files.map((f) => [f.path, f.status]), [
+    ['docs/a b/c.md', 'modified'],
+    ['frontend/src/q"x.tsx', 'modified'],
+    ['scripts/deploy.mjs', 'renamed'],
+  ]);
+  assert.equal(files[2].oldPath, 'scripts/old.mjs');
+});
+
+test('uat data and security paths match regardless of case, and Author is not auth', () => {
+  assert.equal(plan(change('frontend/src/features/auth/session.ts')).highRisk, true);
+  assert.equal(plan(change('backend/Modules/Identity/Identity/Features/SignIn/SignIn.cs')).highRisk, true);
+  assert.equal(plan(change('backend/Modules/Authors/Authors/Features/GetAuthor/GetAuthor.cs')).highRisk, false);
+  assert.equal(plan(change('Scripts/Deploy.mjs')).highRisk, true);
+});
+
+test('a plan with no reviewer domains still runs /code-review', () => {
+  const p = plan(change('README.md'));
+  assert.deepEqual(p.domains, []);
+  assert.deepEqual(p.codeReview, { effort: 'medium' });
 });

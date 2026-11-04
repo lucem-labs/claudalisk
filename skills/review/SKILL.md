@@ -16,13 +16,14 @@ This is the review that CLA-0023 requires before a pull request opens, with the 
 
 ## 2. Plan the review
 
-Run the plan script from the app's root:
+Run `git fetch origin main`, so the base is current, then run the plan script from the app's root:
 
 ```
 node "${CLAUDE_PLUGIN_ROOT}/tools/review-plan.mjs" [--pr <number> | --base <ref>] [--since <reviewed head>]
 ```
 
 - With no option it reviews the current branch against `origin/main`.
+- `--comment` belongs to this skill, not the script; the script ignores it.
 - `--since <sha>` is a fix round: it plans only the diff from the head you reviewed last, so only the domains whose files the fix changed are reviewed again.
 
 The script uses no model. It maps each changed file to the knowledge skills through their `paths` and lists their ADRs. It marks the change high-risk when it touches uat data (migrations, the deploy, init, backup, restore and refresh scripts, the uat Compose file, the agent's deny list and hooks) or security-relevant paths. An app adds its own paths under `review.uatData` and `review.security` in `.claude/claudalisk.json`. The script writes one brief per agent and prints a JSON summary: `agents` (domain, model, brief path), `codeReview.effort`, `highRisk` and its `reasons`, `unmapped` files and `skipped` lock files.
@@ -34,7 +35,7 @@ In one message, start every agent from `agents` in parallel, and run `/code-revi
 - Each agent is `claudalisk:reviewer`, with the prompt `Review the brief at <brief path>.` Leave its model and effort to its frontmatter (Sonnet, medium). For a quorum agent, pass the summary's `model` (`opus`, `sonnet` or `haiku`) in the call. Every quorum agent runs at medium effort (CLA-0079).
 - Run the built-in `/code-review` with the summary's `codeReview.effort` (`medium`, or `high` on a high-risk change) for correctness and security. claudalisk adds no agent for what it covers.
 
-Do not review the diff yourself while they run, and do not re-read the files they report on unless you are about to fix them.
+When `agents` is empty, because no changed file is in a knowledge skill's area, run `/code-review` alone. Do not review the diff yourself while they run, and do not re-read the files they report on unless you are about to fix them.
 
 ## 4. Count the findings
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,17 +22,21 @@ export const DEFAULT_UAT_DATA = [
 ];
 
 export const DEFAULT_SECURITY = [
-  '**/*Auth*/**',
-  '**/*Authentication*',
-  '**/*Authorization*',
+  '**/auth/**',
+  '**/*authentication*',
+  '**/*authentication*/**',
+  '**/*authorization*',
+  '**/*authorization*/**',
+  '**/identity/**',
   '.github/workflows/security.yml',
   '.zap/**',
 ];
 
+const BRIEF_FILE = /^(adr-conformance|uat-data)(-[a-z]+)?.md$/;
 const SKIPPED = [/(^|\/)package-lock\.json$/, /\.lock$/, /\.snap$/, /(^|\/)packages\.lock\.json$/];
 const SKILL_ADR_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\) \(([^)]+)\): (.+)$/;
 
-export function globToRegExp(glob) {
+export function globToRegExp(glob, flags = '') {
   let out = '';
   for (let i = 0; i < glob.length; i++) {
     const c = glob[i];
@@ -42,28 +46,40 @@ export function globToRegExp(glob) {
     else if (c === '?') out += '[^/]';
     else out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
   }
-  return new RegExp(`^${out}$`);
+  return new RegExp(`^${out}$`, flags);
 }
 
-export const matchesAny = (path, globs) => globs.some((g) => globToRegExp(g).test(path));
+export const matchesAny = (path, globs, flags = '') => globs.some((g) => globToRegExp(g, flags).test(path));
+
+const unquote = (path) => (path.startsWith('"') ? JSON.parse(path) : path);
+const sidePath = (line, side) => {
+  const raw = unquote(line.slice(4).replace(/	.*$/, ''));
+  return raw === '/dev/null' ? null : raw.slice(side.length + 1);
+};
 
 export function parseDiff(text) {
   const files = [];
   let current = null;
   for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
-    const header = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
-    if (header) {
-      current = { path: header[2], oldPath: header[1], status: 'modified', lines: [line] };
+    if (line.startsWith('diff --git ')) {
+      const header = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
+      current = { path: header?.[2] ?? null, oldPath: header?.[1] ?? null, status: 'modified', inHunk: false, lines: [line] };
       files.push(current);
       continue;
     }
     if (!current) continue;
     current.lines.push(line);
+    if (current.inHunk) continue;
+    if (line.startsWith('@@')) { current.inHunk = true; continue; }
+    if (line.startsWith('--- ')) current.oldPath = sidePath(line, 'a') ?? current.oldPath;
+    else if (line.startsWith('+++ ')) current.path = sidePath(line, 'b') ?? current.path;
+    else if (line.startsWith('rename to ')) current.path = unquote(line.slice(10));
+    else if (line.startsWith('rename from ')) current.oldPath = unquote(line.slice(12));
     if (line.startsWith('new file mode')) current.status = 'added';
     else if (line.startsWith('deleted file mode')) current.status = 'deleted';
     else if (line.startsWith('rename from')) current.status = 'renamed';
   }
-  return files.map(({ lines, ...f }) => ({ ...f, patch: lines.join('\n').replace(/\n+$/, '') }));
+  return files.map(({ lines, inHunk, ...f }) => ({ ...f, patch: lines.join('\n').replace(/\n+$/, '') }));
 }
 
 function frontmatterList(text, key) {
@@ -100,7 +116,12 @@ export function readDeviations(appRoot) {
   const path = join(appRoot, 'AGENTS.md');
   if (!existsSync(path)) return '';
   const text = readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
-  return text.match(/^(#{2,3}) Deviations[^\n]*\n([\s\S]*?)(?=^#{1,2} |(?![\s\S]))/m)?.[2].trim() ?? '';
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => /^#{2,3} Deviations\b/.test(l));
+  if (start < 0) return '';
+  const level = lines[start].match(/^#+/)[0].length;
+  const end = lines.findIndex((l, i) => i > start && /^#+ /.test(l) && l.match(/^#+/)[0].length <= level);
+  return lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim();
 }
 
 function unionAdrs(skills) {
@@ -117,8 +138,8 @@ export function planReview({ diff, knowledge, config, deviations = '', round = '
     return {
       ...f,
       skills: knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name),
-      uatData: paths.some((p) => matchesAny(p, config.uatData)),
-      security: paths.some((p) => matchesAny(p, config.security)),
+      uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')),
+      security: paths.some((p) => matchesAny(p, config.security, 'i')),
     };
   });
 
@@ -147,7 +168,7 @@ export function planReview({ diff, knowledge, config, deviations = '', round = '
       files: uat.map((f) => f.path),
       skills,
       adrs: unionAdrs(skills.map((n) => skillByName.get(n))),
-      models: highRisk ? [...QUORUM] : [REVIEW_MODEL],
+      models: [...QUORUM],
     });
   }
 
@@ -206,6 +227,7 @@ export function brief(plan, domain, model, pluginRoot) {
 
 export function writeBriefs(plan, outDir, pluginRoot) {
   mkdirSync(outDir, { recursive: true });
+  for (const f of readdirSync(outDir)) if (f === 'plan.json' || BRIEF_FILE.test(f)) rmSync(join(outDir, f));
   const agents = [];
   for (const d of plan.domains) {
     for (const model of d.models) {
@@ -232,10 +254,11 @@ export function writeBriefs(plan, outDir, pluginRoot) {
 export function parseArgs(argv) {
   const args = { base: 'origin/main', head: 'HEAD' };
   for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--comment') continue;
     const key = argv[i].replace(/^--/, '');
     if (!['base', 'head', 'pr', 'diff-file', 'since', 'out', 'app'].includes(key)) throw new Error(`unknown option ${argv[i]}`);
     const value = argv[++i];
-    if (value === undefined) throw new Error(`${argv[i - 1]} needs a value`);
+    if (value === undefined || value.startsWith('--')) throw new Error(`${argv[i - 1]} needs a value`);
     args[key] = value;
   }
   return args;
@@ -245,7 +268,7 @@ export function readDiff(args, run = (cmd, a) => execFileSync(cmd, a, { encoding
   if (args['diff-file']) return readFileSync(args['diff-file'], 'utf8');
   if (args.pr) return run('gh', ['pr', 'diff', args.pr]);
   const base = args.since ?? args.base;
-  return run('git', ['diff', '--no-color', '--find-renames', `${base}...${args.head}`]);
+  return run('git', ['-c', 'core.quotePath=false', 'diff', '--no-color', '--no-ext-diff', '--find-renames', `${base}...${args.head}`]);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
