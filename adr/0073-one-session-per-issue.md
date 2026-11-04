@@ -2,8 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-01
-- **Area:** session-economy
-- **Enforced by:** session-economy skill; reviewer
+- **Area:** workflow
+- **Enforced by:** workflow skill; reviewer
 - **Issue:** #92
 
 ## Context

@@ -2,8 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-01
-- **Area:** session-economy
-- **Enforced by:** the `model` and `effort` frontmatter of the plugin's agents (`claude plugin validate` checks it); session-economy skill; reviewer
+- **Area:** workflow
+- **Enforced by:** the `model` and `effort` frontmatter of the plugin's agents (`claude plugin validate` checks it); workflow skill; reviewer
 - **Issue:** #98
 
 ## Context
