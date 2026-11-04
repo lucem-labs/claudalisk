@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** frontend
-- **Enforced by:** reviewer; Steiger (CLA-0040); the scaffold and the app's comment check (CLA-0035)
-- **Issue:** #75
+- **Enforced by:** reviewer; Steiger (CLA-0040); the scaffold and the app's comment check (CLA-0035); CI's `registry` job (file names)
+- **Issue:** #75, #91
 
 ## Context
 
@@ -31,6 +31,13 @@ Alternatives considered:
 - **Pages and features compose components. They do not restyle them.**
   - A screen uses a `shared/ui` component where one exists, instead of a styled raw HTML element.
   - Add a new variant to the component, such as a `cva` variant. Do not override it with classes at the call site.
+- **Forms use `NativeSelect`.** shadcn's `native-select` is a styled `<select>`, so it works with the keyboard, the browser's autofill and phone pickers. The Radix `Select` is only for menus whose items are richer than text, such as items with icons or descriptions.
+- **File names in `shared/ui` say what they hold:**
+  - Every file in `shared/ui` is kebab-case, like shadcn's own.
+  - A file named after a shadcn component holds that component: shadcn's own, or the `@claudalisk` registry's override of it, such as `table` and `badge`. An override replaces shadcn's file the way shadcn's registry docs show ("install a block and override primitives").
+  - An app never gives a shadcn component's name to a different component, and never wraps a shadcn component to change it. It adds a variant to the component's file.
+  - A variant an app needs on a registry override is added in the registry, because apps update those files from it with `shadcn add @claudalisk/<item>`. A variant added in the app is lost at the next update.
+  - CI's `registry` job fails two files in one folder whose names differ only by case, which collide on Windows and macOS, and a file in `registry/ui` or in the installed `shared/ui` that is not kebab-case.
 - **Tables and charts use recipes.** Tables use the shadcn data table recipe on TanStack Table. Charts use the shadcn chart components on Recharts.
 - **Copied components belong to the app.** They follow the app's rules, including no comments (CLA-0035). When an agent touches a component, it checks for upstream fixes with `shadcn diff` and applies them as a normal change.
   - Some of shadcn's components ship with comments, such as `sidebar.tsx` and `chart.tsx`. The scaffold removes them when it installs the base (CLA-0055). After a later `shadcn add` or an upstream fix, the agent runs `node tools/strip-comments.mjs --app <frontend folder>` from claudalisk, which removes the comments under `src/shared` and keeps lint directives.

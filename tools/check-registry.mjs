@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { cpSync, createReadStream, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -7,7 +7,20 @@ import { join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { addDesignSystem } from './add-design-system.mjs';
 import { findCommentLines } from '../templates/app/scripts/no-comments.mjs';
-import { builtRegistry, checkRegistrySources, listFiles, registryRoot, shadcnVersion, spawnArguments } from './registry.mjs';
+import {
+  accessibilityTest,
+  builtRegistry,
+  checkRegistrySources,
+  findCaseCollisions,
+  findMissingAccessibilityTests,
+  findNonKebabFiles,
+  listFiles,
+  readJson,
+  registryRoot,
+  repositoryRoot,
+  shadcnVersion,
+  spawnArguments,
+} from './registry.mjs';
 
 export function runAsync(command, args, cwd) {
   return new Promise((resolvePromise, reject) => {
@@ -25,6 +38,15 @@ export function installedComments(app) {
   const shared = join(app, 'src', 'shared');
   return listFiles(shared, ['.ts', '.tsx'])
     .flatMap((file) => findCommentLines(readFileSync(file, 'utf8'), file).map((line) => `${relative(app, file).replaceAll('\\', '/')}:${line}`));
+}
+
+export function fileNameErrors(paths, uiFolder) {
+  const normalized = paths.map((path) => path.replaceAll('\\', '/'));
+  return [...findCaseCollisions(normalized), ...findNonKebabFiles(normalized.filter((path) => path.startsWith(uiFolder)))];
+}
+
+export function installedFileNameErrors(app) {
+  return fileNameErrors(listFiles(join(app, 'src'), ['']).map((file) => relative(app, file)), 'src/shared/ui/');
 }
 
 export function compareBuilds(expectedDir, actualDir) {
@@ -123,6 +145,14 @@ async function main() {
   if (sourceErrors.length) throw new Error(sourceErrors.join('\n'));
   console.log('✓ Registry sources have no comments and no raw colours.');
 
+  const tracked = execFileSync('git', ['ls-files', 'registry'], { cwd: repositoryRoot, encoding: 'utf8' }).split('\n').filter(Boolean);
+  const nameErrors = [
+    ...fileNameErrors(tracked, 'registry/ui/'),
+    ...findMissingAccessibilityTests(readJson(join(registryRoot, 'registry.json')), readFileSync(accessibilityTest, 'utf8')),
+  ];
+  if (nameErrors.length) throw new Error(nameErrors.join('\n'));
+  console.log('✓ Registry file names are kebab-case, differ by more than case, and every component has an accessibility test.');
+
   const version = shadcnVersion();
   const work = realpathSync.native(mkdtempSync(join(tmpdir(), 'claudalisk-registry-')));
   try {
@@ -145,6 +175,9 @@ async function main() {
       const comments = installedComments(app);
       if (comments.length) throw new Error(`The scaffold left comments in ${comments.join(', ')}`);
       console.log('✓ The scaffold removed the comments of the installed shadcn components.');
+      const installedNames = installedFileNameErrors(app);
+      if (installedNames.length) throw new Error(installedNames.join('\n'));
+      console.log('✓ The installed files in src are kebab-case in shared/ui and differ by more than case.');
       await runAsync('npx', ['--yes', `shadcn@${version}`, 'add', 'input', '--yes'], app);
       await checkMcp(version, app);
       console.log('✓ shadcn\'s MCP server lists @claudalisk items and searches @shadcn.');
@@ -153,7 +186,7 @@ async function main() {
     }
     await runAsync('npm', ['run', 'build'], app);
     await runAsync('npm', ['test'], app);
-    console.log('✓ @claudalisk/base installs into a fresh Vite app, which type-checks, builds and passes its tests.');
+    console.log('✓ @claudalisk/base installs into a fresh Vite app, which type-checks, builds and passes its tests, axe checks and landmark and role tests.');
   } finally {
     if (!process.argv.includes('--keep')) rmSync(work, { recursive: true, force: true });
     else console.log(`Kept ${work}`);
