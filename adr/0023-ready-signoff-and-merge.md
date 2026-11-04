@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** workflow
-- **Enforced by:** the uat deploy script (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024); guardrail hook on `gh pr create` (CI must be green on the head, #11); the claudalisk review skill (#53); reviewer
-- **Issue:** #90, #127
+- **Enforced by:** the uat deploy script (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024); guardrail hook on `gh pr create` (CI must be green on the head, #11); the claudalisk review skill (`/claudalisk:review`) and its plan script (`tools/review-plan.mjs`); reviewer
+- **Issue:** #90, #127, #53
 
 ## Context
 
@@ -16,8 +16,9 @@ Tests and the owner's review on uat still miss some bugs. In one change to the u
 
 - **No draft pull requests.**
 - **While working,** the agent pushes the issue branch. CI runs on every branch push (CLA-0034). The agent deploys to dev by hand and verifies there. Nothing else deploys dev (CLA-0030), so dev runs what the agent last deployed.
-- **A multi-agent review before opening.** When CI is green and dev is verified, the agent runs the claudalisk review skill on the branch (#53). Until the skill exists, the agent starts the same review agents itself.
+- **A multi-agent review before opening.** When CI is green and dev is verified, the agent runs the claudalisk review skill, `/claudalisk:review`, on the branch.
   - **A script plans the review, not a model.** It maps the changed files to the knowledge skills' areas and their ADRs, decides whether the change is high-risk, and gives each agent only its slice of the diff and its ADRs.
+  - **uat data** paths are the migrations, the deploy, init, backup, restore and refresh scripts, the uat Compose file and the agent's deny list and hooks. An app adds its own, and its security-relevant paths, in `.claude/claudalisk.json`.
   - **ADR conformance:** one agent for every area the change touches, on the review model of CLA-0079.
   - **uat data safety,** when the change touches migrations, backups, restores or deploys: one agent on the review model.
   - **Correctness and security:** the built-in `/code-review`, at medium effort, and high on a high-risk change.

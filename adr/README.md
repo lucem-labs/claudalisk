@@ -1,6 +1,6 @@
 # Architecture decision records
 
-These are claudalisk's standards for the apps it builds. Each ADR is written once here. The knowledge skills in [`skills/`](../skills) index the ADRs for their area and link to them through `${CLAUDE_PLUGIN_ROOT}/adr/…`. Claude loads an ADR only when the work needs it. A skill with `paths` loads when Claude works with matching files.
+These are claudalisk's standards for the apps it builds. Each ADR is written once here. The knowledge skills in [`skills/`](../skills) index the ADRs for their area and link to them through `${CLAUDE_PLUGIN_ROOT}/adr/…`. Claude loads an ADR only when the work needs it. A skill with `paths` loads when Claude works with matching files. The review skill, `/claudalisk:review`, plans a review from the same `paths` and ADR lines: a changed file is checked against the ADRs of every skill whose `paths` match it ([CLA-0023](0023-ready-signoff-and-merge.md)). Keep a skill's `paths` covering the files its ADRs govern.
 
 An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation by ADR id ([CLA-0028](0028-app-agents-md-wins.md)).
 
