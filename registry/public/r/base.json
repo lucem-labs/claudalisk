@@ -12,6 +12,7 @@
     "@claudalisk/action-button",
     "@claudalisk/paged-table",
     "@claudalisk/query-state",
+    "@claudalisk/color-scheme",
     "@claudalisk/app-shell",
     "@claudalisk/table",
     "@claudalisk/badge",

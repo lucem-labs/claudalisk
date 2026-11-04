@@ -1,6 +1,7 @@
 import * as React from "react"
 import { NavLink, UNSAFE_NavigationContext, useLocation, useResolvedPath } from "react-router"
 
+import { ColorSchemeToggle } from "@/components/ui/color-scheme-toggle"
 import { Separator } from "@/components/ui/separator"
 import {
   Sidebar,
@@ -58,8 +59,11 @@ function AppShell({ title, navigation, header, children }: AppShellProps) {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             {header}
+            <div className="ml-auto">
+              <ColorSchemeToggle />
+            </div>
           </header>
-          <main className="flex flex-1 flex-col gap-4 p-4">{children}</main>
+          <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

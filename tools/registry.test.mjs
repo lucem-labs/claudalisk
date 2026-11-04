@@ -1,12 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
+  accessibilityTest,
   checkRegistrySources,
   componentsJson,
+  findCaseCollisions,
   findComments,
+  findMissingAccessibilityTests,
+  findNonKebabFiles,
   findRawColors,
   pluginVersion,
   readJson,
@@ -144,4 +148,47 @@ test('compareBuilds reports missing, stale and extra files', () => {
 
 test('the repository root holds the plugin manifest', () => {
   assert.equal(readJson(join(repositoryRoot, '.claude-plugin', 'plugin.json')).name, 'claudalisk');
+});
+
+test('findCaseCollisions fails two files in one folder whose names differ only by case', () => {
+  assert.deepEqual(
+    findCaseCollisions(['src/shared/ui/table.tsx', 'src/shared/ui/Table.tsx', 'src/pages/table.tsx', 'src/shared/ui/badge.tsx']),
+    ['src/shared/ui/table.tsx and src/shared/ui/Table.tsx differ only by case (CLA-0053)'],
+  );
+});
+
+test('findCaseCollisions compares folders exactly and normalizes separators', () => {
+  assert.deepEqual(findCaseCollisions(['src\\Shared\\ui\\table.tsx', 'src/shared/ui/table.tsx', 'src/shared/ui/table.tsx']), []);
+});
+
+test('findNonKebabFiles lists files whose names are not kebab-case', () => {
+  assert.deepEqual(
+    findNonKebabFiles(['ui/data-table.tsx', 'ui/base-items.test.tsx', 'ui/DataTable.tsx', 'ui/data_table.tsx', 'ui/use-mobile.ts']),
+    ['ui/DataTable.tsx is not kebab-case (CLA-0053)', 'ui/data_table.tsx is not kebab-case (CLA-0053)'],
+  );
+});
+
+test('findMissingAccessibilityTests lists ui items without a describe block of their name', () => {
+  const registry = {
+    items: [
+      { name: 'badge', type: 'registry:ui' },
+      { name: 'pager', type: 'registry:ui' },
+      { name: 'hypermedia', type: 'registry:lib' },
+    ],
+  };
+  assert.deepEqual(findMissingAccessibilityTests(registry, 'describe("badge", () => {})'), [
+    '@claudalisk/pager has no describe("pager") in the accessibility test (CLA-0055)',
+  ]);
+});
+
+test('every registry component has an accessibility test', () => {
+  assert.deepEqual(findMissingAccessibilityTests(readJson(join(registryRoot, 'registry.json')), readFileSync(accessibilityTest, 'utf8')), []);
+});
+
+test('the color-scheme item ships the helper and the toggle, and the app shell and base depend on it', () => {
+  const items = readJson(join(registryRoot, 'registry.json')).items;
+  const item = items.find((candidate) => candidate.name === 'color-scheme');
+  assert.deepEqual(item.files.map((file) => file.path), ['lib/color-scheme.ts', 'ui/color-scheme-toggle.tsx']);
+  assert.ok(items.find((candidate) => candidate.name === 'app-shell').registryDependencies.includes('@claudalisk/color-scheme'));
+  assert.ok(items.find((candidate) => candidate.name === 'base').registryDependencies.includes('@claudalisk/color-scheme'));
 });

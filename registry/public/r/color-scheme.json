@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "color-scheme",
+  "title": "Color scheme",
+  "description": "Light and dark mode: applyColorScheme puts the .dark class and color-scheme on <html> from the stored choice or else the system preference, and a toggle stores the choice in localStorage.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "button"
+  ],
+  "files": [
+    {
+      "path": "lib/color-scheme.ts",
+      "content": "export type ColorScheme = \"light\" | \"dark\"\n\nexport const COLOR_SCHEME_STORAGE_KEY = \"color-scheme\"\n\nexport function storedColorScheme(): ColorScheme | null {\n  try {\n    const stored = window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY)\n    return stored === \"light\" || stored === \"dark\" ? stored : null\n  } catch {\n    return null\n  }\n}\n\nexport function systemColorScheme(): ColorScheme {\n  return window.matchMedia?.(\"(prefers-color-scheme: dark)\").matches ? \"dark\" : \"light\"\n}\n\nexport function currentColorScheme(): ColorScheme {\n  return document.documentElement.classList.contains(\"dark\") ? \"dark\" : \"light\"\n}\n\nexport function applyColorScheme(scheme: ColorScheme = storedColorScheme() ?? systemColorScheme()): ColorScheme {\n  const root = document.documentElement\n  root.classList.toggle(\"dark\", scheme === \"dark\")\n  root.style.colorScheme = scheme\n  return scheme\n}\n\nexport function storeColorScheme(scheme: ColorScheme): ColorScheme {\n  writeStoredColorScheme(scheme)\n  return applyColorScheme(scheme)\n}\n\nfunction writeStoredColorScheme(scheme: ColorScheme): boolean {\n  try {\n    window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, scheme)\n    return true\n  } catch {\n    return false\n  }\n}\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "ui/color-scheme-toggle.tsx",
+      "content": "import * as React from \"react\"\nimport { Moon, Sun } from \"lucide-react\"\n\nimport { Button } from \"@/components/ui/button\"\nimport { currentColorScheme, storeColorScheme, type ColorScheme } from \"@/lib/color-scheme\"\n\ntype ColorSchemeToggleProps = {\n  label?: string\n}\n\nfunction ColorSchemeToggle({ label = \"Dark mode\" }: ColorSchemeToggleProps) {\n  const [scheme, setScheme] = React.useState<ColorScheme>(currentColorScheme)\n  const dark = scheme === \"dark\"\n\n  return (\n    <Button\n      type=\"button\"\n      variant=\"ghost\"\n      size=\"icon\"\n      aria-label={label}\n      aria-pressed={dark}\n      onClick={() => setScheme(storeColorScheme(dark ? \"light\" : \"dark\"))}\n    >\n      {dark ? <Moon aria-hidden /> : <Sun aria-hidden />}\n    </Button>\n  )\n}\n\nexport { ColorSchemeToggle }\n",
+      "type": "registry:ui"
+    }
+  ],
+  "type": "registry:ui"
+}

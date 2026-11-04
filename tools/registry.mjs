@@ -133,6 +133,37 @@ export function findRawColors(text, { css = false } = {}) {
   return found;
 }
 
+export const accessibilityTest = join(registryRoot, 'fixture-app', 'src', 'shared', 'ui', 'accessibility.test.tsx');
+
+const KEBAB_CASE_FILE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+)+$/;
+
+export function findCaseCollisions(paths) {
+  const seen = new Map();
+  const errors = [];
+  for (const path of paths.map((p) => p.replaceAll('\\', '/'))) {
+    const slash = path.lastIndexOf('/');
+    const key = `${path.slice(0, slash + 1)}${path.slice(slash + 1).toLowerCase()}`;
+    const first = seen.get(key);
+    if (first === undefined) seen.set(key, path);
+    else if (first !== path) errors.push(`${first} and ${path} differ only by case (CLA-0053)`);
+  }
+  return errors;
+}
+
+export function findNonKebabFiles(paths) {
+  return paths
+    .map((p) => p.replaceAll('\\', '/'))
+    .filter((path) => !KEBAB_CASE_FILE.test(path.slice(path.lastIndexOf('/') + 1)))
+    .map((path) => `${path} is not kebab-case (CLA-0053)`);
+}
+
+export function findMissingAccessibilityTests(registry, testText) {
+  return registry.items
+    .filter((item) => item.type === 'registry:ui')
+    .filter((item) => !testText.includes(`describe("${item.name}"`))
+    .map((item) => `@claudalisk/${item.name} has no describe("${item.name}") in the accessibility test (CLA-0055)`);
+}
+
 export function checkRegistrySources(root = registryRoot) {
   const errors = [];
   for (const file of registrySources(root)) {

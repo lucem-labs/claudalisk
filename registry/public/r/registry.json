@@ -124,12 +124,30 @@
       ]
     },
     {
+      "name": "color-scheme",
+      "type": "registry:ui",
+      "title": "Color scheme",
+      "description": "Light and dark mode: applyColorScheme puts the .dark class and color-scheme on <html> from the stored choice or else the system preference, and a toggle stores the choice in localStorage.",
+      "dependencies": ["lucide-react"],
+      "registryDependencies": ["button"],
+      "files": [
+        {
+          "path": "lib/color-scheme.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "ui/color-scheme-toggle.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
       "name": "app-shell",
       "type": "registry:ui",
       "title": "App shell",
       "description": "The app's layout: a sidebar with navigation links for React Router, a header and the main content.",
       "dependencies": ["react-router@^7"],
-      "registryDependencies": ["sidebar", "separator", "tooltip"],
+      "registryDependencies": ["sidebar", "separator", "tooltip", "@claudalisk/color-scheme"],
       "files": [
         {
           "path": "ui/app-shell.tsx",
@@ -260,6 +278,7 @@
         "@claudalisk/action-button",
         "@claudalisk/paged-table",
         "@claudalisk/query-state",
+        "@claudalisk/color-scheme",
         "@claudalisk/app-shell",
         "@claudalisk/table",
         "@claudalisk/badge",

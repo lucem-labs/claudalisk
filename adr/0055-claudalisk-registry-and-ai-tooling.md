@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; `claude plugin validate`; CI's `registry` job; reviewer
-- **Issue:** #38, #75
+- **Issue:** #38, #75, #91
 
 ## Decision
 
@@ -14,7 +14,8 @@
 - **What the registry holds:**
   - `theme`: the theme file with the tokens of claudalisk (CLA-0054), installed as `src/app/styles/theme.css`.
   - The base components that every app needs, built on shadcn components:
-    - `app-shell`: the app shell and navigation. It has no business meaning, so it lives in `shared/ui`. The app passes its own navigation from `app` (CLA-0036).
+    - `app-shell`: the app shell and navigation. It has no business meaning, so it lives in `shared/ui`. The app passes its own navigation from `app` (CLA-0036). Its header carries the dark mode toggle.
+    - `color-scheme`: `applyColorScheme` in `shared/lib`, which puts the `.dark` class and `color-scheme` on `<html>` from the stored choice or else the system preference, and `ColorSchemeToggle`, which stores the choice in `localStorage` (CLA-0054).
     - `problem-field` and `problem-alert`: form fields and an alert wired to Problem Details validation errors (CLA-0045). A field shows the errors under its own key. The alert shows the `title`, the `detail` and the validation errors that no field of the form shows. Where one line is enough, `problemMessage` and `ProblemError`'s message give the `detail`, else the first field error, else the `title`.
     - `paged-table`: a data table for paged collections that follows `next` and `prev` links (CLA-0042, CLA-0044).
     - `action-button`: a button that renders only when its action is in `_actions` (CLA-0044).
@@ -40,9 +41,13 @@
 - **CI's `registry` job checks the registry on GitHub-hosted runners:**
   - It fails on a comment or a raw colour in a registry source.
   - It fails when `registry/public/r` differs from a fresh `shadcn build`.
+  - It fails on two files in one folder whose names differ only by case, and on a file in `registry/ui` that is not kebab-case (CLA-0053).
+  - It fails when a `registry:ui` item has no `describe` block of its name in the fixture app's `accessibility.test.tsx`.
   - It installs `@claudalisk/base` into a fresh Vite, React and Tailwind v4 app in `registry/fixture-app`, then:
+    - checks the installed file names the same way;
     - type-checks and builds the app;
     - runs the components' Vitest and Testing Library tests;
+    - runs an axe check on every registry component, and each component's test of its landmarks and roles, such as one `main`, a named `navigation`, a `region` named by its heading or an `alert`. Colour contrast is left out, because jsdom does not render;
     - checks that the scaffold left no comment in the installed files;
     - checks that shadcn's MCP server lists `@claudalisk` and searches `@shadcn`.
 - **The components' tests live in the fixture app.** They test the installed copies, as an app receives them. An app's own end-to-end tests cover the components in its screens (CLA-0016).
