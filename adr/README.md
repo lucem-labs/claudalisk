@@ -87,6 +87,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | workflow |
 | [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | workflow |
 | [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
+| [CLA-0081](0081-releases-tagged-by-a-workflow.md) | A workflow tags, checks and publishes each release from the plugin version | accepted | workflow |
 
 ## Format
 

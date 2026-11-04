@@ -60,4 +60,4 @@ An app with its own global stylesheet moves in steps, and every page keeps worki
   node tools/check-registry.mjs
   ```
 - Tests for the components go in `fixture-app/src`, next to where the item installs.
-- Apps get a change at the next release: bump `version` in `.claude-plugin/plugin.json`, and the owner tags `v<version>` after merging.
+- Apps get a change at the next release: bump `version` in `.claude-plugin/plugin.json` in the pull request. After it merges, the release workflow (`.github/workflows/release.yml`, CLA-0081) tags `v<version>`, checks that every item resolves at the tag and creates the release.

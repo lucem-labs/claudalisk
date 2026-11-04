@@ -4,13 +4,13 @@
 - **Date:** 2026-10-25
 - **Area:** frontend
 - **Enforced by:** the scaffold; `claude plugin validate`; CI's `registry` job; reviewer
-- **Issue:** #38, #75, #91
+- **Issue:** #38, #75, #91, #76
 
 ## Decision
 
 - **Claudalisk publishes a shadcn registry** from `registry/` in this repository.
   - `shadcn build` builds `registry/registry.json` into `registry/public/r`, which is committed.
-  - It is served from GitHub at the release tag: `https://raw.githubusercontent.com/lucem-labs/claudalisk/v<version>/registry/public/r/{name}.json`, where `<version>` is the plugin's version in `.claude-plugin/plugin.json`. A tag never moves, so an app gets the same items until it moves to a newer release.
+  - It is served from GitHub at the release tag: `https://raw.githubusercontent.com/lucem-labs/claudalisk/v<version>/registry/public/r/{name}.json`, where `<version>` is the plugin's version in `.claude-plugin/plugin.json`. A tag never moves, so an app gets the same items until it moves to a newer release. The release workflow makes the tag and checks that every item resolves at it (CLA-0081).
 - **What the registry holds:**
   - `theme`: the theme file with the tokens of claudalisk (CLA-0054), installed as `src/app/styles/theme.css`.
   - The base components that every app needs, built on shadcn components:
@@ -57,5 +57,5 @@
 - A new app starts with the look of claudalisk and the pieces that connect the UI to the API conventions. It does not rebuild them.
 - The items of the registry have tests and versions in this repository, like the rest of claudalisk.
 - An update to a registry item reaches an app only when the app runs `shadcn add` or `shadcn diff` again. The app does this as a normal change.
-- A registry change reaches apps only after a release tag. The plugin's version is bumped in the pull request that should ship one.
+- A registry change reaches apps only after a release tag. The plugin's version is bumped in the pull request that should ship one, and the release workflow tags it after the merge (CLA-0081).
 - shadcn's own components come from shadcn's live registry when they are added, whatever the pinned CLI version. CI notices when an upstream change breaks the base components.

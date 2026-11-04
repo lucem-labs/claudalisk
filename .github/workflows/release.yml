@@ -1,0 +1,95 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Plugin version and its tag
+        id: version
+        run: |
+          tag="$(node tools/release.mjs tag)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is already tagged, so there is nothing to release."
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Tag the release
+        if: steps.version.outputs.released == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+      - name: Registry items at the release URL
+        if: steps.version.outputs.released == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if ! node tools/release.mjs check; then
+            git push --delete origin "refs/tags/$TAG"
+            exit 1
+          fi
+      - name: GitHub release
+        if: steps.version.outputs.released == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node tools/release.mjs notes > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --generate-notes
+      - name: Publish the scripts package from the tag
+        if: steps.version.outputs.released == 'false' && hashFiles('packages/scripts/package.json') != ''
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref "$TAG"
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: npm with trusted publishing
+        run: npm install --global npm@11.6.2 --no-audit --no-fund
+      - name: The tag is the plugin version
+        run: test "$(node tools/release.mjs tag)" = "$GITHUB_REF_NAME"
+      - name: Stage the scripts package on npm
+        working-directory: packages/scripts
+        run: |
+          spec="$(node -p "const p = require('./package.json'); p.name + '@' + p.version")"
+          if npm view "$spec" version > /dev/null 2>&1; then
+            echo "$spec is already on npm."
+            exit 0
+          fi
+          npm publish --provenance --access public
+          echo "$spec is staged and awaits the owner's approval on npmjs.com."
