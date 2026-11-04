@@ -2,8 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-03
-- **Area:** session-economy
-- **Enforced by:** the plugin's `scout-gate` hook (`hooks/scout-gate.mjs`, with its tests); `scout` agent; session-economy skill; reviewer
+- **Area:** workflow
+- **Enforced by:** the plugin's `scout-gate` hook (`hooks/scout-gate.mjs`, with its tests); `scout` agent; workflow skill; reviewer
 - **Issue:** #106
 
 ## Context

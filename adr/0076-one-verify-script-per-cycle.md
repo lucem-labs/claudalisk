@@ -2,8 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-11-01
-- **Area:** session-economy
-- **Enforced by:** `scripts/verify.mjs` and `scripts/trx-annotations.mjs` in the app; `implementer` agent; session-economy skill; reviewer
+- **Area:** workflow
+- **Enforced by:** `scripts/verify.mjs` and `scripts/trx-annotations.mjs` in the app; `implementer` agent; workflow skill; reviewer
 - **Issue:** #95
 
 ## Context

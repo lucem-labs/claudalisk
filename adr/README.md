@@ -79,14 +79,14 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0070](0070-testing-layers.md) | Each rule is tested at the lowest layer that can see it | accepted | testing |
 | [CLA-0071](0071-security-scans.md) | Security scans run in CI at three levels, and every suppression expires | accepted | environments |
 | [CLA-0072](0072-dependabot-updates.md) | Dependabot opens grouped dependency updates, and the owner merges them | accepted | workflow |
-| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | session-economy |
-| [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | session-economy |
-| [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | session-economy |
-| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | session-economy |
-| [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | session-economy |
-| [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | session-economy |
-| [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | session-economy |
-| [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | session-economy |
+| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | workflow |
+| [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | workflow |
+| [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | workflow |
+| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | workflow |
+| [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | workflow |
+| [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | workflow |
+| [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | workflow |
+| [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
 
 ## Format
 
@@ -97,7 +97,7 @@ Each ADR is `NNNN-short-slug.md` with id `CLA-NNNN`. Ids are stable and are neve
 
 - **Status:** proposed | accepted | superseded by CLA-NNNN
 - **Date:** YYYY-MM-DD
-- **Area:** backend-architecture | data-and-migrations | frontend | testing | workflow | environments | session-economy | code-standards (cross-cutting)
+- **Area:** backend-architecture | data-and-migrations | frontend | testing | workflow | environments | code-standards (cross-cutting)
 - **Enforced by:** hook | test | CI | reviewer | prompt only (be specific)
 - **Issue:** #n (optional)
 ```
