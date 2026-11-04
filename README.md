@@ -29,6 +29,14 @@ Apps use shadcn/ui on Tailwind CSS v4. The [`@claudalisk` registry](registry/REA
 
 Files an app needs, such as `scripts/verify.mjs`, which pushes a change, waits for CI and prints only the failures, are in [`templates/`](templates/README.md). Until the scaffold generates them, an app copies them in.
 
+## Install
+
+The repository is its own plugin marketplace:
+
+```
+/plugin install claudalisk --marketplace lucem-labs/claudalisk
+```
+
 ## Security
 
 Hooks from this repo run with full access on your machine. **Pin a released version. Never track `main`.**
