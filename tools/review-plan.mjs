@@ -105,7 +105,7 @@ export function readKnowledge(pluginRoot) {
 
 export function readAppConfig(appRoot) {
   const path = join(appRoot, '.claude', 'claudalisk.json');
-  const review = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')).review ?? {} : {};
+  const review = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, '')).review ?? {} : {};
   return {
     uatData: [...DEFAULT_UAT_DATA, ...(review.uatData ?? [])],
     security: [...DEFAULT_SECURITY, ...(review.security ?? [])],

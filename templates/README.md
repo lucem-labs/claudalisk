@@ -20,6 +20,20 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/backend/Root.Api/Dockerfile`, `app/backend/.dockerignore` | The API image, at `backend/<Root>.Api/Dockerfile` in the app |
 | `app/frontend/Dockerfile`, `app/frontend/.dockerignore`, `app/frontend/nginx.conf` | The frontend image and its server |
 
+## App config
+
+`app/.claude/claudalisk.json` is the app's config (CLA-0082). Copy it, rename `example-app` and fill in the repository, databases, ports and uat names. `tools/app-config.schema.json` defines its shape, and the `$schema` line lets an editor check it. Unknown keys are an error.
+
+`name` is the one source of the app name: `verify.mjs` and the other scripts keep their state in `~/.claudalisk/apps/<name>/`.
+
+To list the app in the machine-wide registry `~/.claudalisk/apps.json`, run this from the plugin folder:
+
+```
+node tools/app-registry.mjs register <path to the app>
+```
+
+It validates the config and fails, writing nothing, when another app already uses the same repository, host prefix, uat project, uat volume or port, or when the name is already registered for another repository. Add `--replace` when the repository moved.
+
 ## Comment check
 
 CLA-0035's CI check is `no-comments.mjs`. It reads the files `git ls-files` lists and needs no packages, so it doesn't depend on a linter or test runner staying in the app. It covers:
