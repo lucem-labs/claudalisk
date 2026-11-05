@@ -35,12 +35,12 @@ test('the allowed keys match the schema properties at every closed level', () =>
 })
 
 test('an unknown key is rejected at each closed level and named', () => {
-  assert.throws(() => parse({ ...sampleConfig, hostprefix: 'x' }), /cfg.json: "hostprefix" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, databases: [{ role: 'app', envVar: 'X', extra: 1 }] }), /"databases[0].extra" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, ports: { ...sampleConfig.ports, web: 1 } }), /"ports.web" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, volum: 'v' } }), /"uat.volum" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 2, count: 3 } }), /"backup.count" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, review: { uatdata: [] } }), /"review.uatdata" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, hostprefix: 'x' }), /cfg\.json: "hostprefix" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, databases: [{ role: 'app', envVar: 'X', extra: 1 }] }), /"databases\[0\]\.extra" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, ports: { ...sampleConfig.ports, web: 1 } }), /"ports\.web" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, volum: 'v' } }), /"uat\.volum" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 2, count: 3 } }), /"backup\.count" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, review: { uatdata: [] } }), /"review\.uatdata" is not a known setting/)
 })
 
 test('the sample config satisfies the schema it is checked against', () => {

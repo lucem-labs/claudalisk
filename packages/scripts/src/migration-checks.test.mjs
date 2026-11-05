@@ -182,10 +182,8 @@ function gitRunner(respond) {
 test('approved edits are read from origin/main, never from the working tree', async () => {
   const root = join(scratch, 'approvals')
   mkdirSync(root, { recursive: true })
-  writeFileSync(join(root, 'approved-migration-edits.txt'), 'app/20260101000000_Branch why
-')
-  const runner = gitRunner(() => ({ stdout: 'app/20260101000000_A why
-' }))
+  writeFileSync(join(root, 'approved-migration-edits.txt'), 'app/20260101000000_Branch why\n')
+  const runner = gitRunner(() => ({ stdout: 'app/20260101000000_A why\n' }))
   assert.deepEqual([...(await readApprovedEdits(runner, root))], ['app/20260101000000_A'])
   assert.deepEqual(runner.calls[0].args, ['-C', root, 'show', 'origin/main:approved-migration-edits.txt'])
 })
@@ -201,7 +199,7 @@ test('a file missing on origin/main approves nothing, and any other git failure 
 
 test('uat with applied migrations and no source migrations is refused, naming where it looked', async () => {
   const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'] })
-  await assert.rejects(checkUatMigrations(runner, settings, { source: new Map(), approved: new Set() }), /backend/**/Migrations.*Nothing was changed./)
+  await assert.rejects(checkUatMigrations(runner, settings, { source: new Map(), approved: new Set() }), /backend\/\*\*\/Migrations.*Nothing was changed\./)
 })
 
 test('applied migrations with no recorded fingerprint are listed in one warning and do not refuse', async () => {

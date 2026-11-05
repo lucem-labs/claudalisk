@@ -116,7 +116,7 @@ test('a uat deploy refuses when HEAD moved or the tree became dirty after the gu
 test('a uat deploy reads the approved edits from origin/main through git', async () => {
   const { root, env, runner } = uatSetup()
   await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
-  assert.equal(callsMatching(runner, /show origin/main:approved-migration-edits.txt$/).length, 1)
+  assert.equal(callsMatching(runner, /show origin\/main:approved-migration-edits\.txt$/).length, 1)
 })
 
 test('a uat deploy passes the app repository to the guard', async () => {
@@ -131,9 +131,7 @@ test('the deployed ref is the current branch, read without asking git to resolve
   assert.equal((await currentVersion(named, '/repo')).ref, 'feature')
   assert.ok(callsMatching(named, /branch --show-current$/).length === 1)
   assert.equal(callsMatching(named, /abbrev-ref/).length, 0)
-  const detached = docker({ state: makeApp().state, branch: '', extra: (call) => (call.line.includes('branch --remotes') ? { stdout: '  origin/feature
-  origin/HEAD -> origin/main
-' } : undefined) })
+  const detached = docker({ state: makeApp().state, branch: '', extra: (call) => (call.line.includes('branch --remotes') ? { stdout: '  origin/feature\n  origin/HEAD -> origin/main\n' } : undefined) })
   assert.equal((await currentVersion(detached, '/repo')).ref, 'origin/feature')
   const alone = docker({ state: makeApp().state, branch: '' })
   assert.equal((await currentVersion(alone, '/repo')).ref, 'detached')
@@ -303,8 +301,7 @@ test('prune-backups keeps the restore point before a migration in a schema main 
     state,
     applied: ['app/20261001000000_A', 'billing/20261005000000_N'],
     extra: (call) => {
-      if (call.line.includes('ls-tree')) return { stdout: 'backend/Shop.Api/Migrations/20261001000000_A.cs
-' }
+      if (call.line.includes('ls-tree')) return { stdout: 'backend/Shop.Api/Migrations/20261001000000_A.cs\n' }
       if (call.line.includes('git -C') && call.line.includes(' show ')) return { stdout: '[Migration("20261001000000_A")]' }
       return undefined
     },
