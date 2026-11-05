@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { command, normalize, segments, substitutions } from './shell.mjs';
 
@@ -23,10 +23,16 @@ export const RULES = [
   { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path, in a scripts directory or relative with ./ or ../, appears anywhere in a PowerShell command.' },
 ];
 
+export function hostPath(path, platform) {
+  if (platform !== 'win32') return path;
+  const m = /^\/([A-Za-z])(?:\/(.*))?$/s.exec(path);
+  return m ? `${m[1].toUpperCase()}:/${m[2] ?? ''}` : path;
+}
+
 const MAX_DEPTH = 5;
 const CONTAINER = new Set(['docker', 'docker-compose', 'podman', 'podman-compose']);
 const DATABASE = new Set(['psql', 'pg_dump', 'pg_dumpall', 'pg_restore', 'pg_basebackup', 'dropdb', 'createdb', 'vacuumdb', 'reindexdb']);
-const CD = new Set(['cd', 'pushd', 'chdir', 'set-location', 'sl']);
+const CD = new Set(['cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location', 'popd', 'pop-location']);
 const FILE_WRITERS = new Set(['tee', 'set-content', 'sc', 'add-content', 'ac', 'out-file', 'new-item', 'ni', 'tee-object']);
 const LAST_WRITERS = new Set(['cp', 'mv', 'install', 'ln']);
 const DEST_WRITERS = new Set(['copy-item', 'cpi', 'copy', 'move-item', 'move', 'mi']);
@@ -34,7 +40,7 @@ const WRAPPERS = new Set(['sudo', 'command', 'env', 'exec', 'nohup', 'time', 'xa
 const WRAPPER_VALUED = { sudo: 'ughpCDRTU', xargs: 'nILPsdEa', env: 'uCS', time: 'fo' };
 const BASH_SHELLS = new Set(['bash', 'sh', 'zsh', 'dash']);
 const PS_SHELLS = new Set(['pwsh', 'powershell']);
-const RUNNERS = new Set(['node', 'tsx', 'bun', 'deno', 'npm', 'npx', 'pnpm', 'yarn']);
+const UAT_EXEMPT = new Set(['git', 'gh', 'echo', 'printf', 'grep', 'rg', 'select-string']);
 const FETCHERS = new Set(['curl', 'wget', 'iwr', 'irm', 'invoke-webrequest', 'invoke-restmethod']);
 const KEYWORDS = new Set(['{', '!', 'if', 'then', 'elif', 'else', 'do', 'while', 'until']);
 const EXPORTERS = new Set(['export', 'declare', 'typeset', 'local', 'readonly', 'set']);
@@ -57,11 +63,6 @@ function flag(ctx, decision, id, text) {
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const lastSegment = (path) => path.split(/[\\/]/).filter(Boolean).pop() ?? '';
-
-function inside(root, path) {
-  const rel = relative(root, path);
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
-}
 
 function exec(file, args, cwd) {
   return execFileSync(file, args, { cwd, encoding: 'utf8', windowsHide: true, timeout: 15000, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -189,7 +190,6 @@ function parseDocker(name, args) {
   let compose = name.endsWith('-compose');
   const projects = [];
   const files = [];
-  const envFiles = [];
   let projectDir = null;
   let i = 0;
   for (; i < args.length; i++) {
@@ -212,9 +212,8 @@ function parseDocker(name, args) {
     if (key === '-p' || key === '--project-name') projects.push(value);
     else if (key === '-f' || key === '--file') files.push(value);
     else if (key === '--project-directory' || key === '--workdir') projectDir = value;
-    else if (key === '--env-file') envFiles.push(value);
   }
-  return { compose, sub: args[i] ?? '', rest: args.slice(i + 1), projects, files, projectDir, envFiles };
+  return { compose, sub: args[i] ?? '', rest: args.slice(i + 1), projects, files, projectDir };
 }
 
 const hasVolumes = (args) => args.some((a) => /^-[A-Za-z]*v[A-Za-z]*$/.test(a) || /^--volumes(=|$)/.test(a));
@@ -245,7 +244,8 @@ function composeFileProject(file, baseDir) {
 function container(name, args, local, ctx) {
   const parsed = parseDocker(name, args);
   destructive(parsed, ctx);
-  const uatEnv = parsed.envFiles.find((file) => lastSegment(file).toLowerCase() === 'uat.env');
+  const envFiles = args.flatMap((a, i) => (a === '--env-file' ? [args[i + 1] ?? ''] : a.startsWith('--env-file=') ? [a.slice(11)] : []));
+  const uatEnv = envFiles.find((file) => lastSegment(file).toLowerCase() === 'uat.env');
   if (uatEnv) flag(ctx, 'deny', 2, `${uatEnv} is the uat env file, so this command would run against uat (CLA-0066). Use the dev env file, or ask the owner.`);
   const state = protection(ctx);
   if (state.error) {
@@ -262,14 +262,15 @@ function container(name, args, local, ctx) {
   const projects = [...parsed.projects];
   const fromEnv = lookup(ctx, local, 'COMPOSE_PROJECT_NAME');
   if (fromEnv) projects.push(fromEnv);
-  const baseDir = parsed.projectDir ? resolve(ctx.cwd, parsed.projectDir) : ctx.cwd;
+  const here = ctx.cwd ?? ctx.root;
+  const baseDir = parsed.projectDir ? resolve(here, ctx.host(parsed.projectDir)) : here;
   const files = [...parsed.files, ...(lookup(ctx, local, 'COMPOSE_FILE') ?? '').split(/[:;]/).filter(Boolean)];
   for (const file of files) {
     if (/\.uat\.ya?ml$/i.test(lastSegment(file))) {
       flag(ctx, 'deny', 2, `${file} is a uat Compose file (CLA-0029). Use the dev files, or ask the owner.`);
       return;
     }
-    const named = composeFileProject(file, baseDir);
+    const named = composeFileProject(ctx.host(file), baseDir);
     if (named) projects.push(named);
   }
   const found = firstHit(projects, state.matchers);
@@ -339,6 +340,10 @@ function ghApi(args, ctx) {
 function prCreate(g, ctx, cwd) {
   const args = g.rest;
   if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) return;
+  if (!cwd) {
+    flag(ctx, 'deny', 6, 'the hook cannot tell the directory (an earlier cd, popd or variable could not be followed), so it cannot find the head commit whose CI it must check (CLA-0023). Run gh pr create from a command that starts in the repository.');
+    return;
+  }
   let head = null;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -373,12 +378,16 @@ function gh(args, ctx, cwd) {
   else if (g.group === 'api') ghApi(g.afterGroup, ctx);
 }
 
-function parseGit(args, cwd) {
+function parseGit(args, cwd, ctx) {
   let dir = cwd;
   let i = 0;
   for (; i < args.length; i++) {
     const a = args[i];
-    if (a === '-C') { dir = resolve(dir, args[++i] ?? '.'); continue; }
+    if (a === '-C') {
+      const target = ctx.host(args[++i] ?? '.');
+      dir = isAbsolute(target) ? resolve(target) : dir === null ? null : resolve(dir, target);
+      continue;
+    }
     if (['-c', '--git-dir', '--work-tree', '--namespace'].includes(a)) { i++; continue; }
     if (a.startsWith('-')) continue;
     break;
@@ -387,6 +396,7 @@ function parseGit(args, cwd) {
 }
 
 function defaultBranches(ctx, cwd) {
+  if (!cwd) return ['main', 'master'];
   try {
     const ref = String(ctx.deps.git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], cwd)).trim();
     if (ref) return [ref.replace(/^origin\//, '')];
@@ -419,6 +429,10 @@ function push(args, ctx, cwd) {
     if (defaults.includes(target)) { deny(`This push updates ${target}.`); return; }
   }
   if (specs.length > 0 && !specs.some((s) => ['HEAD', '+HEAD', '@'].includes(s))) return;
+  if (!cwd) {
+    deny('The hook cannot tell the directory (an earlier cd, popd or variable could not be followed), so it cannot check which branch this push updates. Push an explicit HEAD:refs/heads/<branch>.');
+    return;
+  }
   let current = '';
   try { current = String(ctx.deps.git(['rev-parse', '--abbrev-ref', 'HEAD'], cwd)).trim(); } catch { current = ''; }
   if (!current || current === 'HEAD') { deny('Git cannot tell the current branch, so this push may update the default branch.'); return; }
@@ -451,7 +465,9 @@ function isEnvFile(base) {
 
 function inCheckout(ctx, target) {
   const expanded = target === '~' || /^~[\\/]/.test(target) ? join(ctx.home, target.slice(1)) : target;
-  let dir = dirname(resolve(ctx.cwd, expanded));
+  const hosted = ctx.host(expanded);
+  if (ctx.cwd === null && !isAbsolute(hosted)) return true;
+  let dir = dirname(resolve(ctx.cwd ?? ctx.root, hosted));
   for (;;) {
     if (existsSync(join(dir, '.git'))) return true;
     const up = dirname(dir);
@@ -480,14 +496,13 @@ function envWrites(name, args, redirects, local, ctx) {
 
 const isPrune = (text) => /^prune-backups(\.mjs)?$/i.test(lastSegment(text));
 
-function guardedScripts(name, args, raw, ctx) {
+function guardedScripts(name, args, ctx) {
   const uat = args.some((a, i) => /^--environment=uat$/i.test(a) || (a === '--environment' && /^uat$/i.test(args[i + 1] ?? '')));
-  const direct = /\.(mjs|js|cjs)$/i.test(raw ?? '');
-  if ((RUNNERS.has(name) || direct) && uat) {
-    const script = direct ? null : args.find((a) => /\.(mjs|js|cjs)$/.test(a));
-    const path = script ? resolve(ctx.cwd, script) : null;
-    const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => path === resolve(ctx.cwd, 'scripts', file));
-    if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs run against uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
+  if (uat && !UAT_EXEMPT.has(name)) {
+    const script = args[0] && /\.(mjs|js|cjs)$/.test(args[0]) ? args[0] : null;
+    const path = script && ctx.cwd ? resolve(ctx.cwd, ctx.host(script)) : null;
+    const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => path === resolve(ctx.root, 'scripts', file));
+    if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs, run from the app root, may use --environment uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
   }
   if ((isPrune(name) || args.some(isPrune)) && args.includes('--apply')) {
     flag(ctx, 'deny', 4, 'prune-backups --apply deletes backups and is the owner\'s (CLA-0031). Run it without --apply to see what it would remove.');
@@ -547,7 +562,25 @@ function nested(name, args, seg, shell, ctx, depth) {
   if (mode) for (const body of seg.heredocs) evaluate(body, mode, ctx, depth + 1);
 }
 
+function follow(ctx, name, args, local) {
+  if (name === 'popd' || name === 'pop-location') { ctx.cwd = null; return; }
+  const paths = args.filter((a) => !a.startsWith('-') || a === '-');
+  if (paths.length === 0) {
+    if (name === 'cd' || name === 'chdir') ctx.cwd = resolve(ctx.home);
+    else if (name === 'pushd') ctx.cwd = null;
+    return;
+  }
+  if (paths.length > 1 || paths[0] === '-') { ctx.cwd = null; return; }
+  let target = expand(ctx, local, paths[0]);
+  if (/[$`]/.test(target)) { ctx.cwd = null; return; }
+  if (target === '~' || /^~[\\/]/.test(target)) target = join(ctx.home, target.slice(1));
+  target = ctx.host(target);
+  if (isAbsolute(target)) ctx.cwd = resolve(target);
+  else if (ctx.cwd !== null) ctx.cwd = resolve(ctx.cwd, target);
+}
+
 function segment(whole, shell, ctx, depth) {
+  ctx.host = (path) => (shell === 'bash' ? hostPath(path, ctx.deps.platform ?? process.platform) : path);
   const last = whole.words.length - 1;
   let skip = 0;
   while (skip < last && !whole.quoted[skip]) {
@@ -560,12 +593,12 @@ function segment(whole, shell, ctx, depth) {
   skip = Math.min(skip, last);
   let seg = skip ? { ...whole, words: whole.words.slice(skip), quoted: whole.quoted.slice(skip) } : whole;
   if (shell === 'powershell') {
-    const m = /^\$(\w+)(=[\s\S]*)?$/.exec(seg.words[0]);
+    const m = /^(?:\[[^\]]*\])?\$(?:(?:script|global|local|private):)?(\w+)(?:[+-]?=([\s\S]*))?$/i.exec(seg.words[0]);
     let rest = null;
     if (m && m[2] !== undefined) {
-      const head = m[2].slice(1);
+      const head = m[2];
       rest = head === '' ? { words: seg.words.slice(1), quoted: seg.quoted.slice(1) } : { words: [head, ...seg.words.slice(1)], quoted: [seg.quoted[0], ...seg.quoted.slice(1)] };
-    } else if (m && seg.words[1] === '=') {
+    } else if (m && /^[+-]?=$/.test(seg.words[1] ?? '')) {
       rest = { words: seg.words.slice(2), quoted: seg.quoted.slice(2) };
     }
     if (rest) {
@@ -587,7 +620,7 @@ function segment(whole, shell, ctx, depth) {
   }
   const cmd = command(words, seg.quoted, { skip: [] });
   const local = [...cmd.assignments];
-  const [name, args, raw] = unwrap(cmd.name, cmd.args, local, words[cmd.assignments.length]);
+  const [name, args] = unwrap(cmd.name, cmd.args, local, words[cmd.assignments.length]);
   if (/setenvironmentvariable/i.test(words.join(' ')) && /ALLOW_UAT/i.test(words.join(' '))) assign(ctx, { name: 'ALLOW_UAT', value: '' }, false);
   for (const a of local) assign(ctx, a, !name);
   if (EXPORTERS.has(name)) for (const a of args) { const m = ASSIGNMENT.exec(a); if (m) assign(ctx, { name: m[1], value: m[2] }, true); }
@@ -602,22 +635,16 @@ function segment(whole, shell, ctx, depth) {
   }
   envWrites(name, args, cmd.redirects, local, ctx);
   if (!name) return;
-  if (CD.has(name)) {
-    const paths = args.filter((a) => !a.startsWith('-'));
-    if (paths.length === 1) {
-      const target = expand(ctx, local, paths[0]);
-      ctx.cwd = resolve(ctx.cwd, target === '~' || /^~[\\/]/.test(target) ? join(ctx.home, target.slice(1)) : target);
-    }
-  }
+  if (CD.has(name) && !seg.piped && [';', '&&', '\n', null].includes(seg.after)) follow(ctx, name, args, local);
   if (name === 'iex' || name === 'invoke-expression') flag(ctx, 'deny', 9, `${name} runs text that the hook cannot read. Run the command itself, without ${name}.`);
   if (PS_SHELLS.has(name) && args.some(isEncoded)) flag(ctx, 'deny', 9, `${name} -EncodedCommand hides what runs. Pass the command as plain text with -Command.`);
   configCommands(name, args, ctx);
-  guardedScripts(name, args, raw, ctx);
+  guardedScripts(name, args, ctx);
   if (CONTAINER.has(name)) container(name, args, local, ctx);
   else if (DATABASE.has(name)) database(args, local, ctx);
   else if (name === 'gh') gh(args, ctx, ctx.cwd);
   else if (name === 'git') {
-    const g = parseGit(args, ctx.cwd);
+    const g = parseGit(args, ctx.cwd, ctx);
     if (g.sub === 'push') push(g.rest, ctx, g.dir);
     else if (g.sub === 'add') gitAdd(g.rest, ctx);
   } else if (FETCHERS.has(name) && MERGE_PATH.test(args.join(' '))) {
@@ -658,7 +685,7 @@ export function decide(input, deps = {}) {
       ...deps,
     };
     const start = input.cwd ?? process.cwd();
-    const ctx = { cwd: start, root: start, deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
+    const ctx = { cwd: start, root: start, host: (path) => path, deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
     evaluate(text, shell, ctx, 0);
     const found = ctx.findings.find((f) => f.decision === 'deny') ?? ctx.findings.find((f) => f.decision === 'ask');
     return found ? out(found.decision, found.reason) : null;

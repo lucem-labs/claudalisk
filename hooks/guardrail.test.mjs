@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RULES, decide, protectedNames } from './guardrail.mjs';
+import { RULES, decide, hostPath, protectedNames } from './guardrail.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'guardrail-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -112,7 +112,6 @@ allow([
   'grep -n "docker compose down -v" adr/0029-dev-and-uat-environments.md',
   'echo gh pr merge',
   'echo docker volume rm x',
-  "cat <<EOF\ndocker volume rm x\nEOF",
   '',
   '   ',
 ]);
@@ -1179,3 +1178,145 @@ test('a relative script path with .. counts in PowerShell', () => {
   assert.equal(verdict(call('..\\init.ps1', { tool: 'PowerShell' })), 'ask');
   assert.equal(verdict(call('../restore.sh', { tool: 'PowerShell' })), 'ask');
 });
+
+allow(["cat <<EOF\ndocker volume rm x\nEOF"], { tools: ['Bash'] });
+
+deny([
+  'echo $(( $(docker volume rm x | wc -l) + 1 ))',
+  'echo "$(( $(docker volume rm x) + 1 ))"',
+  'echo $(( `docker volume rm x` + 1 ))',
+  'echo $((docker volume rm x); true)',
+  '# note \\\ngh pr merge 5',
+  'echo \\ #$(gh pr merge 5)',
+], { tools: ['Bash'] });
+
+deny([
+  'echo $((docker volume rm x))',
+  'echo "$((gh pr merge 5))"',
+  '$((docker volume rm x))',
+  '# note `\ngh pr merge 5',
+  'echo ` #$(gh pr merge 5)',
+  '<# x #> echo $(gh pr merge 5)',
+], { tools: ['PowerShell'] });
+
+allow(['echo $((1+2))'], { tools: ['Bash'] });
+allow(['<# docker volume rm x #>', '<# gh pr merge 5 #>\nls'], { tools: ['PowerShell'] });
+
+deny([
+  'cd tmp && node scripts/deploy.mjs --environment uat',
+  'cd /other/app && node scripts/deploy.mjs --environment uat',
+  'node -e "x" scripts/deploy.mjs --environment uat',
+  'node -r ./x scripts/deploy.mjs --environment uat',
+  'node --no-warnings scripts/deploy.mjs --environment uat',
+  'bash scripts/restore.sh --environment uat',
+  'pwsh scripts/restore.ps1 --environment uat',
+  'dotnet run --environment uat',
+  'make deploy --environment=uat',
+]);
+
+allow(['git commit -m "--environment uat"', 'gh issue comment 2 --body "x"', 'echo --environment uat', 'grep -- "--environment uat" README.md', 'node scripts/deploy.mjs --environment uat']);
+
+const KNOWN = { 'symbolic-ref --short refs/remotes/origin/HEAD': 'origin/main' };
+
+function cdGit(onMain) {
+  return (args, cwd) => {
+    const key = args.join(' ');
+    if (key in KNOWN) return KNOWN[key];
+    if (key === 'rev-parse --abbrev-ref HEAD') return cwd === onMain ? 'main' : 'feature';
+    if (key === 'rev-parse --abbrev-ref @{upstream}') throw new Error('none');
+    if (key === 'rev-parse HEAD') return 'sha1';
+    throw new Error(`no answer for ${key}`);
+  };
+}
+
+test('cd only moves the directory when the next segment follows in sequence', () => {
+  const other = resolve('/other/repo');
+  const deps = { git: cdGit(other) };
+  for (const text of ['cd /other/repo && git push', 'cd /other/repo; git push', 'cd /other/repo\ngit push', 'push-location /other/repo; git push']) {
+    assert.equal(verdict(call(text, { deps })), 'deny', text);
+  }
+  for (const text of ['cd /other/repo | git push', 'cd /other/repo & git push', 'cd /other/repo || git push']) {
+    assert.equal(verdict(call(text, { deps })), 'allow', text);
+  }
+});
+
+test('a directory the hook cannot follow makes dependent commands deny', () => {
+  const deps = { git: cdGit(resolve('/other/repo')), gh: () => okRuns(finished('success')) };
+  for (const text of ['cd - && git push', 'popd; git push', 'cd $UNSET && git push', 'cd /x/`pwd` && git push', 'cd /x/$(pwd) && git push', 'cd - && git push origin HEAD']) {
+    const result = call(text, { deps });
+    assert.equal(verdict(result), 'deny', text);
+    assert.match(reason(result), /cannot tell the directory/, text);
+    assert.match(reason(result), /HEAD:refs\/heads/, text);
+  }
+  assert.equal(verdict(call('Pop-Location; git push', { tool: 'PowerShell', deps })), 'deny');
+  assert.equal(verdict(call('cd - && git push origin HEAD:refs/heads/feature', { deps })), 'allow');
+  const created = call('cd - && gh pr create', { deps });
+  assert.equal(verdict(created), 'deny');
+  assert.match(reason(created), /cannot tell the directory/);
+  assert.equal(verdict(call('cd - && echo x > .env', { cwd: plain, deps })), 'deny');
+  assert.equal(verdict(call('cd - && node scripts/deploy.mjs --environment uat', { deps })), 'deny');
+  assert.equal(verdict(call('cd - ; cd /other/repo && git push', { deps })), 'deny');
+  assert.doesNotMatch(reason(call('cd - ; cd /other/repo && git push', { deps })), /cannot tell the directory/);
+  assert.equal(verdict(call(`cd - ; cd ${plain.replace(/\\/g, '/')} && git push`, { deps })), 'allow');
+});
+
+test('an unknown directory reads compose files from where the command started', () => {
+  const place = dir();
+  writeFileSync(join(place, 'ci.yml'), `name: ${UAT}\n`);
+  assert.equal(verdict(call('cd - && docker compose -f ci.yml up', { cwd: place })), 'deny');
+});
+
+test('bare cd and cd ~ go to the home directory', () => {
+  const env = { HOME: home, USERPROFILE: home };
+  assert.equal(verdict(call('cd && echo x > .env', { cwd: checkout, deps: { env } })), 'allow');
+  assert.equal(verdict(call('cd ~ && echo x > .env', { cwd: checkout, deps: { env } })), 'allow');
+  assert.equal(verdict(call('cd ~/ && echo x > .env', { cwd: checkout, deps: { env } })), 'allow');
+});
+
+test('hostPath turns a Git Bash drive path into a Windows path on win32 only', () => {
+  assert.equal(hostPath('/c/git/x', 'win32'), 'C:/git/x');
+  assert.equal(hostPath('/C/git/x', 'win32'), 'C:/git/x');
+  assert.equal(hostPath('/d', 'win32'), 'D:/');
+  assert.equal(hostPath('/d/', 'win32'), 'D:/');
+  assert.equal(hostPath('/cc/x', 'win32'), '/cc/x');
+  assert.equal(hostPath('C:/x', 'win32'), 'C:/x');
+  assert.equal(hostPath('rel/x', 'win32'), 'rel/x');
+  assert.equal(hostPath('/c/git/x', 'linux'), '/c/git/x');
+});
+
+test('Git Bash drive paths are followed on win32', { skip: process.platform !== 'win32' }, () => {
+  const drive = (path) => path.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (m, d) => `/${d.toLowerCase()}`);
+  const deps = { git: cdGit(plain) };
+  assert.equal(verdict(call(`cd ${drive(plain)} && git push`, { deps })), 'deny');
+  assert.equal(verdict(call(`cd ${drive(checkout)} && git push`, { deps })), 'allow');
+  assert.equal(verdict(call(`echo x > ${drive(checkout)}/.env`, { cwd: plain })), 'deny');
+  assert.equal(verdict(call(`git -C ${drive(plain)} push`, { deps })), 'deny');
+  assert.equal(verdict(call(`echo x > ${drive(checkout)}/.env`, { cwd: plain, tool: 'PowerShell' })), 'allow');
+});
+
+test('Git Bash drive paths follow the platform from the deps', () => {
+  const posix = { platform: 'linux', git: cdGit(resolve('/c/repo')) };
+  assert.equal(verdict(call('cd /c/repo && git push', { deps: posix })), 'deny');
+});
+
+deny([
+  '$x += gh pr merge 5',
+  '$x -= gh pr merge 5',
+  '$script:x = gh pr merge 5',
+  '$global:x = gh pr merge 5',
+  '$local:x = docker volume rm y',
+  '$script:x=gh pr merge 5',
+  '[string]$x = gh pr merge 5',
+  '[string]$x=gh pr merge 5',
+], { tools: ['PowerShell'] });
+
+allow(['$x += 5', '$script:x = 5', '[int]$n = 3'], { tools: ['PowerShell'] });
+
+deny([
+  'docker run --env-file /h/.claudalisk/apps/a/uat.env img',
+  'docker run --env-file=/h/.claudalisk/apps/a/uat.env img',
+  'docker compose -f compose.base.yml run --env-file /h/.claudalisk/apps/a/uat.env app',
+  'docker exec --env-file C:/h/uat.env db sh',
+]);
+
+allow(['docker run --env-file /h/.claudalisk/apps/a/dev.env img']);

@@ -8,28 +8,32 @@ export function normalize(name) {
 }
 
 function prepare(text, shell) {
-  let source = String(text ?? '').replace(/\r\n?/g, '\n');
-  if (shell === 'bash') source = source.replace(/\\\n/g, '');
-  if (shell === 'powershell') source = source.replace(/`\n/g, '');
-  return source;
+  return String(text ?? '').replace(/\r\n?/g, '\n');
 }
 
-function heredocAt(source, i) {
+function heredocAt(source, i, shell) {
   if (source[i] !== '<' || source[i + 1] !== '<' || source[i + 2] === '<' || source[i - 1] === '<') return null;
   HEREDOC.lastIndex = i;
   const m = HEREDOC.exec(source);
   if (!m) return null;
   const quoted = m[2] !== undefined || m[3] !== undefined;
+  if (shell === 'powershell' && !quoted) return null;
   return { delim: m[2] ?? m[3] ?? m[4], dash: m[1] === '-', expand: !quoted };
 }
 
-function arithmeticEnd(s, i) {
+function arithmeticEnd(s, i, shell) {
+  if (shell === 'powershell' || s[i] !== '$' || s[i + 1] !== '(' || s[i + 2] !== '(') return -1;
   let depth = 0;
+  let inner = -1;
   for (let k = i + 1; k < s.length; k++) {
     if (s[k] === '(') depth++;
-    else if (s[k] === ')' && --depth === 0) return k + 1;
+    else if (s[k] === ')') {
+      depth--;
+      if (depth === 1 && inner < 0) inner = k;
+      if (depth === 0) return inner === k - 1 ? k + 1 : -1;
+    }
   }
-  return s.length;
+  return -1;
 }
 
 function takeBody(source, from, delim) {
@@ -62,9 +66,9 @@ export function segments(text, { shell } = {}) {
     word = null;
     wasQuoted = false;
   };
-  const endSegment = (pipe) => {
+  const endSegment = (pipe, after) => {
     endWord();
-    if (words.length) result.push({ words, quoted, piped, heredocs });
+    if (words.length) result.push({ words, quoted, piped, heredocs, after });
     words = [];
     quoted = [];
     heredocs = [];
@@ -80,7 +84,9 @@ export function segments(text, { shell } = {}) {
         add(source.slice(i, end + 1));
         i = end;
       }
+      else if (quote === '"' && shell === 'bash' && c === '\\' && source[i + 1] === '\n') i++;
       else if (quote === '"' && shell === 'bash' && c === '\\' && '"\\$`'.includes(source[i + 1] ?? '')) add(source[++i]);
+      else if (quote === '"' && shell === 'powershell' && c === '`' && source[i + 1] === '\n') i++;
       else if (quote === '"' && shell === 'powershell' && c === '`' && i + 1 < source.length) add(source[++i]);
       else add(c);
       continue;
@@ -96,10 +102,15 @@ export function segments(text, { shell } = {}) {
       while (i + 1 < source.length && source[i + 1] !== '\n') i++;
       continue;
     }
-    if (c === '$' && source[i + 1] === '(' && source[i + 2] === '(') {
-      const end = arithmeticEnd(source, i + 1);
-      add(source.slice(i, end));
-      i = end - 1;
+    if (c === '<' && source[i + 1] === '#' && shell === 'powershell' && word === null) {
+      const end = source.indexOf('#>', i + 2);
+      i = end < 0 ? source.length : end + 1;
+      continue;
+    }
+    const arithmetic = c === '$' ? arithmeticEnd(source, i, shell) : -1;
+    if (arithmetic > 0) {
+      add(source.slice(i, arithmetic));
+      i = arithmetic - 1;
       continue;
     }
     if (c === '"' || c === "'") {
@@ -109,11 +120,12 @@ export function segments(text, { shell } = {}) {
       continue;
     }
     if ((c === '\\' && shell === 'bash') || (c === '`' && shell === 'powershell')) {
-      if (i + 1 < source.length) { add(source[++i]); wasQuoted = true; }
+      if (source[i + 1] === '\n') i++;
+      else if (i + 1 < source.length) { add(source[++i]); wasQuoted = true; }
       continue;
     }
     if (c === '<' || c === '>') {
-      const heredoc = c === '<' ? heredocAt(source, i) : null;
+      const heredoc = c === '<' ? heredocAt(source, i, shell) : null;
       if (heredoc) pending.push({ ...heredoc, into: heredocs });
       if (word !== null && !/^\d*[<>&]*$/.test(word)) endWord();
       add(c);
@@ -134,13 +146,13 @@ export function segments(text, { shell } = {}) {
         }
         i = pos - 1;
       }
-      endSegment(pipe);
+      endSegment(pipe, double ? c + c : c);
       continue;
     }
     if (/\s/.test(c)) endWord();
     else add(c);
   }
-  endSegment(false);
+  endSegment(false, null);
   return result;
 }
 
@@ -173,7 +185,9 @@ function scan(s, start, shell, closer, found, dataOnly) {
   const pending = [];
   let single = false;
   let double = false;
+  let escaped = -1;
   let i = start;
+  const wordStart = () => i === start || (/[\s;|&(]/.test(s[i - 1]) && escaped !== i - 1);
   const nested = (from, close) => scan(s, from, shell, close, [], false);
   const open = (from, close, record) => {
     const r = nested(from, close);
@@ -197,7 +211,7 @@ function scan(s, start, shell, closer, found, dataOnly) {
       i = pos;
       continue;
     }
-    if ((!powershell && c === '\\') || (powershell && c === '`')) { i += 2; continue; }
+    if ((!powershell && c === '\\') || (powershell && c === '`')) { escaped = i + 1; i += 2; continue; }
     if (powershell && !dataOnly && c === '@' && s[i + 2] === '\n' && (s[i + 1] === "'" || s[i + 1] === '"')) {
       const end = s.indexOf(`\n${s[i + 1]}@`, i + 3);
       const stop = end < 0 ? s.length : end;
@@ -209,12 +223,22 @@ function scan(s, start, shell, closer, found, dataOnly) {
       if (c === "'" && !double) { single = true; i++; continue; }
       if (c === '"') { double = !double; i++; continue; }
     }
-    if (c === '#' && shell && !dataOnly && !double && (i === start || /[\s;|&(]/.test(s[i - 1]))) {
+    if (c === '#' && shell && !dataOnly && !double && wordStart()) {
       while (i < s.length && s[i] !== '\n') i++;
       continue;
     }
+    if (c === '<' && s[i + 1] === '#' && powershell && !dataOnly && !double && wordStart()) {
+      const end = s.indexOf('#>', i + 2);
+      i = end < 0 ? s.length : end + 2;
+      continue;
+    }
     if (closer && c === closer && !double) return { end: i };
-    if (c === '$' && s[i + 1] === '(' && s[i + 2] === '(') { i = arithmeticEnd(s, i + 1); continue; }
+    const arithmetic = c === '$' ? arithmeticEnd(s, i, shell) : -1;
+    if (arithmetic > 0) {
+      scan(s.slice(i + 3, arithmetic - 2), 0, shell, null, found, true);
+      i = arithmetic;
+      continue;
+    }
     if (c === '$' && s[i + 1] === '(') { i = open(i + 2, ')', true); continue; }
     if (c === '`' && !powershell) {
       let end = i + 1;
@@ -228,7 +252,7 @@ function scan(s, start, shell, closer, found, dataOnly) {
     if (!double && c === '(') { i = open(i + 1, ')', true); continue; }
     if (!double && powershell && c === '{') { i = open(i + 1, '}', true); continue; }
     if (!double && c === '<') {
-      const heredoc = heredocAt(s, i);
+      const heredoc = heredocAt(s, i, shell);
       if (heredoc) { pending.push(heredoc); i += 2; continue; }
     }
     i++;

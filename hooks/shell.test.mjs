@@ -179,8 +179,50 @@ test('a redirect keeps its target when the target is quoted', () => {
 });
 
 test('<< inside arithmetic is not a heredoc', () => {
-  for (const shell of ['bash', 'powershell', undefined]) {
+  for (const shell of ['bash', undefined]) {
     assert.deepEqual(words('echo $((1<<2))\ngh pr merge 5', shell), [['echo', '$((1<<2))'], ['gh', 'pr', 'merge', '5']], String(shell));
   }
+  assert.deepEqual(words('echo $((1<<2))\ngh pr merge 5', 'powershell').at(-1), ['gh', 'pr', 'merge', '5']);
   assert.deepEqual(substitutions('echo $((1<<2))\necho $(gh pr merge 5)', 'bash'), ['gh pr merge 5']);
+});
+
+test('arithmetic still exposes the commands inside it', () => {
+  assert.deepEqual(substitutions('echo $(( $(docker volume rm x | wc -l) + 1 ))', 'bash'), ['docker volume rm x | wc -l']);
+  assert.deepEqual(substitutions('echo "$(( $(docker volume rm x) + 1 ))"', 'bash'), ['docker volume rm x']);
+  assert.deepEqual(substitutions('echo $(( `docker volume rm x` + 1 ))', 'bash'), ['docker volume rm x']);
+  assert.deepEqual(substitutions('echo $((1+2))', 'bash'), []);
+  assert.ok(substitutions('echo $((docker volume rm x); true)', 'bash').some((s) => s.includes('docker volume rm x')));
+  assert.ok(substitutions('echo $((docker volume rm x))', 'powershell').some((s) => s.includes('docker volume rm x')));
+  assert.ok(substitutions('echo "$((gh pr merge 5))"', 'powershell').some((s) => s.includes('gh pr merge 5')));
+});
+
+test('a backslash or backtick before a newline continues the line, and a comment still ends at it', () => {
+  assert.deepEqual(words('echo "a\\\nb"', 'bash'), [['echo', 'ab']]);
+  assert.deepEqual(words('echo "a`\nb"', 'powershell'), [['echo', 'ab']]);
+  assert.deepEqual(words('echo a\\\nb', 'bash'), [['echo', 'ab']]);
+  assert.deepEqual(words('# note \\\ngh pr merge 5', 'bash'), [['gh', 'pr', 'merge', '5']]);
+  assert.deepEqual(words('# note `\ngh pr merge 5', 'powershell'), [['gh', 'pr', 'merge', '5']]);
+  assert.deepEqual(words("echo 'a\\\nb'", 'bash'), [['echo', 'a\\\nb']]);
+});
+
+test('an escaped character does not start a comment in a substitution scan', () => {
+  assert.deepEqual(substitutions('echo \\ #$(gh pr merge 5)', 'bash'), ['gh pr merge 5']);
+  assert.deepEqual(substitutions('echo ` #$(gh pr merge 5)', 'powershell'), ['gh pr merge 5']);
+  assert.deepEqual(substitutions('echo # $(gh pr merge 5)', 'bash'), []);
+});
+
+test('PowerShell block comments are skipped at word start', () => {
+  assert.deepEqual(substitutions('<# x #> echo $(gh pr merge 5)', 'powershell'), ['gh pr merge 5']);
+  assert.deepEqual(substitutions('<# $(gh pr merge 5) #> echo hi', 'powershell'), []);
+  assert.deepEqual(words('<# docker volume rm x #>\nls', 'powershell'), [['ls']]);
+  assert.deepEqual(words('<# x #> echo hi', 'powershell'), [['echo', 'hi']]);
+});
+
+test('a segment says which operator ended it', () => {
+  assert.deepEqual(segments('a && b || c; d | e & f\ng').map((s) => s.after), ['&&', '||', ';', '|', '&', '\n', null]);
+});
+
+test('an unquoted heredoc marker is no heredoc in PowerShell, a quoted one is', () => {
+  assert.deepEqual(words('cat <<EOF\nls\nEOF', 'powershell').map((w) => w[0]), ['cat', 'ls', 'EOF']);
+  assert.deepEqual(segments("cat <<'EOF'\nls\nEOF", { shell: 'powershell' })[0].heredocs, ['ls']);
 });
