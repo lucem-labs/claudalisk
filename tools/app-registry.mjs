@@ -3,13 +3,13 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readAppConfig } from './app-config.mjs';
+import { readAppConfig, validateAppConfig } from './app-config.mjs';
 
 export const registryPath = ({ home = homedir() } = {}) => join(home, '.claudalisk', 'apps.json');
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isText = (value) => typeof value === 'string' && value !== '';
-const isPort = (value) => Number.isInteger(value) && value > 0 && value <= 65535;
+const isPort = (value) => Number.isInteger(value) && value >= 1024 && value <= 65535;
 
 function problemsOf(registry) {
   if (!isObject(registry)) return ['the registry must be an object'];
@@ -25,6 +25,9 @@ function problemsOf(registry) {
   });
   if (registry.proxy !== undefined && (!isObject(registry.proxy) || !isText(registry.proxy.composeProject) || !isText(registry.proxy.network))) problems.push('"proxy" needs composeProject and network');
   if (registry.runners !== undefined && (!isObject(registry.runners) || !isText(registry.runners.composeProject))) problems.push('"runners" needs composeProject');
+  if (problems.length) return problems;
+  const stacks = [registry.proxy?.composeProject, registry.runners?.composeProject];
+  for (const app of registry.apps) if (stacks.includes(app.uat.composeProject)) problems.push(`${app.name} uses the shared stack's Compose project ${app.uat.composeProject}`);
   return problems;
 }
 
@@ -42,6 +45,20 @@ export function readRegistry({ home = homedir() } = {}) {
   return registry;
 }
 
+const BUSY = new Set(['EPERM', 'EBUSY', 'EACCES']);
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+export function renameWithRetry(from, to, { rename = renameSync, wait = pause, attempts = 5 } = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return rename(from, to);
+    } catch (e) {
+      if (!BUSY.has(e.code) || attempt >= attempts) throw e;
+      wait(50 * attempt);
+    }
+  }
+}
+
 function writeRegistry(registry, { home }) {
   const path = registryPath({ home });
   const problems = problemsOf(registry);
@@ -50,7 +67,7 @@ function writeRegistry(registry, { home }) {
   const temp = `${path}.${process.pid}.tmp`;
   try {
     writeFileSync(temp, `${JSON.stringify(registry, null, 2)}\n`);
-    renameSync(temp, path);
+    renameWithRetry(temp, path);
   } finally {
     rmSync(temp, { force: true });
   }
@@ -58,7 +75,7 @@ function writeRegistry(registry, { home }) {
 
 function clashes(app, other) {
   const found = [];
-  if (app.repo === other.repo) found.push(`repo ${app.repo}`);
+  if (app.repo.toLowerCase() === other.repo.toLowerCase()) found.push(`repo ${app.repo}`);
   if (app.hostPrefix === other.hostPrefix) found.push(`hostPrefix ${app.hostPrefix}`);
   if (app.uat.composeProject === other.uat.composeProject) found.push(`uat.composeProject ${app.uat.composeProject}`);
   const volumesOf = ({ uat }) => [uat.volume, ...(uat.protectedVolumes ?? [])];
@@ -68,7 +85,9 @@ function clashes(app, other) {
   return found;
 }
 
-export function registerApp(config, { home = homedir() } = {}) {
+export function registerApp(config, { home = homedir(), replace = false } = {}) {
+  const invalid = validateAppConfig(config);
+  if (invalid.length) throw new Error(`the app config is invalid: ${invalid.join('; ')}`);
   const registry = readRegistry({ home });
   const entry = {
     name: config.name,
@@ -78,7 +97,10 @@ export function registerApp(config, { home = homedir() } = {}) {
     ports: { devDb: config.ports.devDb, apiLocal: config.ports.apiLocal },
   };
   for (const other of registry.apps) {
-    if (other.name === entry.name) continue;
+    if (other.name === entry.name) {
+      if (!replace && other.repo.toLowerCase() !== entry.repo.toLowerCase()) throw new Error(`${entry.name} is already registered for ${other.repo}, not ${entry.repo}. Rename the app, or pass --replace if the repository moved`);
+      continue;
+    }
     const found = clashes(entry, other);
     if (found.length) throw new Error(`${entry.name} clashes with ${other.name}: ${found.join(', ')}`);
   }
@@ -108,12 +130,12 @@ export function allocatePorts(registry, { devDbBase = 5433, apiLocalBase = 5100 
 }
 
 export function main(argv, { home = homedir(), write = console.log } = {}) {
-  const [command, appRoot] = argv;
-  if (command !== 'register' || !appRoot) throw new Error('usage: node tools/app-registry.mjs register <appRoot>');
+  const [command, appRoot, ...flags] = argv;
+  if (command !== 'register' || !appRoot || flags.some((flag) => flag !== '--replace')) throw new Error('usage: node tools/app-registry.mjs register <appRoot> [--replace]');
   const root = resolve(appRoot);
   const config = readAppConfig(root);
   if (!config) throw new Error(`${join(root, '.claude', 'claudalisk.json')} is missing`);
-  const entry = registerApp(config, { home });
+  const entry = registerApp(config, { home, replace: flags.includes('--replace') });
   write(`registered ${entry.name} (${entry.repo}) in ${registryPath({ home })}`);
 }
 

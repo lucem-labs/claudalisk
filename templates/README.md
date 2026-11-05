@@ -32,7 +32,7 @@ To list the app in the machine-wide registry `~/.claudalisk/apps.json`, run this
 node tools/app-registry.mjs register <path to the app>
 ```
 
-It validates the config and fails, writing nothing, when another app already uses the same repository, host prefix, uat project, uat volume or port.
+It validates the config and fails, writing nothing, when another app already uses the same repository, host prefix, uat project, uat volume or port, or when the name is already registered for another repository. Add `--replace` when the repository moved.
 
 ## Comment check
 

@@ -135,6 +135,13 @@ test('the app config adds its own uat data and security paths', () => {
   assert.deepEqual(readAppConfig(tmpdir()).uatData, DEFAULT_UAT_DATA);
 });
 
+test('an app config with a BOM is read', () => {
+  const root = tempDir({ '.claude/claudalisk.json': `﻿${JSON.stringify({ review: { uatData: ['tools/db/**'] } })}` });
+  try {
+    assert.ok(readAppConfig(root).uatData.includes('tools/db/**'));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
 test('the deviations section of AGENTS.md is read', () => {
   const root = tempDir({ 'AGENTS.md': '# App\n\n## Deviations\n\n- CLA-0035: generated files keep their header.\n\n### Backend\n\n- CLA-0069: one mapper.\n\n## Commands\n\n- npm test\n' });
   const nested = tempDir({ 'AGENTS.md': '# App\n\n## Rules\n\n### Deviations\n\n- CLA-0035: kept.\n\n### Commands\n\n- npm test\n' });

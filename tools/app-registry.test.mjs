@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { allocatePorts, main, readRegistry, registerApp, registerProxy, registerRunners, registryPath } from './app-registry.mjs';
+import { allocatePorts, main, readRegistry, registerApp, registerProxy, registerRunners, registryPath, renameWithRetry } from './app-registry.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'app-registry.mjs');
 
@@ -74,11 +74,65 @@ test('registerApp creates the folder and the entry', () => {
 test('registerApp upserts by name and accepts changed values', () => {
   const home = tempHome();
   registerApp(config('shop'), { home });
-  registerApp(config('shop', { ports: { devDb: 5500, apiLocal: 5100 }, repo: 'acme/shop2' }), { home });
+  registerApp(config('shop', { ports: { devDb: 5500, apiLocal: 5100 } }), { home });
   const { apps } = readRegistry({ home });
   assert.equal(apps.length, 1);
   assert.equal(apps[0].ports.devDb, 5500);
-  assert.equal(apps[0].repo, 'acme/shop2');
+});
+
+test('the same name from another repository is refused unless replacing', () => {
+  const home = tempHome();
+  registerApp(config('shop'), { home });
+  const before = text(home);
+  const moved = config('shop', { repo: 'neworg/shop' });
+  assert.throws(() => registerApp(moved, { home }), /shop is already registered for acme\/shop, not neworg\/shop/);
+  assert.equal(text(home), before);
+  registerApp(moved, { home, replace: true });
+  assert.equal(readRegistry({ home }).apps[0].repo, 'neworg/shop');
+});
+
+test('registerApp refuses an invalid config and writes nothing', () => {
+  const home = tempHome();
+  assert.throws(() => registerApp(config('../evil'), { home }), /app config is invalid/);
+  assert.equal(existsSync(registryPath({ home })), false);
+});
+
+test('repositories that differ only by case clash', () => {
+  const home = tempHome();
+  registerApp(config('shop'), { home });
+  const other = config('blog', { repo: 'ACME/shop', ports: { devDb: 5434, apiLocal: 5101 } });
+  assert.throws(() => registerApp(other, { home }), /blog clashes with shop: repo ACME\/shop/);
+});
+
+test('a uat project that is the proxy or the runners stack is refused', () => {
+  const home = tempHome();
+  registerProxy({ composeProject: 'proxy', network: 'proxy-net' }, { home });
+  registerRunners({ composeProject: 'runners' }, { home });
+  for (const composeProject of ['proxy', 'runners']) {
+    assert.throws(() => registerApp(config('shop', { uat: { composeProject, volume: 'v' } }), { home }), /shared stack/);
+  }
+  registerApp(config('shop'), { home });
+  assert.throws(() => registerProxy({ composeProject: 'shop-uat', network: 'n' }, { home }), /shared stack/);
+});
+
+test('a port below 1024 makes the registry the wrong shape', () => {
+  const home = tempHome();
+  mkdirSync(join(home, '.claudalisk'));
+  writeFileSync(registryPath({ home }), JSON.stringify({ apps: [{ name: 'x', repo: 'a/x', hostPrefix: 'x', uat: { composeProject: 'p', volume: 'v' }, ports: { devDb: 80, apiLocal: 5100 } }] }));
+  assert.throws(() => readRegistry({ home }), /ports/);
+});
+
+test('renameWithRetry waits out a busy target, then gives up', () => {
+  const busy = () => { throw Object.assign(new Error('busy'), { code: 'EPERM' }); };
+  let tries = 0;
+  const waits = [];
+  renameWithRetry('a', 'b', { rename: () => { tries += 1; if (tries < 3) busy(); }, wait: (ms) => waits.push(ms) });
+  assert.equal(tries, 3);
+  assert.deepEqual(waits, [50, 100]);
+  assert.throws(() => renameWithRetry('a', 'b', { rename: busy, wait: () => {}, attempts: 2 }), /busy/);
+  let other = 0;
+  assert.throws(() => renameWithRetry('a', 'b', { rename: () => { other += 1; throw Object.assign(new Error('gone'), { code: 'ENOENT' }); }, wait: () => {} }), /gone/);
+  assert.equal(other, 1);
 });
 
 const clashCases = [

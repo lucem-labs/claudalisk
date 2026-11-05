@@ -120,7 +120,7 @@ export function stateFolder({ home, app, worktree }) {
   return join(home, '.claudalisk', 'apps', app, 'verify', worktree);
 }
 
-const APP_NAME = /^[a-z0-9][a-z0-9-]*$/;
+export const APP_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
 export function configuredName(top, readFile = readFileSync) {
   let text;

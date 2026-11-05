@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readAppConfig, validateAppConfig } from './app-config.mjs';
+import { APP_NAME } from '../templates/app/scripts/verify.mjs';
+import { SCHEMA, readAppConfig, validateAppConfig } from './app-config.mjs';
 
 const SCHEMA_URL = 'https://raw.githubusercontent.com/lucem-labs/claudalisk/main/tools/app-config.schema.json';
 
@@ -89,6 +90,10 @@ test('uat names that Docker cannot use are problems', () => {
   assert.notDeepEqual(uat({ composeProject: '' }), []);
   assert.notDeepEqual(uat({ volume: '' }), []);
   assert.notDeepEqual(uat({ protectedVolumes: ['bad name'] }), []);
+});
+
+test('verify.mjs checks a name with the same pattern as the schema', () => {
+  assert.equal(APP_NAME.source, SCHEMA.properties.name.pattern);
 });
 
 test('e2e ports are not part of the config', () => {
