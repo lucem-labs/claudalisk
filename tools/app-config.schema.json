@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/lucem-labs/claudalisk/main/tools/app-config.schema.json",
+  "title": "claudalisk app config",
+  "description": "The shape of an app's .claude/claudalisk.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "hostPrefix", "repo", "databases", "ports", "uat"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "The schema this file follows, for editors."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "The app name. The one source of the folder ~/.claudalisk/apps/<name>/ that holds the app's state."
+    },
+    "hostPrefix": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "The prefix of <hostPrefix>.dev.localhost and of the proxy router names."
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "description": "The GitHub repository, as owner/name."
+    },
+    "databases": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The app's databases. Scripts handle them by role.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "envVar"],
+        "properties": {
+          "role": { "type": "string", "description": "What the database is for, such as app or identity." },
+          "envVar": { "type": "string", "description": "The environment variable that holds its connection string." }
+        }
+      }
+    },
+    "ports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["devDb", "apiLocal"],
+      "description": "The host ports the app's dev environment uses. The e2e harness takes free ports, so none are listed for it.",
+      "properties": {
+        "devDb": { "type": "integer", "minimum": 1024, "maximum": 65535, "description": "The host port of the dev database." },
+        "apiLocal": { "type": "integer", "minimum": 1024, "maximum": 65535, "description": "The host port of the API run locally." }
+      }
+    },
+    "uat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["composeProject", "volume"],
+      "description": "The uat resources no agent may touch.",
+      "properties": {
+        "composeProject": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "description": "The Compose project name of uat." },
+        "volume": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$", "description": "The Docker volume that holds uat's data." },
+        "protectedVolumes": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$" },
+          "description": "More volumes that hold uat data."
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How uat backups are kept.",
+      "properties": {
+        "keep": { "type": "integer", "minimum": 1, "description": "How many backups to keep." }
+      }
+    },
+    "askCommands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Commands the agent must ask the owner about first."
+    },
+    "ownerOnlyCommands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Commands only the owner runs."
+    },
+    "runnerLabel": {
+      "type": "string",
+      "description": "The label of the CI runners the app uses."
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Extra path globs for the review plan, added to the defaults.",
+      "properties": {
+        "uatData": { "type": "array", "items": { "type": "string" }, "description": "Globs of files that can touch uat data." },
+        "security": { "type": "array", "items": { "type": "string" }, "description": "Globs of security-sensitive files." }
+      }
+    }
+  }
+}

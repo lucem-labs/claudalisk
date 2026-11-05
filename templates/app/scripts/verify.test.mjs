@@ -10,6 +10,7 @@ import {
   commitAndPush,
   failedStepTail,
   failuresFromAnnotations,
+  gitNames,
   isDone,
   jobLog,
   layerOf,
@@ -294,4 +295,69 @@ test('verify tells the agent to run it again when CI outlasts the timeout', asyn
   const code = await verify({ argv: ['--timeout', '1'], git: fakeGit().git, gh: slow.gh, home: tempHome(), ...fakeClock(), write: (t) => printed.push(t), writeLog: () => {} });
   assert.equal(code, 3);
   assert.match(printed[0], /CI ci on abc1234: in_progress[\s\S]*still running after 1 min\. Run node scripts\/verify\.mjs again/);
+});
+
+const configFile = (content) => (path) => {
+  if (!path.endsWith('claudalisk.json')) throw new Error('unexpected read');
+  if (content === undefined) throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+  return typeof content === 'string' ? content : JSON.stringify(content);
+};
+
+test('gitNames takes the app name from the config', () => {
+  assert.deepEqual(gitNames(fakeGit().git, configFile({ name: 'storefront' })), { app: 'storefront', worktree: 'shop-95' });
+});
+
+test('a clone in a differently named folder gets the same app folder', () => {
+  const clone = (top) => (args) => {
+    if (args.join(' ') === 'rev-parse --show-toplevel') return ok(`${top}\n`);
+    if (args.join(' ') === 'rev-parse --path-format=absolute --git-common-dir') return ok(`${top}/.git\n`);
+    return ok();
+  };
+  const read = configFile({ name: 'storefront' });
+  assert.equal(gitNames(clone('/work/a'), read).app, 'storefront');
+  assert.equal(gitNames(clone('/other/b'), read).app, 'storefront');
+  assert.equal(gitNames(clone('/work/a'), configFile(undefined)).app, 'a');
+  assert.equal(gitNames(clone('/other/b'), configFile(undefined)).app, 'b');
+});
+
+test('gitNames falls back to the folder name without a config or a name', () => {
+  assert.equal(gitNames(fakeGit().git, configFile(undefined)).app, 'shop');
+  assert.equal(gitNames(fakeGit().git, configFile({ review: {} })).app, 'shop');
+  assert.equal(gitNames(fakeGit().git, configFile('﻿{"name":"storefront"}')).app, 'storefront');
+});
+
+test('gitNames throws on a name that is not a safe folder name', () => {
+  for (const name of ['../evil', 'Shop', '', 'a/b', 7]) {
+    assert.throws(() => gitNames(fakeGit().git, configFile({ name })), /claudalisk\.json: name/);
+  }
+});
+
+test('gitNames names the config file when its JSON is broken, and a read error is not an absent file', () => {
+  assert.throws(() => gitNames(fakeGit().git, configFile('{ nope')), /claudalisk\.json is not valid JSON/);
+  const denied = () => { throw Object.assign(new Error('denied'), { code: 'EACCES' }); };
+  assert.throws(() => gitNames(fakeGit().git, denied), /denied/);
+});
+
+test('verify refuses a bad config before it commits or pushes', async () => {
+  const calls = [];
+  const { git } = fakeGit();
+  const spy = (args) => { calls.push(args[0]); return git(args); };
+  await assert.rejects(
+    verify({ argv: ['-m', 'x'], git: spy, gh: fakeGh([]).gh, home: tempHome(), ...fakeClock(), write: () => {}, writeLog: () => {}, readFile: configFile({ name: '../evil' }) }),
+    /claudalisk\.json: name/,
+  );
+  assert.deepEqual([...new Set(calls)], ['rev-parse']);
+});
+
+test('verify keeps its logs under the configured app name', async () => {
+  const red = fakeGh([
+    [`head_sha`, ok(JSON.stringify({ workflow_runs: [run({ conclusion: 'failure' })] }))],
+    ['/jobs?', ok(JSON.stringify({ jobs: [job('frontend', { id: 5, conclusion: 'failure' })] }))],
+    ['annotations', ok('[]')],
+    ['jobs/5/logs', ok('2026-11-01T10:00:00.0000000Z boom\n')],
+  ]);
+  const home = tempHome();
+  const logs = new Map();
+  await verify({ argv: [], git: fakeGit().git, gh: red.gh, home, ...fakeClock(), write: () => {}, writeLog: (p, t) => logs.set(p, t), readFile: configFile({ name: 'storefront' }) });
+  assert.deepEqual([...logs.keys()], [join(stateFolder({ home, app: 'storefront', worktree: 'shop-95' }), 'frontend.log')]);
 });

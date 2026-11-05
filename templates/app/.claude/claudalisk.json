@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/lucem-labs/claudalisk/main/tools/app-config.schema.json",
+  "name": "example-app",
+  "hostPrefix": "example-app",
+  "repo": "your-org/example-app",
+  "databases": [
+    { "role": "app", "envVar": "ConnectionStrings__Default" }
+  ],
+  "ports": { "devDb": 5433, "apiLocal": 5100 },
+  "uat": {
+    "composeProject": "example-app-uat",
+    "volume": "example-app-uat-data",
+    "protectedVolumes": []
+  },
+  "backup": { "keep": 10 },
+  "askCommands": [],
+  "ownerOnlyCommands": [],
+  "runnerLabel": "ci",
+  "review": { "uatData": [], "security": [] }
+}

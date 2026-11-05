@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -120,10 +120,32 @@ export function stateFolder({ home, app, worktree }) {
   return join(home, '.claudalisk', 'apps', app, 'verify', worktree);
 }
 
-export function gitNames(git) {
+const APP_NAME = /^[a-z0-9][a-z0-9-]*$/;
+
+export function configuredName(top, readFile = readFileSync) {
+  let text;
+  try {
+    text = readFile(join(top, '.claude', 'claudalisk.json'), 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') return undefined;
+    throw e;
+  }
+  let config;
+  try {
+    config = JSON.parse(text.replace(/^﻿/, ''));
+  } catch (e) {
+    throw new Error(`.claude/claudalisk.json is not valid JSON: ${e.message}`);
+  }
+  const name = config?.name;
+  if (name === undefined) return undefined;
+  if (typeof name !== 'string' || !APP_NAME.test(name)) throw new Error(`.claude/claudalisk.json: name ${JSON.stringify(name)} must match ${APP_NAME}`);
+  return name;
+}
+
+export function gitNames(git, readFile = readFileSync) {
   const top = git(['rev-parse', '--show-toplevel']).stdout.trim();
   const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir']).stdout.trim();
-  return { app: basename(dirname(common)), worktree: basename(top) };
+  return { app: configuredName(top, readFile) ?? basename(dirname(common)), worktree: basename(top) };
 }
 
 function must(result, what) {
@@ -194,10 +216,10 @@ export function collectFailures({ gh, jobs, layers, logFolder, writeLog }) {
   return failures;
 }
 
-export async function verify({ argv, git, gh, home = homedir(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)), now = Date.now, write = console.log, writeLog = writeFileSync }) {
+export async function verify({ argv, git, gh, home = homedir(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)), now = Date.now, write = console.log, writeLog = writeFileSync, readFile = readFileSync }) {
   const options = parseArgs(argv);
+  const logFolder = stateFolder({ home, ...gitNames(git, readFile) });
   const { sha, notes } = commitAndPush({ git, message: options.message });
-  const logFolder = stateFolder({ home, ...gitNames(git) });
   const result = await watch({ gh, sha, ...options, sleep, now });
   const prefix = notes.length ? `${notes.join(' and ')} ${sha.slice(0, 7)}\n` : '';
   if (result.state === 'no-run') {
