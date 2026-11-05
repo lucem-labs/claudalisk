@@ -156,3 +156,31 @@ test('in PowerShell groups and script blocks are split out', () => {
 test('substitutions with no shell behave as bash', () => {
   assert.deepEqual(substitutions('echo $(a)'), ['a']);
 });
+
+test('with a shell, a comment runs to the end of the line', () => {
+  for (const shell of ['bash', 'powershell']) {
+    assert.deepEqual(words("# don't touch uat\ngh pr merge 5", shell), [['gh', 'pr', 'merge', '5']], shell);
+    assert.deepEqual(words('ls # note; gh pr merge 5\ngit status', shell), [['ls'], ['git', 'status']], shell);
+    assert.deepEqual(words('echo a#b', shell), [['echo', 'a#b']], shell);
+    assert.deepEqual(substitutions("# don't $(a)\necho $(b)", shell), ['b'], shell);
+  }
+  assert.deepEqual(words('echo # x'), [['echo', '#', 'x']]);
+});
+
+test('a redirect keeps its target when the target is quoted', () => {
+  for (const text of ['echo x >".env"', "echo x >'.env'"]) {
+    const [segment] = segments(text, { shell: 'bash' });
+    const found = command(segment.words, segment.quoted);
+    assert.deepEqual(found.redirects.map((r) => r.target), ['.env'], text);
+    assert.deepEqual(found.args, ['x'], text);
+  }
+  const [data] = segments('git commit -m ">> .env"', { shell: 'bash' });
+  assert.deepEqual(command(data.words, data.quoted).redirects, []);
+});
+
+test('<< inside arithmetic is not a heredoc', () => {
+  for (const shell of ['bash', 'powershell', undefined]) {
+    assert.deepEqual(words('echo $((1<<2))\ngh pr merge 5', shell), [['echo', '$((1<<2))'], ['gh', 'pr', 'merge', '5']], String(shell));
+  }
+  assert.deepEqual(substitutions('echo $((1<<2))\necho $(gh pr merge 5)', 'bash'), ['gh pr merge 5']);
+});

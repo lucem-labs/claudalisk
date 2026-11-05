@@ -23,6 +23,15 @@ function heredocAt(source, i) {
   return { delim: m[2] ?? m[3] ?? m[4], dash: m[1] === '-', expand: !quoted };
 }
 
+function arithmeticEnd(s, i) {
+  let depth = 0;
+  for (let k = i + 1; k < s.length; k++) {
+    if (s[k] === '(') depth++;
+    else if (s[k] === ')' && --depth === 0) return k + 1;
+  }
+  return s.length;
+}
+
 function takeBody(source, from, delim) {
   const lines = [];
   let pos = from;
@@ -83,10 +92,20 @@ export function segments(text, { shell } = {}) {
       i = end < 0 ? source.length : end + 2;
       continue;
     }
+    if (c === '#' && shell && word === null) {
+      while (i + 1 < source.length && source[i + 1] !== '\n') i++;
+      continue;
+    }
+    if (c === '$' && source[i + 1] === '(' && source[i + 2] === '(') {
+      const end = arithmeticEnd(source, i + 1);
+      add(source.slice(i, end));
+      i = end - 1;
+      continue;
+    }
     if (c === '"' || c === "'") {
       quote = c;
+      if (word === null || !/^\d*[<>&]+$/.test(word)) wasQuoted = true;
       word = word ?? '';
-      wasQuoted = true;
       continue;
     }
     if ((c === '\\' && shell === 'bash') || (c === '`' && shell === 'powershell')) {
@@ -190,7 +209,12 @@ function scan(s, start, shell, closer, found, dataOnly) {
       if (c === "'" && !double) { single = true; i++; continue; }
       if (c === '"') { double = !double; i++; continue; }
     }
+    if (c === '#' && shell && !dataOnly && !double && (i === start || /[\s;|&(]/.test(s[i - 1]))) {
+      while (i < s.length && s[i] !== '\n') i++;
+      continue;
+    }
     if (closer && c === closer && !double) return { end: i };
+    if (c === '$' && s[i + 1] === '(' && s[i + 2] === '(') { i = arithmeticEnd(s, i + 1); continue; }
     if (c === '$' && s[i + 1] === '(') { i = open(i + 2, ')', true); continue; }
     if (c === '`' && !powershell) {
       let end = i + 1;

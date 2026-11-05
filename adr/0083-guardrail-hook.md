@@ -16,6 +16,7 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 - **It applies to subagents too.** Every segment is checked, and the hook recurses up to five levels into shells, `eval` and substitutions. Past that it asks. Deny beats ask beats allow.
 - **The protected names are read at each call.** They are every registered app's uat Compose project, volume and protected volumes, the proxy's project and network, the runners' project (CLA-0082), the same from the current app's `.claude/claudalisk.json`, and names derived from them: `<hostPrefix>.uat.localhost` and the project name with `_` for `-`. A token names a resource when the name appears with no `[a-z0-9_-]` before it and no `[a-z0-9]` after it.
 - **A broken registry or config denies only what needs the names.** A command that runs a container tool or a database client, or a Compose call, is denied with the file to fix. Other commands still go through the rules that need no names, so `git status` is allowed.
+- **An absent registry protects only the current app,** since a machine with no registered app has nothing else to protect (CLA-0082). A corrupt config loses its command lists, while a corrupt registry with a good config keeps them.
 - **A registry carries no uat database name,** so databases are matched by the derived names: the project name with `_` for `-`.
 - **A crash asks.** An unreadable input or any other error gives an `ask` that says the guardrail could not check the command. The hook always exits 0, because a non-zero exit would let the command run.
 - **The rules and how each is enforced:**
@@ -33,13 +34,13 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 | 9 | Opaque PowerShell: `-EncodedCommand`, `iex` | deny | CLA-0083 | hook speed bump |
 | 10 | `git add -f` of env, backup or dump files; setting `*ALLOW_UAT*` variables | ask | CLA-0026 | hook speed bump, CI/test |
 | 11 | Changing a runner group's access | ask | CLA-0033 | hook speed bump |
-| 12 | A dangerous script's path anywhere in a PowerShell command | ask | CLA-0083 | hook speed bump |
+| 12 | A dangerous script's path (in a `scripts` directory, or relative with `./` or `../`) anywhere in a PowerShell command | ask | CLA-0083 | hook speed bump |
 
   - In rule 6, the hook checks CI. That dev was verified and that the review was done stay with the workflow, as prompt only.
   - In rule 3, the uat volume is external, so Compose cannot remove it, which is the structural part.
   - Commands in a config's `ownerOnlyCommands` are denied and those in `askCommands` ask.
 - **A hook sees only the top-level command.** A script that runs Compose inside itself guards itself (CLA-0030, CLA-0031).
-- **Known limits:** a command assembled at run time from variables, text piped into a shell, here-strings (`bash <<< "..."`), wrappers it does not know such as `timeout`, the contents of a script file, and `gh api` updating a ref directly. The hook stops a careless or mistaken command. A determined one can get past it, for example through a script file. The external uat volume does not depend on the hook: Compose cannot remove it.
+- **Known limits:** a command assembled at run time from variables, text piped into a shell, here-strings (`bash <<< "..."`), wrappers it does not know such as `timeout`, the contents of a script file, and `gh api` updating a ref directly. Shell writes and removals under `~/.claudalisk/apps/<app>/`, such as `rm -rf` of backups or a hand-written `uat.env`, are not checked. A container addressed by id is not matched to its project. The Compose project is not known when it comes from a `.env` file or the folder name. A connection string that lives only in the hook's environment is not seen. The hook stops a careless or mistaken command. A determined one can get past it, for example through a script file. The external uat volume does not depend on the hook: Compose cannot remove it.
 
 ## Consequences
 

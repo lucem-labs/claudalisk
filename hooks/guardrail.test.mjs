@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RULES, decide, protectedNames } from './guardrail.mjs';
 
@@ -1052,3 +1052,130 @@ ask([
 ]);
 
 allow(['setx FOO 1', 'Set-Item env:FOO 1']);
+
+deny([
+  "# don't touch uat\ngh pr merge 5",
+  "# don't\ndocker volume rm x",
+  'echo $((1<<2))\ngh pr merge 5',
+  './scripts/restore.mjs --environment uat',
+  'scripts/init.mjs --environment uat',
+  'node tmp/scripts/deploy.mjs --environment uat',
+  './scripts/deploy.mjs --environment uat',
+  'gh pr --repo o/r merge 5',
+  'gh pr -R o/r merge 5',
+  'gh pr --repo=o/r merge 5',
+  'docker --tlscacert c volume rm y',
+  'docker --tlscert c --tlskey k volume rm y',
+  'docker compose --workdir . down -v',
+  `pg_dumpall -d example_app_uat`,
+  `pg_basebackup -D x -d example_app_uat`,
+  `vacuumdb example_app_uat`,
+  `reindexdb example_app_uat`,
+  `Set-Item env:COMPOSE_PROJECT_NAME ${UAT}; docker compose down`,
+  `Set-Item -Path env:COMPOSE_PROJECT_NAME -Value ${UAT}; docker compose down`,
+  'docker compose --env-file /h/.claudalisk/apps/a/uat.env -f compose.base.yml down',
+]);
+
+allow(["# note; gh pr merge 5\ngit status", 'echo a#b', 'ls # gh pr merge 5']);
+
+deny(['case a in a) docker volume rm x;; esac', 'case a in b) ls;; a) docker volume rm x;; esac', 'function f { docker system prune; }; f'], { tools: ['Bash'] });
+
+deny([
+  `$r = docker exec ${UAT}-db-1 psql`,
+  '$x = gh pr merge 5',
+  `$p = "${UAT}"; docker stop $p`,
+  `$p="${UAT}"; docker stop $p`,
+], { tools: ['PowerShell'] });
+
+allow(['$x = 5', '$x=5; ls', '$name = "abc"'], { tools: ['PowerShell'] });
+
+ask(['git add -f src/*', 'git add -f "docs/?.md"', 'git add -f src/[ab].cs']);
+
+envFiles([
+  'echo x >".env"',
+  "echo x >'.env'",
+  'ni .env',
+  'copy a .env',
+  'cp a .env',
+  'sc .env x',
+  'ac .env x',
+  'cpi a .env',
+  'move a .env',
+  'mi a .env',
+  'Get-Content a | Tee-Object .env',
+  'Get-Content a | Tee-Object -FilePath .env',
+], 'deny');
+
+test('a quoted target that is data is not a write', () => {
+  assert.equal(verdict(call('echo ">> .env"', { cwd: checkout })), 'allow');
+});
+
+test('the guarded script is exactly scripts/deploy.mjs or scripts/backup.mjs from the working directory', () => {
+  assert.equal(verdict(call('node scripts/deploy.mjs --environment uat')), 'allow');
+  assert.equal(verdict(call('node scripts/backup.mjs --environment uat', { tool: 'PowerShell' })), 'allow');
+  assert.equal(verdict(call('node ../scripts/deploy.mjs --environment uat')), 'deny');
+  assert.equal(verdict(call('node a/scripts/backup.mjs --environment uat')), 'deny');
+});
+
+test('gh pr -R names the repository of the CI lookup, before or after the verb', () => {
+  const okOne = okRuns(finished('success'));
+  assert.deepEqual(create('gh pr -R o/r create --title x', { runs: okOne }).calls.gh, [['api', 'repos/o/r/actions/runs?head_sha=abc123&per_page=50']]);
+  assert.deepEqual(create('gh pr create --title x --repo o/q', { runs: okOne }).calls.gh, [['api', 'repos/o/q/actions/runs?head_sha=abc123&per_page=50']]);
+  assert.deepEqual(create('gh pr create -R=o/z', { runs: okOne }).calls.gh.length, 1);
+});
+
+test('--help skips the CI check only when it is the only argument', () => {
+  assert.equal(verdict(call('gh pr create --help')), 'allow');
+  assert.equal(verdict(call('gh pr create -h')), 'allow');
+  const checked = create('gh pr create --title --help --body x', { runs: okRuns(finished('failure')) });
+  assert.equal(verdict(checked.result), 'deny');
+  assert.equal(checked.calls.gh.length, 1);
+});
+
+test('cd, pushd, chdir, Set-Location and sl change the directory for later segments', () => {
+  const other = resolve('/other/repo');
+  const seen = [];
+  const git = (args, cwd) => {
+    const key = args.join(' ');
+    if (key === 'symbolic-ref --short refs/remotes/origin/HEAD') return 'origin/main';
+    if (key === 'rev-parse --abbrev-ref HEAD') return cwd === other ? 'main' : 'feature';
+    if (key === 'rev-parse --abbrev-ref @{upstream}') throw new Error('none');
+    if (key === 'rev-parse HEAD') return `sha-${basename(cwd)}`;
+    throw new Error(`no answer for ${key}`);
+  };
+  const gh = (args) => { seen.push(args[1]); return okRuns(finished('success')); };
+  const run = (text, extra = {}) => call(text, { deps: { git, gh, ...extra.deps }, ...extra });
+  for (const text of ['cd /other/repo && git push', 'pushd /other/repo; git push', 'chdir /other/repo && git push']) {
+    assert.equal(verdict(run(text)), 'deny', text);
+  }
+  for (const text of ['Set-Location /other/repo; git push', 'sl /other/repo; git push']) {
+    assert.equal(verdict(run(text, { tool: 'PowerShell' })), 'deny', text);
+  }
+  assert.equal(verdict(run('git push')), 'allow');
+  assert.equal(verdict(run('cd /other/repo && git push', { deps: { env: {} } })), 'deny');
+  assert.equal(verdict(run('cd $REPO && git push', { deps: { env: { REPO: other } } })), 'deny');
+  assert.equal(verdict(run('bash -c "cd /other/repo" && git push')), 'allow');
+  assert.equal(verdict(run('cd /other/repo && gh pr create')), 'allow');
+  assert.ok(seen[0].includes('head_sha=sha-repo'), seen[0]);
+});
+
+test('cd decides which directory a later env write is judged in', () => {
+  const base = dir();
+  mkdirSync(join(base, 'sub', '.git'), { recursive: true });
+  for (const tool of TOOLS) {
+    assert.equal(verdict(call('echo x > .env', { cwd: base, tool })), 'allow');
+    assert.equal(verdict(call('cd sub; echo x > .env', { cwd: base, tool })), 'deny');
+  }
+});
+
+test('a script path with a 500000 character token is checked in linear time', { timeout: 10000 }, () => {
+  const long = 'a'.repeat(500000);
+  for (const text of [`echo ${long}`, `./${long}/x ${long}.mjs`, `${'a/'.repeat(250000)}init.mjs`, `${'.'.repeat(500000)}`]) {
+    for (const tool of TOOLS) assert.equal(verdict(call(text, { tool })), 'allow');
+  }
+});
+
+test('a relative script path with .. counts in PowerShell', () => {
+  assert.equal(verdict(call('..\\init.ps1', { tool: 'PowerShell' })), 'ask');
+  assert.equal(verdict(call('../restore.sh', { tool: 'PowerShell' })), 'ask');
+});

@@ -20,12 +20,16 @@ export const RULES = [
   { id: 9, decision: 'deny', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'No opaque PowerShell: -EncodedCommand and iex.' },
   { id: 10, decision: 'ask', adr: 'CLA-0026', enforcedBy: [HOOK, 'CI/test'], summary: 'Ask before git add -f of env, backup or dump files and before setting an ALLOW_UAT variable.' },
   { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before changing a runner group\'s access.' },
-  { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path appears anywhere in a PowerShell command.' },
+  { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path, in a scripts directory or relative with ./ or ../, appears anywhere in a PowerShell command.' },
 ];
 
 const MAX_DEPTH = 5;
 const CONTAINER = new Set(['docker', 'docker-compose', 'podman', 'podman-compose']);
-const DATABASE = new Set(['psql', 'pg_dump', 'pg_restore', 'dropdb', 'createdb']);
+const DATABASE = new Set(['psql', 'pg_dump', 'pg_dumpall', 'pg_restore', 'pg_basebackup', 'dropdb', 'createdb', 'vacuumdb', 'reindexdb']);
+const CD = new Set(['cd', 'pushd', 'chdir', 'set-location', 'sl']);
+const FILE_WRITERS = new Set(['tee', 'set-content', 'sc', 'add-content', 'ac', 'out-file', 'new-item', 'ni', 'tee-object']);
+const LAST_WRITERS = new Set(['cp', 'mv', 'install', 'ln']);
+const DEST_WRITERS = new Set(['copy-item', 'cpi', 'copy', 'move-item', 'move', 'mi']);
 const WRAPPERS = new Set(['sudo', 'command', 'env', 'exec', 'nohup', 'time', 'xargs']);
 const WRAPPER_VALUED = { sudo: 'ughpCDRTU', xargs: 'nILPsdEa', env: 'uCS', time: 'fo' };
 const BASH_SHELLS = new Set(['bash', 'sh', 'zsh', 'dash']);
@@ -36,10 +40,11 @@ const KEYWORDS = new Set(['{', '!', 'if', 'then', 'elif', 'else', 'do', 'while',
 const EXPORTERS = new Set(['export', 'declare', 'typeset', 'local', 'readonly', 'set']);
 const ASSIGNMENT = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s;
 const MERGE_PATH = /\/pulls\/\d+\/merge(?![\w-])/;
-const DANGEROUS_SCRIPT = /([^\s'"`()<>|;&,=]*[\\/])?(?:merge|restore|prune-backups|init)[^\s'"\\/]*\.(?:mjs|js|ps1|sh|cmd|bat)(?![\w.-])/gi;
+const SCRIPT_SEPARATORS = /[\s'"`()<>|;&,=]+/;
+const DANGEROUS_BASENAME = /^(?:merge|restore|prune-backups|init)[^\\/]*\.(?:mjs|js|ps1|sh|cmd|bat)$/i;
 const OK_CONCLUSIONS = ['success', 'skipped', 'neutral'];
 const SHORT_VALUED = new Set(['f', 'p', 'c', 'H', 'l']);
-const LONG_VALUED = new Set(['--context', '--host', '--config', '--log-level', '--file', '--project-name', '--project-directory', '--env-file', '--profile', '--ansi', '--parallel', '--progress']);
+const LONG_VALUED = new Set(['--context', '--host', '--config', '--log-level', '--file', '--project-name', '--project-directory', '--env-file', '--profile', '--ansi', '--parallel', '--progress', '--tlscacert', '--tlscert', '--tlskey', '--workdir']);
 
 const out = (decision, reason) => ({
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: decision, permissionDecisionReason: reason },
@@ -125,7 +130,7 @@ export async function realDeps() {
 function protection(ctx) {
   if (!ctx.protection) {
     try {
-      const { names, config } = ctx.deps.protect(ctx.cwd);
+      const { names, config } = ctx.deps.protect(ctx.root);
       ctx.protection = {
         config: config ?? null,
         matchers: names.filter(Boolean).map((name) => ({ name, re: new RegExp(`(?<![a-z0-9_-])${escapeRegExp(name)}(?![a-z0-9])`, 'i') })),
@@ -159,8 +164,9 @@ function assign(ctx, { name, value }, persist) {
   if (persist) ctx.vars.set(name.toUpperCase(), value);
 }
 
-function unwrap(name, args, local) {
+function unwrap(name, args, local, first) {
   let rest = args;
+  let raw = first;
   while (WRAPPERS.has(name)) {
     const valued = WRAPPER_VALUED[name] ?? '';
     let i = 0;
@@ -172,16 +178,18 @@ function unwrap(name, args, local) {
       if (!a.startsWith('-') || a === '-') break;
       if (a.length === 2 && valued.includes(a[1])) i++;
     }
+    raw = rest[i];
     name = normalize(rest[i]);
     rest = rest.slice(i + 1);
   }
-  return [name, rest];
+  return [name, rest, raw];
 }
 
 function parseDocker(name, args) {
   let compose = name.endsWith('-compose');
   const projects = [];
   const files = [];
+  const envFiles = [];
   let projectDir = null;
   let i = 0;
   for (; i < args.length; i++) {
@@ -203,9 +211,10 @@ function parseDocker(name, args) {
     if (value === null || !compose) continue;
     if (key === '-p' || key === '--project-name') projects.push(value);
     else if (key === '-f' || key === '--file') files.push(value);
-    else if (key === '--project-directory') projectDir = value;
+    else if (key === '--project-directory' || key === '--workdir') projectDir = value;
+    else if (key === '--env-file') envFiles.push(value);
   }
-  return { compose, sub: args[i] ?? '', rest: args.slice(i + 1), projects, files, projectDir };
+  return { compose, sub: args[i] ?? '', rest: args.slice(i + 1), projects, files, projectDir, envFiles };
 }
 
 const hasVolumes = (args) => args.some((a) => /^-[A-Za-z]*v[A-Za-z]*$/.test(a) || /^--volumes(=|$)/.test(a));
@@ -236,6 +245,8 @@ function composeFileProject(file, baseDir) {
 function container(name, args, local, ctx) {
   const parsed = parseDocker(name, args);
   destructive(parsed, ctx);
+  const uatEnv = parsed.envFiles.find((file) => lastSegment(file).toLowerCase() === 'uat.env');
+  if (uatEnv) flag(ctx, 'deny', 2, `${uatEnv} is the uat env file, so this command would run against uat (CLA-0066). Use the dev env file, or ask the owner.`);
   const state = protection(ctx);
   if (state.error) {
     flag(ctx, 'deny', 3, `the protected resources cannot be read (${state.error.message}). Fix that file, then run the command again.`);
@@ -279,16 +290,16 @@ function database(args, local, ctx) {
 
 function parseGh(args) {
   let repo = null;
-  let i = 0;
-  for (; i < args.length; i++) {
+  const at = [];
+  for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '-R' || a === '--repo') { repo = args[++i]; continue; }
-    if (a.startsWith('--repo=')) { repo = a.slice(7); continue; }
-    if (/^-R./.test(a)) { repo = a.slice(2); continue; }
-    if (a.startsWith('-')) continue;
-    break;
+    if (a === '-R' || a === '--repo') repo = args[++i];
+    else if (a.startsWith('--repo=')) repo = a.slice(7);
+    else if (/^-R./.test(a)) repo = a.slice(2);
+    else if (!a.startsWith('-') && at.length < 2) at.push(i);
   }
-  return { repo, group: args[i], verb: args[i + 1], rest: args.slice(i + 2), afterGroup: args.slice(i + 1) };
+  const verbAt = at[1] ?? args.length;
+  return { repo, group: args[at[0]], verb: args[at[1]], rest: args.slice(verbAt + 1), afterGroup: args.slice((at[0] ?? args.length) + 1) };
 }
 
 function parseApi(args) {
@@ -327,7 +338,7 @@ function ghApi(args, ctx) {
 
 function prCreate(g, ctx, cwd) {
   const args = g.rest;
-  if (args.includes('--help') || args.includes('-h')) return;
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) return;
   let head = null;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -420,7 +431,7 @@ function push(args, ctx, cwd) {
 function sensitivePath(path) {
   const base = lastSegment(path).toLowerCase();
   if (base.endsWith('.example')) return false;
-  return isEnvFile(base) || /\.(sql|dump|bak|backup)$/.test(base) || /(^|[\\/])backups([\\/]|$)/i.test(path);
+  return /[*?[]/.test(path) || isEnvFile(base) || /\.(sql|dump|bak|backup)$/.test(base) || /(^|[\\/])backups([\\/]|$)/i.test(path);
 }
 
 function gitAdd(args, ctx) {
@@ -452,9 +463,9 @@ function inCheckout(ctx, target) {
 function envWrites(name, args, redirects, local, ctx) {
   const targets = redirects.filter((r) => r.op.startsWith('>') && r.target && !r.target.startsWith('&')).map((r) => r.target);
   const positionals = args.filter((a) => !a.startsWith('-'));
-  if (['cp', 'mv', 'install', 'ln'].includes(name)) targets.push(...positionals.slice(-1));
-  else if (['tee', 'set-content', 'add-content', 'out-file', 'new-item'].includes(name)) targets.push(...positionals);
-  else if (['copy-item', 'move-item'].includes(name)) {
+  if (LAST_WRITERS.has(name)) targets.push(...positionals.slice(-1));
+  else if (FILE_WRITERS.has(name)) targets.push(...positionals);
+  else if (DEST_WRITERS.has(name)) {
     const at = args.findIndex((a) => /^-dest/i.test(a));
     targets.push(at >= 0 ? args[at + 1] ?? '' : positionals.at(-1) ?? '');
   }
@@ -469,12 +480,13 @@ function envWrites(name, args, redirects, local, ctx) {
 
 const isPrune = (text) => /^prune-backups(\.mjs)?$/i.test(lastSegment(text));
 
-function guardedScripts(name, args, ctx) {
+function guardedScripts(name, args, raw, ctx) {
   const uat = args.some((a, i) => /^--environment=uat$/i.test(a) || (a === '--environment' && /^uat$/i.test(args[i + 1] ?? '')));
-  if (RUNNERS.has(name) && uat) {
-    const script = args.find((a) => /\.(mjs|js|cjs)$/.test(a));
+  const direct = /\.(mjs|js|cjs)$/i.test(raw ?? '');
+  if ((RUNNERS.has(name) || direct) && uat) {
+    const script = direct ? null : args.find((a) => /\.(mjs|js|cjs)$/.test(a));
     const path = script ? resolve(ctx.cwd, script) : null;
-    const allowed = name === 'node' && path && inside(ctx.cwd, path) && ['deploy.mjs', 'backup.mjs'].includes(basename(path)) && basename(dirname(path)) === 'scripts';
+    const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => path === resolve(ctx.cwd, 'scripts', file));
     if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs run against uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
   }
   if ((isPrune(name) || args.some(isPrune)) && args.includes('--apply')) {
@@ -483,10 +495,12 @@ function guardedScripts(name, args, ctx) {
 }
 
 function dangerousPaths(text, ctx) {
-  for (const m of text.matchAll(DANGEROUS_SCRIPT)) {
-    const dir = m[1] ?? '';
-    if (/^\.[\\/]/.test(dir) || /(^|[\\/])scripts[\\/]/i.test(dir)) {
-      flag(ctx, 'ask', 12, `${m[0]} is a script path in a PowerShell command, and PowerShell runs a bare path. Ask the owner, or quote it as an argument to a command that only reads it.`);
+  for (const token of text.split(SCRIPT_SEPARATORS)) {
+    const cut = Math.max(token.lastIndexOf('/'), token.lastIndexOf('\\'));
+    if (cut < 0 || !DANGEROUS_BASENAME.test(token.slice(cut + 1))) continue;
+    const dir = token.slice(0, cut + 1);
+    if (/^\.\.?[\\/]/.test(dir) || dir.split(/[\\/]/).some((part) => part.toLowerCase() === 'scripts')) {
+      flag(ctx, 'ask', 12, `${token} is a script path in a PowerShell command, and PowerShell runs a bare path. Ask the owner, or quote it as an argument to a command that only reads it.`);
       return;
     }
   }
@@ -534,9 +548,34 @@ function nested(name, args, seg, shell, ctx, depth) {
 }
 
 function segment(whole, shell, ctx, depth) {
+  const last = whole.words.length - 1;
   let skip = 0;
-  while (skip < whole.words.length - 1 && !whole.quoted[skip] && (KEYWORDS.has(whole.words[skip]) || /^[\w-]+\(\)$/.test(whole.words[skip]))) skip++;
-  const seg = skip ? { ...whole, words: whole.words.slice(skip), quoted: whole.quoted.slice(skip) } : whole;
+  while (skip < last && !whole.quoted[skip]) {
+    const word = whole.words[skip];
+    if (KEYWORDS.has(word) || /^[\w-]+\(\)$/.test(word) || /^[^()\s]+\)$/.test(word)) skip++;
+    else if (word === 'function') skip += 2;
+    else if (word === 'case' && whole.words.indexOf('in', skip) > 0) skip = whole.words.indexOf('in', skip) + 1;
+    else break;
+  }
+  skip = Math.min(skip, last);
+  let seg = skip ? { ...whole, words: whole.words.slice(skip), quoted: whole.quoted.slice(skip) } : whole;
+  if (shell === 'powershell') {
+    const m = /^\$(\w+)(=[\s\S]*)?$/.exec(seg.words[0]);
+    let rest = null;
+    if (m && m[2] !== undefined) {
+      const head = m[2].slice(1);
+      rest = head === '' ? { words: seg.words.slice(1), quoted: seg.quoted.slice(1) } : { words: [head, ...seg.words.slice(1)], quoted: [seg.quoted[0], ...seg.quoted.slice(1)] };
+    } else if (m && seg.words[1] === '=') {
+      rest = { words: seg.words.slice(2), quoted: seg.quoted.slice(2) };
+    }
+    if (rest) {
+      if (rest.words.length <= 1) {
+        if (rest.words.length === 1) ctx.vars.set(m[1].toUpperCase(), rest.words[0]);
+        return;
+      }
+      seg = { ...seg, ...rest };
+    }
+  }
   const words = seg.words;
   const psEnv = /^\$env:([A-Za-z_]\w*)(?:=([\s\S]*))?$/i.exec(words[0]);
   if (psEnv) {
@@ -548,18 +587,32 @@ function segment(whole, shell, ctx, depth) {
   }
   const cmd = command(words, seg.quoted, { skip: [] });
   const local = [...cmd.assignments];
-  const [name, args] = unwrap(cmd.name, cmd.args, local);
+  const [name, args, raw] = unwrap(cmd.name, cmd.args, local, words[cmd.assignments.length]);
   if (/setenvironmentvariable/i.test(words.join(' ')) && /ALLOW_UAT/i.test(words.join(' '))) assign(ctx, { name: 'ALLOW_UAT', value: '' }, false);
   for (const a of local) assign(ctx, a, !name);
   if (EXPORTERS.has(name)) for (const a of args) { const m = ASSIGNMENT.exec(a); if (m) assign(ctx, { name: m[1], value: m[2] }, true); }
   if (name === 'setx' && args[0]) assign(ctx, { name: args[0], value: args[1] ?? '' }, true);
-  if (['set-item', 'new-item', 'set-variable'].includes(name)) for (const a of args) { const m = /^env:(.+)$/i.exec(a); if (m) assign(ctx, { name: m[1], value: '' }, true); }
+  if (['set-item', 'new-item', 'set-variable', 'si', 'ni'].includes(name)) {
+    const at = args.findIndex((a) => /^env:(.+)$/i.test(a));
+    if (at >= 0) {
+      const valueAt = args.findIndex((a) => /^-value$/i.test(a));
+      const value = valueAt >= 0 ? args[valueAt + 1] : args[at + 1];
+      assign(ctx, { name: args[at].slice(4), value: value && !value.startsWith('-') ? value : '' }, true);
+    }
+  }
   envWrites(name, args, cmd.redirects, local, ctx);
   if (!name) return;
+  if (CD.has(name)) {
+    const paths = args.filter((a) => !a.startsWith('-'));
+    if (paths.length === 1) {
+      const target = expand(ctx, local, paths[0]);
+      ctx.cwd = resolve(ctx.cwd, target === '~' || /^~[\\/]/.test(target) ? join(ctx.home, target.slice(1)) : target);
+    }
+  }
   if (name === 'iex' || name === 'invoke-expression') flag(ctx, 'deny', 9, `${name} runs text that the hook cannot read. Run the command itself, without ${name}.`);
   if (PS_SHELLS.has(name) && args.some(isEncoded)) flag(ctx, 'deny', 9, `${name} -EncodedCommand hides what runs. Pass the command as plain text with -Command.`);
   configCommands(name, args, ctx);
-  guardedScripts(name, args, ctx);
+  guardedScripts(name, args, raw, ctx);
   if (CONTAINER.has(name)) container(name, args, local, ctx);
   else if (DATABASE.has(name)) database(args, local, ctx);
   else if (name === 'gh') gh(args, ctx, ctx.cwd);
@@ -578,9 +631,11 @@ function evaluate(text, shell, ctx, depth) {
     ctx.findings.push({ decision: 'ask', reason: `Rule 1 (CLA-0083): this command nests shells or substitutions deeper than ${MAX_DEPTH} levels, so the guardrail cannot check it. Ask the owner, or run the steps separately.` });
     return;
   }
+  const saved = ctx.cwd;
   if (shell === 'powershell') dangerousPaths(text, ctx);
   for (const seg of segments(text, { shell })) segment(seg, shell, ctx, depth);
   for (const inner of substitutions(text, shell)) evaluate(inner, shell, ctx, depth + 1);
+  ctx.cwd = saved;
 }
 
 function shellOf(toolName) {
@@ -602,7 +657,8 @@ export function decide(input, deps = {}) {
       protect: () => { throw new Error('the protected resources were not loaded'); },
       ...deps,
     };
-    const ctx = { cwd: input.cwd ?? process.cwd(), deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
+    const start = input.cwd ?? process.cwd();
+    const ctx = { cwd: start, root: start, deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
     evaluate(text, shell, ctx, 0);
     const found = ctx.findings.find((f) => f.decision === 'deny') ?? ctx.findings.find((f) => f.decision === 'ask');
     return found ? out(found.decision, found.reason) : null;
