@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected resources from the machine-wide registry of CLA-0082, planned in #2)
+- **Enforced by:** guardrail hook (protected resources from the machine-wide registry of CLA-0082, CLA-0083)
 - **Issue:** #8, #19, #20
 
 ## Decision

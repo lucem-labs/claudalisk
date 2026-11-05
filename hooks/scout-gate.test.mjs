@@ -133,3 +133,13 @@ test('the script denies through stdout and allows with no output', () => withRoo
   assert.equal(allowedRun.stdout, '');
   assert.equal(run('not json').stdout, '');
 }));
+
+test('quotes inside a double-quoted substitution do not end the outer quote', () => withRoot((root) => {
+  const command = "git commit -m \"$(cat <<'EOF'\nsee \"grep -r x\"; \"cat hooks/hooks.json\"\nEOF\n)\"";
+  assert.equal(call(root, 'Bash', { command }), null);
+}));
+
+test('a redirect of stderr before the command does not hide it', () => withRoot((root) => {
+  assert.equal(call(root, 'Bash', { command: 'cat src/Small.cs' }).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(call(root, 'Bash', { command: '2>/dev/null cat src/Small.cs' }).hookSpecificOutput.permissionDecision, 'deny');
+}));

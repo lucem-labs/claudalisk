@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** workflow
-- **Enforced by:** the uat deploy script (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024); guardrail hook on `gh pr create` (CI must be green on the head, #11); the claudalisk review skill (`/claudalisk:review`) and its plan script (`tools/review-plan.mjs`); reviewer
+- **Enforced by:** the uat deploy script (deploys only open pull requests whose CI succeeded); guardrail hook (the agent can't merge, CLA-0024); guardrail hook on `gh pr create` (CI must be green on the head, CLA-0083); the claudalisk review skill (`/claudalisk:review`) and its plan script (`tools/review-plan.mjs`); reviewer
 - **Issue:** #90, #127, #53
 
 ## Context

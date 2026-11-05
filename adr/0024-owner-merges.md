@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** workflow
-- **Enforced by:** guardrail hook (deny merge commands to the agent); deny-list backstop
+- **Enforced by:** guardrail hook (deny merge commands to the agent, CLA-0083); deny-list backstop
 
 ## Context
 

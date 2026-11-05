@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-05
 - **Area:** environments
-- **Enforced by:** `tools/app-config.mjs`, `tools/app-registry.mjs` and their tests in CI's `adrs` job; the `name` check in `templates/app/scripts/verify.mjs`; guardrail hook (protected resources read from the registry, planned in #2)
+- **Enforced by:** `tools/app-config.mjs`, `tools/app-registry.mjs` and their tests in CI's `adrs` job; the `name` check in `templates/app/scripts/verify.mjs`; guardrail hook (protected resources read from the registry, CLA-0083)
 - **Issue:** #8
 
 ## Context
