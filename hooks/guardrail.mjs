@@ -501,7 +501,7 @@ function guardedScripts(name, args, ctx) {
   if (uat && !UAT_EXEMPT.has(name)) {
     const script = args[0] && /\.(mjs|js|cjs)$/.test(args[0]) ? args[0] : null;
     const path = script && ctx.cwd ? resolve(ctx.cwd, ctx.host(script)) : null;
-    const fold = (value) => ((ctx.deps.platform ?? process.platform) === 'win32' ? value.toLowerCase() : value);
+    const fold = (value) => (ctx.platform === 'win32' ? value.toLowerCase() : value);
     const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => fold(path) === fold(resolve(ctx.root, 'scripts', file)));
     if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs, run from the app root, may use --environment uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
   }
@@ -581,7 +581,7 @@ function follow(ctx, name, args, local) {
 }
 
 function segment(whole, shell, ctx, depth) {
-  ctx.host = (path) => (shell === 'bash' ? hostPath(path, ctx.deps.platform ?? process.platform) : path);
+  ctx.host = (path) => (shell === 'bash' ? hostPath(path, ctx.platform) : path);
   const last = whole.words.length - 1;
   let skip = 0;
   while (skip < last && !whole.quoted[skip]) {
@@ -664,12 +664,12 @@ function evaluate(text, shell, ctx, depth) {
     return;
   }
   const saved = ctx.cwd;
-  const joined = shell === 'powershell' ? /\S`\n\S/ : /\S\\\n\S/;
-  if (depth === 0 && joined.test(text.replace(/\r\n?/g, '\n'))) {
+  const parts = segments(text, { shell });
+  if (parts.some((part) => part.split)) {
     ctx.findings.push({ decision: 'ask', reason: 'Rule 1 (CLA-0083): a line continuation inside a word can hide a command, so the guardrail cannot check it. Put the word on one line.' });
   }
   if (shell === 'powershell') dangerousPaths(text, ctx);
-  for (const seg of segments(text, { shell })) segment(seg, shell, ctx, depth);
+  for (const seg of parts) segment(seg, shell, ctx, depth);
   for (const inner of substitutions(text, shell)) evaluate(inner, shell, ctx, depth + 1);
   ctx.cwd = saved;
 }
@@ -694,7 +694,7 @@ export function decide(input, deps = {}) {
       ...deps,
     };
     const start = input.cwd ?? process.cwd();
-    const ctx = { cwd: start, root: start, host: (path) => path, deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
+    const ctx = { cwd: start, root: start, platform: resolved.platform ?? process.platform, host: (path) => path, deps: resolved, home: resolved.home ?? homedir(), vars: new Map(), findings: [], protection: null };
     evaluate(text, shell, ctx, 0);
     const found = ctx.findings.find((f) => f.decision === 'deny') ?? ctx.findings.find((f) => f.decision === 'ask');
     return found ? out(found.decision, found.reason) : null;

@@ -61,6 +61,14 @@ export function segments(text, { shell } = {}) {
   let wasQuoted = false;
   let quote = null;
   let piped = false;
+  let split = false;
+  const mark = (at) => {
+    const before = source[at - 1];
+    const next = source[at + 2];
+    if (before === undefined || next === undefined || /\s/.test(before) || /\s/.test(next)) return;
+    if (/[&|;]/.test(before) && next !== '&' && next !== '|') return;
+    split = true;
+  };
   const endWord = () => {
     if (word !== null) { words.push(word); quoted.push(wasQuoted); }
     word = null;
@@ -68,7 +76,10 @@ export function segments(text, { shell } = {}) {
   };
   const endSegment = (pipe, after) => {
     endWord();
-    if (words.length) result.push({ words, quoted, piped, heredocs, after });
+    if (words.length) {
+      result.push({ words, quoted, piped, heredocs, after, split });
+      split = false;
+    }
     words = [];
     quoted = [];
     heredocs = [];
@@ -84,9 +95,9 @@ export function segments(text, { shell } = {}) {
         add(source.slice(i, end + 1));
         i = end;
       }
-      else if (quote === '"' && shell === 'bash' && c === '\\' && source[i + 1] === '\n') i++;
+      else if (quote === '"' && shell === 'bash' && c === '\\' && source[i + 1] === '\n') { mark(i); i++; }
       else if (quote === '"' && shell === 'bash' && c === '\\' && '"\\$`'.includes(source[i + 1] ?? '')) add(source[++i]);
-      else if (quote === '"' && shell === 'powershell' && c === '`' && source[i + 1] === '\n') i++;
+      else if (quote === '"' && shell === 'powershell' && c === '`' && source[i + 1] === '\n') { mark(i); i++; }
       else if (quote === '"' && shell === 'powershell' && c === '`' && i + 1 < source.length) add(source[++i]);
       else add(c);
       continue;
@@ -120,7 +131,7 @@ export function segments(text, { shell } = {}) {
       continue;
     }
     if ((c === '\\' && shell === 'bash') || (c === '`' && shell === 'powershell')) {
-      if (source[i + 1] === '\n') i++;
+      if (source[i + 1] === '\n') { mark(i); i++; }
       else if (i + 1 < source.length) { add(source[++i]); wasQuoted = true; }
       continue;
     }
@@ -153,6 +164,7 @@ export function segments(text, { shell } = {}) {
     else add(c);
   }
   endSegment(false, null);
+  if (split && result.length) result.at(-1).split = true;
   return result;
 }
 

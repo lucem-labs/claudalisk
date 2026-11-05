@@ -1353,6 +1353,23 @@ test('a line continuation inside a word asks', () => {
 
 allow(['docker compose \\\n  up -d', 'git commit -m a \\\n  -m b', "git commit -m \"$(cat <<'EOF'\nline one \\\nnext\nEOF\n)\""], { tools: ['Bash'] });
 
+test('a continuation inside a word asks, wherever it is', () => {
+  for (const text of ['cat <<E\\\nOF\nx\nEOF\ngh pr merge 5', 'echo "$\\\n(gh pr merge 5)"', 'cd /x &\\\n& git push', "bash -c 'cat <<E\\\nOF'"]) {
+    assert.notEqual(verdict(call(text)), 'allow', text);
+  }
+  assert.notEqual(verdict(call('do`\ncker ps', { tool: 'PowerShell' })), 'allow');
+});
+
+test('quoted data and plain operator breaks are no continuation inside a word', () => {
+  const fence = '```';
+  for (const text of ["git commit -m @'\nFix the `foo`\nnext line\n'@", `git commit -m @'\n${fence}js\ncode\n${fence}\n'@`]) {
+    assert.equal(verdict(call(text, { tool: 'PowerShell' })), 'allow', text);
+  }
+  for (const text of ["sed -i '/x/a\\\nnew line' file.txt", "cat > s.sh <<'EOF'\nfoo\\\nbar\nEOF", 'npm run build &&\\\nnpm test', 'a;\\\nb', 'echo a\\\\\nb', 'docker compose \\\n  up -d']) {
+    assert.equal(verdict(call(text, { tool: 'Bash' })), 'allow', text);
+  }
+});
+
 test('the uat script comparison ignores case on win32 only', () => {
   const text = 'node Scripts/Deploy.mjs --environment uat';
   assert.equal(verdict(call(text, { deps: { platform: 'win32' } })), 'allow');
