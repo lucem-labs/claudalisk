@@ -36,7 +36,7 @@ function fakeGit({ branch = 'issue-95-x', dirty = '', upstream = SHA } = {}) {
   const git = (args) => {
     calls.push(args.join(' '));
     const key = args.join(' ');
-    if (key === 'rev-parse --abbrev-ref HEAD') return ok(`${branch}\n`);
+    if (key === 'branch --show-current') return ok(branch === 'HEAD' ? '' : `${branch}\n`);
     if (key === 'status --porcelain') return ok(dirty);
     if (key === 'rev-parse HEAD') return ok(`${SHA}\n`);
     if (key === `rev-parse --verify -q refs/remotes/origin/${branch}`) return upstream ? ok(`${upstream}\n`) : fail('');
@@ -149,6 +149,16 @@ test('commitAndPush pushes a branch created from origin/main to its own name, un
       assert.equal(sh(remote, 'rev-parse', 'refs/heads/main'), mainBefore);
       assert.equal(sh(work, 'rev-parse', '--abbrev-ref', '@{u}'), 'origin/issue-1-x');
       assert.deepEqual(commitAndPush({ git }).notes, []);
+
+      sh(work, 'tag', 'issue-2-y');
+      sh(work, 'checkout', '-q', '-b', 'issue-2-y');
+      const tagged = commitAndPush({ git });
+      assert.equal(tagged.branch, 'issue-2-y');
+      assert.equal(sh(remote, 'rev-parse', 'refs/heads/issue-2-y'), tagged.sha);
+
+      sh(work, 'checkout', '-q', 'main');
+      sh(work, 'tag', 'main');
+      assert.throws(() => commitAndPush({ git }), /will not push main/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

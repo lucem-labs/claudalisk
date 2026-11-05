@@ -154,7 +154,7 @@ function must(result, what) {
 }
 
 export function commitAndPush({ git, message }) {
-  const branch = must(git(['rev-parse', '--abbrev-ref', 'HEAD']), 'git rev-parse');
+  const branch = must(git(['branch', '--show-current']), 'git branch') || 'HEAD';
   if (['HEAD', 'main', 'master'].includes(branch)) throw new UsageError(`verify pushes the issue branch; it will not push ${branch}.`);
   const notes = [];
   if (must(git(['status', '--porcelain']), 'git status')) {
