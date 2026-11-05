@@ -73,14 +73,27 @@ export async function restore(runner, target, { backup, confirm, ownerApproved =
   const container = await runningContainer(runner, target, 'db')
   if (!container) throw new Error(`The ${target.environment} database is not running; deploy ${target.environment} first.`)
 
-  let preRestoreNote = ''
-  if (target.environment === 'uat') {
-    console.log("Taking a backup of uat's current data first.")
-    preRestoreNote = ` Backup of the replaced data: ${await takeBackup(runner, target, { reason: 'pre-restore', now })}`
+  let deployed = null
+  if (!noStart) {
+    deployed = await deployedVersion(runner, target)
+    if (!deployed) throw new Error(`The deployed version of ${target.environment} cannot be read, so a restore could not migrate the database afterwards; deploy ${target.environment} first. Nothing was changed.`)
   }
 
   console.log(`Stopping the ${target.environment} API.`)
-  await compose(runner, target, ['stop', 'api'])
+  await composeChecked(runner, target, ['stop', 'api'], { what: `Stopping the ${target.environment} API` })
+
+  let preRestoreNote = ''
+  if (target.environment === 'uat') {
+    console.log("Taking a backup of uat's current data first.")
+    try {
+      preRestoreNote = ` Backup of the replaced data: ${await takeBackup(runner, target, { reason: 'pre-restore', now })}`
+    } catch (error) {
+      console.error(`The backup of the current uat data failed, so nothing was changed. Starting the API again.`)
+      await compose(runner, target, ['start', 'api'])
+      throw error
+    }
+  }
+
   const restored = []
   try {
     for (const dump of selected.dumps) {
@@ -90,15 +103,24 @@ export async function restore(runner, target, { backup, confirm, ownerApproved =
       restored.push(into.name)
     }
   } catch (error) {
-    const done = restored.length > 0 ? `Already restored: ${restored.join(', ')}. The others are unchanged.` : `The ${target.environment} database is unchanged.`
-    console.error(`Restore failed. ${done}${preRestoreNote}`)
-    await compose(runner, target, ['start', 'api'])
+    if (restored.length > 0) {
+      console.error(`Restore failed. Already restored: ${restored.join(', ')}. The others are unchanged. The API is left stopped.${preRestoreNote}`)
+    } else {
+      console.error(`Restore failed. The ${target.environment} database is unchanged. Starting the API again.${preRestoreNote}`)
+      await compose(runner, target, ['start', 'api'])
+    }
     throw error
   }
 
   if (noStart) {
     console.log(`Restored ${target.environment} from backup ${selected.name}; the API is left stopped (--no-start).${preRestoreNote}`)
     return selected
+  }
+  try {
+    await migrate(runner, target, deployed)
+  } catch (error) {
+    console.error(`The backup ${selected.name} is restored, but migrating it failed. The ${target.environment} API is left stopped.${preRestoreNote}`)
+    throw error
   }
   await compose(runner, target, ['start', 'api'])
   if (!(await waitForHealth(target))) {

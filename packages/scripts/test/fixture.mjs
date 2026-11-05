@@ -61,6 +61,8 @@ export function docker({
   applied = [],
   apiEnv = `DEPLOYED_SHA=${sha}\nDEPLOYED_REF=feature\n`,
   dirty = false,
+  branch = 'feature',
+  head = sha,
   failOn = [],
   extra = () => undefined,
 } = {}) {
@@ -73,8 +75,8 @@ export function docker({
     const custom = extra(call)
     if (custom) return custom
     if (command === 'git') {
-      if (text.includes('rev-parse --abbrev-ref')) return { stdout: 'feature\n' }
-      if (text.includes('rev-parse HEAD')) return { stdout: `${sha}\n` }
+      if (text.includes('branch --show-current')) return { stdout: branch ? `${branch}\n` : '' }
+      if (text.includes('rev-parse HEAD')) return { stdout: `${head}\n` }
       if (text.includes('status --porcelain')) return { stdout: dirty ? ' M file\n' : '' }
       return {}
     }

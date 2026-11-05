@@ -38,6 +38,12 @@ test('migration files are the migrations of non-test projects, without designers
   assert.ok(!isMigrationFile('backend/App.Persistence/Migrations/20260101000000_Initial.Designer.cs'))
   assert.ok(!isMigrationFile('backend/App.Persistence/Migrations/AppDbContextModelSnapshot.cs'))
   assert.ok(!isMigrationFile('backend/App.Tests/Migrations/20260101000000_TestOnly.cs'))
+  assert.ok(isMigrationFile('backend/Modules/Orders/Orders.Persistence/Migrations/20260101000000_Initial.cs'))
+  assert.ok(isMigrationFile('backend/Modules/Orders/Orders.Persistence/Migrations/Sub/20260101000000_Initial.cs'))
+  assert.ok(!isMigrationFile('backend/Modules/Orders.Tests/Orders.Persistence/Migrations/20260101000000_Initial.cs'))
+  assert.ok(!isMigrationFile('backend/Modules/Orders/Orders.Persistence/Migrations/OrdersDbContextModelSnapshot.cs'))
+  assert.ok(!isMigrationFile('backend/Modules/Orders/Orders.Persistence/Orders.cs'))
+  assert.ok(!isMigrationFile('other/Migrations/20260101000000_Initial.cs'))
 })
 
 test('a migration id comes from every [Migration] attribute, or else from the file name', () => {
@@ -60,6 +66,17 @@ test('fingerprints ignore line endings, and the source scan finds every migratio
   assert.deepEqual([...sourceMigrations(root).keys()].sort(), ['20260101000000_Initial', '20260102000000_InitialLibrary'])
 })
 
+test('the source scan finds migrations at any depth under backend and skips bin and obj', () => {
+  const root = freshDir()
+  const nested = join(root, 'backend', 'Modules', 'Orders', 'Orders.Persistence', 'Migrations')
+  mkdirSync(nested, { recursive: true })
+  writeFileSync(join(nested, '20260101000000_Initial.cs'), 'one')
+  const built = join(root, 'backend', 'Modules', 'Orders', 'Orders.Persistence', 'obj', 'Migrations')
+  mkdirSync(built, { recursive: true })
+  writeFileSync(join(built, '20260109000000_Generated.cs'), 'generated')
+  assert.deepEqual([...sourceMigrations(root).keys()], ['20260101000000_Initial'])
+})
+
 test('the approved edits file lists schema/id entries, with or without a reason', () => {
   assert.deepEqual(
     [...approvedMigrationEdits('catalog/20261028131259_InitialCreate moved ... #168\npublic/20261016120952_InitialCreate\nnot an entry\n')],
@@ -72,7 +89,12 @@ test('an applied migration whose file changed is refused unless approved; one th
   const applied = ['app/20260101000000_A', 'app/20260102000000_B', 'app/20260103000000_Abandoned']
   const recorded = { '20260101000000_A': 'h1', '20260102000000_B': 'h2-old' }
 
-  assert.deepEqual(checkMigrations({ applied, source, recorded }), { changed: ['20260102000000_B'], missing: ['app/20260103000000_Abandoned'] })
+  assert.deepEqual(checkMigrations({ applied, source, recorded }), {
+    changed: ['20260102000000_B'],
+    missing: ['app/20260103000000_Abandoned'],
+    unrecorded: ['20260103000000_Abandoned'],
+  })
+  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).unrecorded, ['20260101000000_A', '20260102000000_B', '20260103000000_Abandoned'])
   assert.deepEqual(checkMigrations({ applied, source, recorded, approved: new Set(['app/20260102000000_B']) }).changed, [])
   assert.deepEqual(checkMigrations({ applied: [...applied, 'legacy/20250101000000_Old'], source, recorded }).missing, ['app/20260103000000_Abandoned'], 'a schema the commit does not migrate at all is not missing')
   assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).changed, [], 'a migration seen for the first time is recorded, not refused')
@@ -153,12 +175,47 @@ test('matching migrations pass, and recording keeps the fingerprints of what uat
   assert.deepEqual(readFingerprints(stateDir), { '20260101000000_A': 'h1' }, 'only applied migrations are recorded')
 })
 
-test('a missing approved-edits file approves nothing, and a present one is read', () => {
+function gitRunner(respond) {
+  return fakeRunner((call) => (call.command === 'git' ? respond(call) : {}))
+}
+
+test('approved edits are read from origin/main, never from the working tree', async () => {
   const root = join(scratch, 'approvals')
   mkdirSync(root, { recursive: true })
-  assert.equal(readApprovedEdits(root).size, 0)
-  writeFileSync(join(root, 'approved-migration-edits.txt'), 'app/20260101000000_A why\n')
-  assert.deepEqual([...readApprovedEdits(root)], ['app/20260101000000_A'])
+  writeFileSync(join(root, 'approved-migration-edits.txt'), 'app/20260101000000_Branch why
+')
+  const runner = gitRunner(() => ({ stdout: 'app/20260101000000_A why
+' }))
+  assert.deepEqual([...(await readApprovedEdits(runner, root))], ['app/20260101000000_A'])
+  assert.deepEqual(runner.calls[0].args, ['-C', root, 'show', 'origin/main:approved-migration-edits.txt'])
+})
+
+test('a file missing on origin/main approves nothing, and any other git failure throws', async () => {
+  const missing = gitRunner(() => ({ code: 128, stderr: "fatal: path 'approved-migration-edits.txt' does not exist in 'origin/main'" }))
+  assert.equal((await readApprovedEdits(missing, '/repo')).size, 0)
+  const onDisk = gitRunner(() => ({ code: 128, stderr: "fatal: path 'approved-migration-edits.txt' exists on disk, but not in 'origin/main'" }))
+  assert.equal((await readApprovedEdits(onDisk, '/repo')).size, 0)
+  const broken = gitRunner(() => ({ code: 128, stderr: "fatal: invalid object name 'origin/main'." }))
+  await assert.rejects(readApprovedEdits(broken, '/repo'), /invalid object name/)
+})
+
+test('uat with applied migrations and no source migrations is refused, naming where it looked', async () => {
+  const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'] })
+  await assert.rejects(checkUatMigrations(runner, settings, { source: new Map(), approved: new Set() }), /backend/**/Migrations.*Nothing was changed./)
+})
+
+test('applied migrations with no recorded fingerprint are listed in one warning and do not refuse', async () => {
+  const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'] })
+  const warnings = []
+  const warn = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Set() }), { firstDeploy: false })
+  } finally {
+    console.warn = warn
+  }
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /20260101000000_A/)
 })
 
 test('several databases are checked together, and a first deploy needs none of them to have a schema', async () => {

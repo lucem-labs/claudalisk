@@ -24,7 +24,7 @@ export async function migrate({ appRoot, argv, env, runner }) {
   const app = readApp(appRoot)
   const dev = loadEnvironment('dev', { app, env })
   const project = options.project ?? findApiProject(appRoot)
-  const connections = Object.fromEntries(dev.databases.map((database) => [database.envVar, env[database.envVar] || devConnectionString(app, dev.values, database.name)]))
+  const connections = Object.fromEntries(dev.databases.map((database) => [database.envVar, devConnectionString(app, dev.values, database.name)]))
   await runChecked(runner, 'dotnet', ['run', '--project', project, '--', '--initialize-databases'], {
     cwd: appRoot,
     inherit: true,

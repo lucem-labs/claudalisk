@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { after, test } from 'node:test'
-import { configPath, parseAppConfig, readApp, requiredFields } from './app-config.mjs'
+import { allowedKeys, configPath, parseAppConfig, readApp, requiredFields } from './app-config.mjs'
 import { sampleConfig } from '../test/sample-app.mjs'
 
 const schema = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'tools', 'app-config.schema.json'), 'utf8'))
@@ -19,6 +19,28 @@ test('the required fields match the schema file', () => {
   assert.deepEqual(requiredFields.database, schema.properties.databases.items.required)
   assert.deepEqual(requiredFields.ports, schema.properties.ports.required)
   assert.deepEqual(requiredFields.uat, schema.properties.uat.required)
+})
+
+test('the allowed keys match the schema properties at every closed level', () => {
+  const sorted = (keys) => [...keys].sort()
+  assert.deepEqual(sorted(allowedKeys.app), sorted(Object.keys(schema.properties)))
+  assert.deepEqual(sorted(allowedKeys.database), sorted(Object.keys(schema.properties.databases.items.properties)))
+  assert.deepEqual(sorted(allowedKeys.ports), sorted(Object.keys(schema.properties.ports.properties)))
+  assert.deepEqual(sorted(allowedKeys.uat), sorted(Object.keys(schema.properties.uat.properties)))
+  assert.deepEqual(sorted(allowedKeys.backup), sorted(Object.keys(schema.properties.backup.properties)))
+  assert.deepEqual(sorted(allowedKeys.review), sorted(Object.keys(schema.properties.review.properties)))
+  for (const level of [schema, schema.properties.databases.items, schema.properties.ports, schema.properties.uat, schema.properties.backup, schema.properties.review]) {
+    assert.equal(level.additionalProperties, false)
+  }
+})
+
+test('an unknown key is rejected at each closed level and named', () => {
+  assert.throws(() => parse({ ...sampleConfig, hostprefix: 'x' }), /cfg.json: "hostprefix" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, databases: [{ role: 'app', envVar: 'X', extra: 1 }] }), /"databases[0].extra" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, ports: { ...sampleConfig.ports, web: 1 } }), /"ports.web" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, volum: 'v' } }), /"uat.volum" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 2, count: 3 } }), /"backup.count" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, review: { uatdata: [] } }), /"review.uatdata" is not a known setting/)
 })
 
 test('the sample config satisfies the schema it is checked against', () => {

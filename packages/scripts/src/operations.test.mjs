@@ -27,6 +27,8 @@ const dev = settingsFor('dev', { app: sampleApp, stateDir, values: sampleValues 
 function services(respond = () => ({})) {
   return fakeRunner((call) => {
     if (call.args.includes('ps') && call.args.includes('db')) return { stdout: 'db1\n' }
+    if (call.args.includes('ps') && call.args.includes('api')) return { stdout: 'api1\n' }
+    if (call.args[0] === 'inspect') return { stdout: 'DEPLOYED_SHA=1234567abcdef\nDEPLOYED_REF=feature\n' }
     return respond(call)
   })
 }
@@ -61,9 +63,10 @@ test('a uat restore is refused before anything runs without the owner', async ()
 
 const when = new Date('2026-10-29T10:00:00Z')
 
-function backupRunner(settings, { apiEnv = 'DEPLOYED_SHA=1234567abcdef\nDEPLOYED_REF=feature\n', failDump = false } = {}) {
+function backupRunner(settings, { apiEnv = 'DEPLOYED_SHA=1234567abcdef\nDEPLOYED_REF=feature\n', failDump = false, fail = () => false } = {}) {
   return fakeRunner((call) => {
     const text = call.args.join(' ')
+    if (fail(text, call)) return { code: 1, stderr: 'boom' }
     if (call.args.includes('ps') && call.args.includes('db')) return { stdout: 'db1\n' }
     if (call.args.includes('ps') && call.args.includes('api')) return { stdout: apiEnv ? 'api1\n' : '' }
     if (call.args[0] === 'inspect') return { stdout: apiEnv }
@@ -155,4 +158,110 @@ test('a restore puts each database of the backup back by its role', async () => 
   const sql = runner.calls.map((call) => call.options.input ?? '').join('\n')
   assert.match(sql, /RENAME TO "dev_a"/)
   assert.match(sql, /RENAME TO "dev_b"/)
+})
+
+const quietly = async (action) => {
+  const log = console.log
+  const error = console.error
+  const messages = []
+  console.log = (message) => messages.push(message)
+  console.error = (message) => messages.push(message)
+  try {
+    return { messages, result: await action().then((value) => ({ value }), (reason) => ({ reason })) }
+  } finally {
+    console.log = log
+    console.error = error
+  }
+}
+
+const position = (runner, text) => runner.calls.findIndex((call) => call.line.includes(text) || (call.options.input ?? '').includes(text))
+
+function uatTarget() {
+  const settings = freshSettings(sampleApp, sampleValues)
+  const folderPath = join(settings.backupDir, name)
+  mkdirSync(folderPath, { recursive: true })
+  writeFileSync(join(folderPath, 'shop.dump'), 'dump')
+  writeManifest(folderPath, createManifest({
+    environment: 'uat', reason: 'deploy', createdAt: new Date('2026-10-16T09:30:05Z'),
+    databases: [{ role: 'app', database: 'shop', file: 'shop.dump', sizeBytes: 4, sha256: createHash('sha256').update('dump').digest('hex') }],
+    migrations: [],
+  }))
+  return settings
+}
+
+const owner = { backup: name, ownerApproved: true, confirm: `restore uat ${name}`, now: () => when }
+
+test('a restore stops the API, backs up uat, swaps, migrates and only then starts the API', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings)
+  const { messages } = await quietly(() => restore(runner, settings, owner))
+  assert.ok(messages.length > 0)
+  const order = ['stop api', 'pg_dump', 'RENAME TO "shop"', '--rm migrate', 'start api'].map((step) => position(runner, step))
+  assert.deepEqual([...order].sort((a, b) => a - b), order)
+  assert.ok(order.every((index) => index >= 0))
+  const migrateCall = runner.calls.find((call) => call.line.includes('--rm migrate'))
+  assert.equal(migrateCall.options.env.DEPLOYED_SHA, '1234567abcdef')
+})
+
+test('a restore with no readable deployed version is refused before anything changes', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings, { apiEnv: '' })
+  const { result } = await quietly(() => restore(runner, settings, owner))
+  assert.match(result.reason.message, /deploy uat first/)
+  assert.ok(!runner.calls.some((call) => call.line.includes('stop api')))
+})
+
+test('a failed stop aborts the restore before the backup', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings, { fail: (text) => text.endsWith('stop api') })
+  const { result } = await quietly(() => restore(runner, settings, owner))
+  assert.ok(result.reason)
+  assert.equal(position(runner, 'pg_dump'), -1)
+  assert.equal(position(runner, 'RENAME'), -1)
+})
+
+test('a failed pre-restore backup starts the API again and changes nothing', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings, { failDump: true })
+  const { result } = await quietly(() => restore(runner, settings, owner))
+  assert.match(result.reason.message, /pg_dump/)
+  assert.ok(position(runner, 'start api') > position(runner, 'stop api'))
+  assert.equal(position(runner, 'RENAME'), -1)
+})
+
+test('a failed migration after the swap leaves the API stopped and says so', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings, { fail: (text) => text.includes('--rm migrate') })
+  const { messages, result } = await quietly(() => restore(runner, settings, owner))
+  assert.ok(result.reason)
+  assert.equal(position(runner, 'start api'), -1)
+  assert.match(messages.join('\n'), /restored, but migrating it failed.*left stopped.*Backup of the replaced data/s)
+})
+
+test('a restore that fails before any database was swapped starts the API again', async () => {
+  const settings = uatTarget()
+  const runner = backupRunner(settings, { fail: (text) => text.includes('pg_restore -U') })
+  const { result } = await quietly(() => restore(runner, settings, owner))
+  assert.ok(result.reason)
+  assert.ok(position(runner, 'start api') > position(runner, 'stop api'))
+})
+
+test('a restore that fails after some databases were swapped leaves the API stopped', async () => {
+  const dir = temporaryFolder('shop-partial-')
+  const values = { ...sampleValues, ConnectionStrings__Shop: 'Database=dev_a', ConnectionStrings__Identity: 'Database=dev_b' }
+  const target = settingsFor('dev', { app: twoDatabaseApp, stateDir: dir, values })
+  const folderPath = join(dir, 'backups', name)
+  mkdirSync(folderPath, { recursive: true })
+  const databases = ['app', 'identity'].map((role, index) => {
+    const file = `uat_${index}.dump`
+    writeFileSync(join(folderPath, file), role)
+    return { role, database: `uat_${index}`, file, sizeBytes: Buffer.byteLength(role), sha256: createHash('sha256').update(role).digest('hex') }
+  })
+  writeManifest(folderPath, createManifest({ environment: 'uat', reason: 'deploy', createdAt: new Date('2026-10-16T09:30:05Z'), databases, migrations: [] }))
+  const runner = services((call) => (call.args.some((argument) => argument.includes('pg_restore -U')) && call.args.includes('dev_b_restore_20261029100000') ? { code: 1, stderr: 'corrupt' } : {}))
+  const { messages, result } = await quietly(() => restore(runner, target, { backup: name, now: () => when }))
+  assert.ok(result.reason)
+  assert.ok(position(runner, 'RENAME TO "dev_a"') >= 0)
+  assert.equal(position(runner, 'start api'), -1)
+  assert.match(messages.join('\n'), /Already restored: dev_a.*left stopped/)
 })

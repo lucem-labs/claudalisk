@@ -56,5 +56,29 @@ test('a failed restore leaves the database unchanged and drops the temporary one
 test('the swap ends other sessions, then renames both databases', () => {
   const sql = swapSql('shop', 'shop_restore_1', 'shop_replaced_1')
   assert.match(sql, /pg_terminate_backend.*datname = 'shop'/)
-  assert.match(sql, /ALTER DATABASE "shop" RENAME TO "shop_replaced_1";\nALTER DATABASE "shop_restore_1" RENAME TO "shop";/)
+  assert.match(sql, /BEGIN;\nALTER DATABASE "shop" RENAME TO "shop_replaced_1";\nALTER DATABASE "shop_restore_1" RENAME TO "shop";\nCOMMIT;/)
+  assert.ok(sql.indexOf('pg_terminate_backend') < sql.indexOf('BEGIN;'))
+})
+
+test('a failed swap drops the temporary database and does not drop the original', async () => {
+  const runner = fakeRunner((call) => (sqlOf(call).includes('RENAME TO') ? { code: 1, stderr: 'rename failed' } : {}))
+  await assert.rejects(restoreDatabase(runner, restore))
+  const sql = runner.calls.map(sqlOf).join('\n')
+  assert.match(sql, /DROP DATABASE IF EXISTS "shop_restore_20261028090000"/)
+  assert.doesNotMatch(sql, /DROP DATABASE "shop_replaced/)
+})
+
+test('a failed drop of the replaced database after a good swap warns and still succeeds', async () => {
+  const runner = fakeRunner((call) => (sqlOf(call).startsWith('DROP DATABASE "shop_replaced') ? { code: 1, stderr: 'in use' } : {}))
+  const warnings = []
+  const warn = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    await restoreDatabase(runner, restore)
+  } finally {
+    console.warn = warn
+  }
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /shop_replaced_20261028090000/)
+  assert.ok(!runner.calls.map(sqlOf).join('\n').includes('DROP DATABASE IF EXISTS "shop_restore'))
 })

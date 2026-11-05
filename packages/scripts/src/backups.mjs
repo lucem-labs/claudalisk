@@ -111,6 +111,10 @@ export function unmergedMigrations(applied, ids) {
   return [...applied].filter((entry) => !ids.has(migrationId(entry)) && migrated.has(schemaOf(entry))).sort()
 }
 
+export function migrationsToProtect(applied, ids) {
+  return [...applied].filter((entry) => !ids.has(migrationId(entry))).sort()
+}
+
 export function restorePointFor(newestFirst, migrations, known = () => true) {
   return newestFirst.find(
     (backup) =>

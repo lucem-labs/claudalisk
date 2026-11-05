@@ -19,7 +19,7 @@ function repository({ dirty = false, behind = false, pulls = [ownPull], runs = [
   })
 }
 
-const deploy = (runner, options = {}) => assertUatDeployable(runner, { root: '/repo', confirm: deployConfirmation(sha), pollSeconds: 0, ...options })
+const deploy = (runner, options = {}) => assertUatDeployable(runner, { root: '/repo', repo: 'acme/shop', confirm: deployConfirmation(sha), pollSeconds: 0, ...options })
 
 test('the confirmation names the short commit', () => {
   assert.equal(deployConfirmation(sha), 'deploy uat 3e38675')
@@ -56,4 +56,14 @@ test('uat deploys only the head of an open pull request into main', async () => 
 test('uat deploys only pull requests the signed-in account opened, never a bot', async () => {
   await assert.rejects(deploy(repository({ pulls: [{ ...ownPull, author: 'dependabot[bot]', bot: true }] })), /#7 was opened by dependabot\[bot\]; uat runs only pull requests opened by owner/)
   await assert.rejects(deploy(repository({ pulls: [{ ...ownPull, author: 'someone' }] })), /#7 was opened by someone/)
+})
+
+test('the pull request and CI lookups name the repository from the app config', async () => {
+  const runner = repository()
+  await deploy(runner)
+  const gh = runner.calls.filter((call) => call.command === 'gh')
+  assert.ok(gh.some((call) => call.args[1] === `repos/acme/shop/commits/${sha}/pulls`))
+  const list = gh.find((call) => call.args[0] === 'run')
+  assert.deepEqual(list.args.slice(0, 4), ['run', 'list', '--repo', 'acme/shop'])
+  assert.ok(!gh.some((call) => call.line.includes('{owner}')))
 })

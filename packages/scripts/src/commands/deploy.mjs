@@ -20,8 +20,8 @@ import { pruneBackups } from './prune-backups.mjs'
 export async function currentVersion(runner, root) {
   const git = async (args) => (await runChecked(runner, 'git', ['-C', root, ...args])).stdout.trim()
   const sha = await git(['rev-parse', 'HEAD'])
-  let ref = await git(['rev-parse', '--abbrev-ref', 'HEAD'])
-  if (ref === 'HEAD') {
+  let ref = await git(['branch', '--show-current'])
+  if (!ref) {
     const remotes = (await git(['branch', '--remotes', '--points-at', 'HEAD']))
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -60,8 +60,9 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const uat = environment === 'uat'
   const app = readApp(appRoot)
 
+  let guarded = null
   if (uat) {
-    await guard(runner, { root: appRoot, confirm: options.confirm })
+    guarded = await guard(runner, { root: appRoot, repo: app.repo, confirm: options.confirm })
   } else if (options.confirm) {
     throw new Error('--confirm is only for uat.')
   }
@@ -71,6 +72,9 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   if (uat && !existsSync(settings.backupDir)) mkdirSync(settings.backupDir, { recursive: true })
 
   const version = await currentVersion(runner, appRoot)
+  if (uat && (version.sha !== guarded || version.dirty)) {
+    throw new Error(`Refusing to deploy uat: the working tree changed after the checks passed on ${String(guarded).slice(0, 7)} (now ${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}). Nothing was changed; deploy again.`)
+  }
   const deployed = { sha: version.dirty ? `${version.sha}-dirty` : version.sha, ref: version.ref }
   console.log(`Deploying ${environment} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
 
@@ -82,7 +86,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
     await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
-    if ((await checkUatMigrations(runner, settings, { source, approved: readApprovedEdits(appRoot) })).firstDeploy) {
+    if ((await checkUatMigrations(runner, settings, { source, approved: await readApprovedEdits(runner, appRoot) })).firstDeploy) {
       console.log('First uat deploy: the uat database has no schema yet, so there is nothing to back up. Skipping the pre-deploy backup.')
     } else {
       backupFolder = await takeBackup(runner, settings, { reason: 'deploy', now })

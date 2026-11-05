@@ -61,8 +61,10 @@ export function restoreNames(database, stamp) {
 
 export function swapSql(database, temporary, replaced) {
   return `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = ${quoteLiteral(database)} AND pid <> pg_backend_pid();
+BEGIN;
 ALTER DATABASE ${quoteIdentifier(database)} RENAME TO ${quoteIdentifier(replaced)};
 ALTER DATABASE ${quoteIdentifier(temporary)} RENAME TO ${quoteIdentifier(database)};
+COMMIT;
 `
 }
 
@@ -84,7 +86,11 @@ export async function restoreDatabase(runner, { container, database, dumpPath, s
     }
     await psql(runner, container, 'postgres', swapSql(database, temporary, replaced))
     created = false
-    await psql(runner, container, 'postgres', `DROP DATABASE ${quoteIdentifier(replaced)} WITH (FORCE);\n`)
+    try {
+      await psql(runner, container, 'postgres', `DROP DATABASE ${quoteIdentifier(replaced)} WITH (FORCE);\n`)
+    } catch (error) {
+      console.warn(`Warning: ${database} was restored, but the replaced database ${replaced} could not be dropped and is left behind (${error.message}).`)
+    }
   } finally {
     if (created) await psql(runner, container, 'postgres', `DROP DATABASE IF EXISTS ${quoteIdentifier(temporary)} WITH (FORCE);\n`)
     await runner('docker', ['exec', container, 'rm', '-f', file])

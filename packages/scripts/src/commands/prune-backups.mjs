@@ -1,7 +1,7 @@
 import { rmSync } from 'node:fs'
 import { assertHandRun, parseOptions } from '../cli.mjs'
 import { readApp } from '../app-config.mjs'
-import { listBackups, selectBackupsToKeep, unmergedMigrations } from '../backups.mjs'
+import { listBackups, migrationsToProtect, selectBackupsToKeep } from '../backups.mjs'
 import { appliedMigrations } from '../database.mjs'
 import { loadEnvironment, runningContainer } from '../environment.mjs'
 import { isMigrationFile, migrationIdsOf } from '../migration-checks.mjs'
@@ -40,7 +40,7 @@ export async function pruneBackups({ appRoot, argv, env, runner }) {
   if (!Number.isInteger(keep) || keep < 1) throw new Error(`--keep takes a whole number of at least 1, not '${options.keep}'.`)
 
   const { complete, incomplete } = await listBackups(uat.backupDir)
-  const unmerged = unmergedMigrations(await uatMigrations(runner, uat, complete[0]), await mainMigrationIds(runner, appRoot))
+  const unmerged = migrationsToProtect(await uatMigrations(runner, uat, complete[0]), await mainMigrationIds(runner, appRoot))
   const selection = selectBackupsToKeep(complete, keep, unmerged)
   const remove = complete.filter((backup) => !selection.keep.has(backup.name))
 

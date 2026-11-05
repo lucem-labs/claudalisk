@@ -12,7 +12,7 @@ export function ciVerdict(runs) {
   return 'failed'
 }
 
-export async function assertUatDeployable(runner, { root, confirm, waitMinutes = 30, pollSeconds = 30, now = () => Date.now() }) {
+export async function assertUatDeployable(runner, { root, repo, confirm, waitMinutes = 30, pollSeconds = 30, now = () => Date.now() }) {
   const git = (args, what) => runChecked(runner, 'git', ['-C', root, ...args], { what })
   const sha = (await git(['rev-parse', 'HEAD'])).stdout.trim()
   const short = sha.slice(0, 7)
@@ -31,7 +31,7 @@ export async function assertUatDeployable(runner, { root, confirm, waitMinutes =
   const gh = (args, what) => runChecked(runner, 'gh', args, { cwd: root, what: `Refusing to deploy uat: ${what} (is gh logged in?)` })
   const account = (await gh(['api', 'user', '--jq', '.login'], 'reading the signed-in GitHub account')).stdout.trim()
   const pulls = JSON.parse((await gh(
-    ['api', `repos/{owner}/{repo}/commits/${sha}/pulls`, '--jq', '[.[] | select(.state == "open" and .base.ref == "main") | {number, head: .head.sha, author: .user.login, bot: (.user.type == "Bot")}]'],
+    ['api', `repos/${repo}/commits/${sha}/pulls`, '--jq', '[.[] | select(.state == "open" and .base.ref == "main") | {number, head: .head.sha, author: .user.login, bot: (.user.type == "Bot")}]'],
     'reading the pull requests of the commit',
   )).stdout || '[]').filter((pull) => pull.head === sha)
   if (pulls.length === 0) {
@@ -44,7 +44,7 @@ export async function assertUatDeployable(runner, { root, confirm, waitMinutes =
   console.log(`${short} is the head of #${pull.number}.`)
   const deadline = now() + waitMinutes * 60_000
   for (;;) {
-    const listed = await gh(['run', 'list', '--commit', sha, '--workflow', 'ci.yml', '--limit', '20', '--json', 'status,conclusion'], 'reading CI runs')
+    const listed = await gh(['run', 'list', '--repo', repo, '--commit', sha, '--workflow', 'ci.yml', '--limit', '20', '--json', 'status,conclusion'], 'reading CI runs')
     const verdict = ciVerdict(JSON.parse(listed.stdout || '[]'))
     if (verdict === 'success') {
       console.log(`CI passed on ${short}.`)

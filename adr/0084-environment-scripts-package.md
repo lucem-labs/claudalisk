@@ -40,4 +40,5 @@ The plugin cannot own the code outright:
 - One implementation of the guards serves every app. A safety fix is one pull request here and a version bump per app.
 - An app cannot change the package's behaviour by editing it. It sets config, or asks for a change here.
 - The new migration rules are not part of this decision: the one-fingerprint rule and approvals from `origin/main` are tracked in #7, and the CI workflow template and `npm audit signatures` in #18.
+- A restore's pruning and the deploy's migration check differ only as CLA-0030 and CLA-0031 say: the deploy ignores a schema the commit does not migrate, and pruning protects the restore point for every applied migration that `origin/main` lacks.
 - A new package version needs a plugin version bump to release (CLA-0081) and the owner's approval on npm.

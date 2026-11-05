@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { backup } from './backup.mjs'
-import { deploy } from './deploy.mjs'
+import { currentVersion, deploy } from './deploy.mjs'
 import { init } from './init.mjs'
 import { findApiProject, migrate } from './migrate.mjs'
 import { pruneBackups } from './prune-backups.mjs'
@@ -101,6 +101,43 @@ function uatSetup({ hasSchema = true, applied = ['app/20260101000000_A'], failOn
   const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], hasSchema, applied, failOn })
   return { ...fixture, runner }
 }
+
+test('a uat deploy refuses when HEAD moved or the tree became dirty after the guard passed, before building', async () => {
+  const moved = uatSetup()
+  await assert.rejects(deploy({ appRoot: moved.root, argv: ['--environment', 'uat'], env: moved.env, runner: moved.runner, health: healthy, guard: async () => 'f'.repeat(40) }), /changed after the checks passed/)
+  assert.equal(callsMatching(moved.runner, / build$/).length, 0)
+  const dirty = makeApp()
+  writeEnvFile(dirty.state, 'uat')
+  const runner = docker({ state: dirty.state, volumes: ['shop-uat_postgres-data'], dirty: true })
+  await assert.rejects(deploy({ appRoot: dirty.root, argv: ['--environment', 'uat'], env: dirty.env, runner, health: healthy, guard: approvedGuard }), /uncommitted changes/)
+  assert.equal(callsMatching(runner, / build$/).length, 0)
+})
+
+test('a uat deploy reads the approved edits from origin/main through git', async () => {
+  const { root, env, runner } = uatSetup()
+  await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
+  assert.equal(callsMatching(runner, /show origin/main:approved-migration-edits.txt$/).length, 1)
+})
+
+test('a uat deploy passes the app repository to the guard', async () => {
+  const { root, env, runner } = uatSetup()
+  let seen
+  await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: async (_runner, options) => { seen = options; return sha }, now: when })
+  assert.equal(seen.repo, 'acme/shop')
+})
+
+test('the deployed ref is the current branch, read without asking git to resolve a name', async () => {
+  const named = docker({ state: makeApp().state })
+  assert.equal((await currentVersion(named, '/repo')).ref, 'feature')
+  assert.ok(callsMatching(named, /branch --show-current$/).length === 1)
+  assert.equal(callsMatching(named, /abbrev-ref/).length, 0)
+  const detached = docker({ state: makeApp().state, branch: '', extra: (call) => (call.line.includes('branch --remotes') ? { stdout: '  origin/feature
+  origin/HEAD -> origin/main
+' } : undefined) })
+  assert.equal((await currentVersion(detached, '/repo')).ref, 'origin/feature')
+  const alone = docker({ state: makeApp().state, branch: '' })
+  assert.equal((await currentVersion(alone, '/repo')).ref, 'detached')
+})
 
 test('a uat deploy of an existing database backs up first, with the deploy as the reason', async () => {
   const { root, state, env, runner } = uatSetup()
@@ -256,6 +293,27 @@ test('prune-backups keeps the restore point from before a migration uat has and 
   assert.deepEqual(result.kept.sort(), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa'])
 })
 
+test('prune-backups keeps the restore point before a migration in a schema main does not migrate at all', async () => {
+  const { root, state, env } = makeApp()
+  writeEnvFile(state, 'uat')
+  writeBackup(state, '20261001T000000Z-aaaaaaa', { createdAt: '2026-10-01T00:00:00Z', migrations: ['app/20261001000000_A'] })
+  writeBackup(state, '20261002T000000Z-aaaaaaa', { createdAt: '2026-10-02T00:00:00Z', migrations: ['app/20261001000000_A', 'billing/20261005000000_N'] })
+  writeBackup(state, '20261003T000000Z-aaaaaaa', { createdAt: '2026-10-03T00:00:00Z', migrations: ['app/20261001000000_A', 'billing/20261005000000_N'] })
+  const runner = docker({
+    state,
+    applied: ['app/20261001000000_A', 'billing/20261005000000_N'],
+    extra: (call) => {
+      if (call.line.includes('ls-tree')) return { stdout: 'backend/Shop.Api/Migrations/20261001000000_A.cs
+' }
+      if (call.line.includes('git -C') && call.line.includes(' show ')) return { stdout: '[Migration("20261001000000_A")]' }
+      return undefined
+    },
+  })
+  const result = await pruneBackups({ appRoot: root, argv: ['--keep', '1'], env, runner })
+  assert.deepEqual(result.removed, ['20261002T000000Z-aaaaaaa'])
+  assert.deepEqual(result.kept.sort(), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa'])
+})
+
 test('migrate finds the one API project and points each database variable at dev', async () => {
   const { root, state, env } = makeApp({ config: twoDatabaseApp })
   writeEnvFile(state, 'dev', 'POSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nConnectionStrings__Shop=Database=a\nConnectionStrings__Identity=Database=b\n')
@@ -270,14 +328,14 @@ test('migrate finds the one API project and points each database variable at dev
   assert.equal(call.options.env.ConnectionStrings__Identity, 'Host=localhost;Port=5440;Database=b;Username=app;Password=pw')
 })
 
-test('migrate keeps a connection string already in the environment, and a --project override', async () => {
+test('migrate ignores a connection string in the shell and takes a --project override', async () => {
   const { root, state, env } = makeApp()
   writeEnvFile(state, 'dev')
   const runner = docker({ state })
   await migrate({ appRoot: root, argv: ['--project', 'x/y.csproj'], env: { ...env, ConnectionStrings__Shop: 'Host=elsewhere' }, runner })
   const [call] = callsMatching(runner, /^dotnet run/)
   assert.equal(call.args[2], 'x/y.csproj')
-  assert.equal(call.options.env.ConnectionStrings__Shop, 'Host=elsewhere')
+  assert.equal(call.options.env.ConnectionStrings__Shop, 'Host=localhost;Port=5440;Database=shop;Username=app;Password=pw')
 })
 
 test('migrate fails when the dotnet run fails', async () => {

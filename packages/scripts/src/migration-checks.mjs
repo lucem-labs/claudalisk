@@ -6,8 +6,14 @@ import { appliedMigrations, hasSchema } from './database.mjs'
 import { runningContainer } from './environment.mjs'
 
 export function isMigrationFile(path) {
-  const match = /^backend\/([^/]+)\/Migrations\/([^/]+\.cs)$/.exec(path.replace(/\\/g, '/'))
-  return Boolean(match) && !match[1].endsWith('.Tests') && !match[2].endsWith('.Designer.cs') && !match[2].endsWith('ModelSnapshot.cs')
+  const segments = path.replace(/\\/g, '/').split('/')
+  const file = segments.at(-1)
+  return segments[0] === 'backend'
+    && segments.slice(1, -1).includes('Migrations')
+    && file.endsWith('.cs')
+    && !segments.some((segment) => segment.endsWith('.Tests'))
+    && !file.endsWith('.Designer.cs')
+    && !file.endsWith('ModelSnapshot.cs')
 }
 
 export function migrationIdsOf(path, text) {
@@ -29,15 +35,19 @@ export function fingerprints(files) {
 
 export function sourceMigrations(root) {
   const files = []
-  for (const project of readdirSync(join(root, 'backend'), { withFileTypes: true })) {
-    if (!project.isDirectory()) continue
-    const folder = join(root, 'backend', project.name, 'Migrations')
-    if (!existsSync(folder)) continue
-    for (const file of readdirSync(folder)) {
-      const path = `backend/${project.name}/Migrations/${file}`
-      if (isMigrationFile(path)) files.push({ path, text: readFileSync(join(folder, file), 'utf8') })
+  const walk = (relative) => {
+    const folder = join(root, relative)
+    if (!existsSync(folder)) return
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      const path = `${relative}/${entry.name}`
+      if (entry.isDirectory()) {
+        if (entry.name !== 'bin' && entry.name !== 'obj') walk(path)
+      } else if (isMigrationFile(path)) {
+        files.push({ path, text: readFileSync(join(root, path), 'utf8') })
+      }
     }
   }
+  walk('backend')
   return fingerprints(files)
 }
 
@@ -55,7 +65,8 @@ export function checkMigrations({ applied, source, recorded, approved = new Set(
   const changed = applied
     .map(migrationId)
     .filter((id) => source.has(id) && recorded[id] && recorded[id] !== source.get(id) && !approvedIds.has(id))
-  return { changed: changed.sort(), missing: unmergedMigrations(applied, new Set(source.keys())) }
+  const unrecorded = applied.map(migrationId).filter((id) => !recorded[id]).sort()
+  return { changed: changed.sort(), missing: unmergedMigrations(applied, new Set(source.keys())), unrecorded }
 }
 
 export function recordApplied({ applied, source, recorded }) {
@@ -92,15 +103,23 @@ async function uatSchemas(runner, settings) {
   return { found, applied: [...applied].sort() }
 }
 
-export function readApprovedEdits(root) {
-  const path = join(root, 'approved-migration-edits.txt')
-  return approvedMigrationEdits(existsSync(path) ? readFileSync(path, 'utf8') : '')
+export async function readApprovedEdits(runner, root) {
+  const result = await runner('git', ['-C', root, 'show', 'origin/main:approved-migration-edits.txt'])
+  if (result.code === 0) return approvedMigrationEdits(result.stdout)
+  if (/does not exist in|exists on disk, but not in/.test(result.stderr)) return approvedMigrationEdits('')
+  throw new Error(`Reading approved-migration-edits.txt from origin/main failed (${result.stderr.trim()}).`)
 }
 
 export async function checkUatMigrations(runner, settings, { source, approved }) {
   const { found, applied } = await uatSchemas(runner, settings)
   if (!found) return { firstDeploy: true }
-  const { changed, missing } = checkMigrations({ applied, source, recorded: readFingerprints(settings.stateDir), approved })
+  if (applied.length > 0 && source.size === 0) {
+    throw new Error('Refusing to deploy uat: uat has applied migrations, but no migration was found under backend/**/Migrations/ (bin and obj skipped). Nothing was changed.')
+  }
+  const { changed, missing, unrecorded } = checkMigrations({ applied, source, recorded: readFingerprints(settings.stateDir), approved })
+  if (unrecorded.length > 0) {
+    console.warn(`Warning: uat has applied ${unrecorded.join(', ')} with no recorded fingerprint, so an edit made before the first recording cannot be detected.`)
+  }
   if (changed.length > 0) {
     throw new Error(`Refusing to deploy uat: ${changed.join(', ')} changed after uat applied it (CLA-0010). Fix forward with a new migration. Nothing was changed.`)
   }
