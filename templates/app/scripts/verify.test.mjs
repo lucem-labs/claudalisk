@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -38,7 +39,7 @@ function fakeGit({ branch = 'issue-95-x', dirty = '', upstream = SHA } = {}) {
     if (key === 'rev-parse --abbrev-ref HEAD') return ok(`${branch}\n`);
     if (key === 'status --porcelain') return ok(dirty);
     if (key === 'rev-parse HEAD') return ok(`${SHA}\n`);
-    if (key === 'rev-parse --verify -q @{u}') return upstream ? ok(`${upstream}\n`) : fail('');
+    if (key === `rev-parse --verify -q refs/remotes/origin/${branch}`) return upstream ? ok(`${upstream}\n`) : fail('');
     if (key === 'rev-parse --show-toplevel') return ok('/work/shop-95\n');
     if (key === 'rev-parse --path-format=absolute --git-common-dir') return ok('/work/shop/.git\n');
     return ok();
@@ -106,7 +107,7 @@ test('commitAndPush commits changes with the message and pushes only when the re
   assert.deepEqual(commitAndPush({ git: dirty.git, message: 'Add cancel' }), { sha: SHA, branch: 'issue-95-x', notes: ['committed', 'pushed'] });
   assert.ok(dirty.calls.includes('add -A'));
   assert.ok(dirty.calls.includes('commit -q -m Add cancel'));
-  assert.ok(dirty.calls.includes('push -q'));
+  assert.ok(dirty.calls.includes('push -q -u origin HEAD:refs/heads/issue-95-x'));
 
   const clean = fakeGit();
   assert.deepEqual(commitAndPush({ git: clean.git }).notes, []);
@@ -114,7 +115,44 @@ test('commitAndPush commits changes with the message and pushes only when the re
 
   const fresh = fakeGit({ upstream: '' });
   commitAndPush({ git: fresh.git });
-  assert.ok(fresh.calls.includes('push -q -u origin HEAD'));
+  assert.ok(fresh.calls.includes('push -q -u origin HEAD:refs/heads/issue-95-x'));
+});
+
+test('commitAndPush pushes a branch created from origin/main to its own name, under any push.default', () => {
+  for (const pushDefault of ['simple', 'upstream']) {
+    const root = mkdtempSync(join(tmpdir(), 'verify-push-'));
+    const remote = join(root, 'remote.git');
+    const work = join(root, 'work');
+    const sh = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+    try {
+      sh(root, 'init', '-q', '--bare', '-b', 'main', remote);
+      sh(root, 'clone', '-q', remote, work);
+      sh(work, 'config', 'user.name', 'test');
+      sh(work, 'config', 'user.email', 'test@example.invalid');
+      sh(work, 'config', 'commit.gpgsign', 'false');
+      sh(work, 'config', 'push.default', pushDefault);
+      sh(work, 'symbolic-ref', 'HEAD', 'refs/heads/main');
+      writeFileSync(join(work, 'a.txt'), 'a\n');
+      sh(work, 'add', '-A');
+      sh(work, 'commit', '-q', '-m', 'first');
+      sh(work, 'push', '-q', 'origin', 'main');
+      const mainBefore = sh(remote, 'rev-parse', 'refs/heads/main');
+      sh(work, 'checkout', '-q', '-b', 'issue-1-x', 'origin/main');
+      assert.equal(sh(work, 'rev-parse', '--abbrev-ref', '@{u}'), 'origin/main');
+      writeFileSync(join(work, 'b.txt'), 'b\n');
+
+      const git = (args) => spawnSync('git', args, { cwd: work, encoding: 'utf8' });
+      const { sha, notes } = commitAndPush({ git, message: 'Change' });
+
+      assert.deepEqual(notes, ['committed', 'pushed']);
+      assert.equal(sh(remote, 'rev-parse', 'refs/heads/issue-1-x'), sha);
+      assert.equal(sh(remote, 'rev-parse', 'refs/heads/main'), mainBefore);
+      assert.equal(sh(work, 'rev-parse', '--abbrev-ref', '@{u}'), 'origin/issue-1-x');
+      assert.deepEqual(commitAndPush({ git }).notes, []);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
 });
 
 test('commitAndPush refuses main, a detached head and changes without a message', () => {
