@@ -11,7 +11,7 @@ import { refreshDev } from './refresh-dev.mjs'
 import { restore } from './restore.mjs'
 import { fakeRunner } from '../fake-runner.mjs'
 import { callsMatching, docker, makeApp, sha, writeBackup, writeEnvFile } from '../../test/fixture.mjs'
-import { twoDatabaseApp } from '../../test/sample-app.mjs'
+import { sampleConfig, twoDatabaseApp } from '../../test/sample-app.mjs'
 
 const healthy = async () => ({ status: 'ok' })
 const unhealthy = async () => null
@@ -98,6 +98,8 @@ test('a uat deploy stops at the guard before it touches Docker', async () => {
 function uatSetup({ hasSchema = true, applied = ['app/20260101000000_A'], failOn = [] } = {}) {
   const fixture = makeApp()
   writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=false\n')
+  mkdirSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations'), { recursive: true })
+  writeFileSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations', '20260101000000_A.cs'), 'migration')
   const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], hasSchema, applied, failOn })
   return { ...fixture, runner }
 }
@@ -312,7 +314,7 @@ test('prune-backups keeps the restore point before a migration in a schema main 
 })
 
 test('migrate finds the one API project and points each database variable at dev', async () => {
-  const { root, state, env } = makeApp({ config: twoDatabaseApp })
+  const { root, state, env } = makeApp({ config: { ...sampleConfig, databases: twoDatabaseApp.databases } })
   writeEnvFile(state, 'dev', 'POSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nConnectionStrings__Shop=Database=a\nConnectionStrings__Identity=Database=b\n')
   mkdirSync(join(root, 'backend', 'Shop.Api'), { recursive: true })
   writeFileSync(join(root, 'backend', 'Shop.Api', 'Shop.Api.csproj'), '')
