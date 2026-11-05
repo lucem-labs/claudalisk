@@ -165,9 +165,8 @@ function assign(ctx, { name, value }, persist) {
   if (persist) ctx.vars.set(name.toUpperCase(), value);
 }
 
-function unwrap(name, args, local, first) {
+function unwrap(name, args, local) {
   let rest = args;
-  let raw = first;
   while (WRAPPERS.has(name)) {
     const valued = WRAPPER_VALUED[name] ?? '';
     let i = 0;
@@ -179,11 +178,10 @@ function unwrap(name, args, local, first) {
       if (!a.startsWith('-') || a === '-') break;
       if (a.length === 2 && valued.includes(a[1])) i++;
     }
-    raw = rest[i];
     name = normalize(rest[i]);
     rest = rest.slice(i + 1);
   }
-  return [name, rest, raw];
+  return [name, rest];
 }
 
 function parseDocker(name, args) {
@@ -621,7 +619,7 @@ function segment(whole, shell, ctx, depth) {
   }
   const cmd = command(words, seg.quoted, { skip: [] });
   const local = [...cmd.assignments];
-  const [name, args] = unwrap(cmd.name, cmd.args, local, words[cmd.assignments.length]);
+  const [name, args] = unwrap(cmd.name, cmd.args, local);
   if (/setenvironmentvariable/i.test(words.join(' ')) && /ALLOW_UAT/i.test(words.join(' '))) assign(ctx, { name: 'ALLOW_UAT', value: '' }, false);
   for (const a of local) assign(ctx, a, !name);
   if (EXPORTERS.has(name)) for (const a of args) { const m = ASSIGNMENT.exec(a); if (m) assign(ctx, { name: m[1], value: m[2] }, true); }
