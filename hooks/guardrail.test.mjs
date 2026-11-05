@@ -1235,7 +1235,9 @@ test('cd only moves the directory when the next segment follows in sequence', ()
   for (const text of ['cd /other/repo && git push', 'cd /other/repo; git push', 'cd /other/repo\ngit push', 'push-location /other/repo; git push']) {
     assert.equal(verdict(call(text, { deps })), 'deny', text);
   }
-  for (const text of ['cd /other/repo | git push', 'cd /other/repo & git push', 'cd /other/repo || git push']) {
+  assert.equal(verdict(call('cd /other/repo || git push', { deps })), 'deny');
+  assert.equal(verdict(call('cd sub || git status', { deps })), 'allow');
+  for (const text of ['cd /other/repo | git push', 'cd /other/repo & git push']) {
     assert.equal(verdict(call(text, { deps })), 'allow', text);
   }
 });
@@ -1320,3 +1322,39 @@ deny([
 ]);
 
 allow(['docker run --env-file /h/.claudalisk/apps/a/dev.env img']);
+
+test('a cd that ends in || leaves the directory unknown', () => {
+  const deps = { git: cdGit(resolve('/main/repo')) };
+  assert.equal(verdict(call('cd /main/repo || true; git push', { deps })), 'deny');
+  assert.equal(verdict(call('cd /other/app || exit 1; node scripts/deploy.mjs --environment uat', { deps })), 'deny');
+  assert.equal(verdict(call('cd sub | git push', { deps })), 'allow');
+  assert.equal(verdict(call('cd sub & git push', { deps })), 'allow');
+});
+
+test('in PowerShell a piped cd leaves the directory unknown, and & keeps it', () => {
+  const deps = { git: cdGit(resolve('/main/repo')) };
+  const run = (text) => call(text, { tool: 'PowerShell', deps });
+  assert.equal(verdict(run('cd C:\\main | Out-Null; git push')), 'deny');
+  assert.equal(verdict(run('Out-Null | cd C:\\main; git push')), 'deny');
+  assert.equal(verdict(run('cd C:\\main & git push')), 'allow');
+});
+
+test('a line continuation inside a word asks', () => {
+  for (const text of ['cat <<E\\\nOF\nx\nEOF\ngh pr merge 5', 'echo "$\\\n(gh pr merge 5)"', 'cd /x &\\\n& git push', 'echo a\\\nb']) {
+    assert.notEqual(verdict(call(text)), 'allow', text);
+  }
+  const result = call('echo a\\\nb');
+  assert.equal(verdict(result), 'ask');
+  assert.match(reason(result), /line continuation inside a word/);
+  assert.equal(verdict(call('echo a`\nb', { tool: 'PowerShell' })), 'ask');
+  assert.equal(verdict(call('echo a\\\nb', { tool: 'PowerShell' })), 'allow');
+  assert.equal(verdict(call('echo $(echo a\\\nb)')), 'ask');
+});
+
+allow(['docker compose \\\n  up -d', 'git commit -m a \\\n  -m b', "git commit -m \"$(cat <<'EOF'\nline one \\\nnext\nEOF\n)\""], { tools: ['Bash'] });
+
+test('the uat script comparison ignores case on win32 only', () => {
+  const text = 'node Scripts/Deploy.mjs --environment uat';
+  assert.equal(verdict(call(text, { deps: { platform: 'win32' } })), 'allow');
+  assert.equal(verdict(call(text, { deps: { platform: 'linux' } })), 'deny');
+});

@@ -501,7 +501,8 @@ function guardedScripts(name, args, ctx) {
   if (uat && !UAT_EXEMPT.has(name)) {
     const script = args[0] && /\.(mjs|js|cjs)$/.test(args[0]) ? args[0] : null;
     const path = script && ctx.cwd ? resolve(ctx.cwd, ctx.host(script)) : null;
-    const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => path === resolve(ctx.root, 'scripts', file));
+    const fold = (value) => ((ctx.deps.platform ?? process.platform) === 'win32' ? value.toLowerCase() : value);
+    const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => fold(path) === fold(resolve(ctx.root, 'scripts', file)));
     if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs, run from the app root, may use --environment uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
   }
   if ((isPrune(name) || args.some(isPrune)) && args.includes('--apply')) {
@@ -635,7 +636,11 @@ function segment(whole, shell, ctx, depth) {
   }
   envWrites(name, args, cmd.redirects, local, ctx);
   if (!name) return;
-  if (CD.has(name) && !seg.piped && [';', '&&', '\n', null].includes(seg.after)) follow(ctx, name, args, local);
+  if (CD.has(name)) {
+    const piping = seg.piped || seg.after === '|';
+    if (seg.after === '||' || (shell === 'powershell' && piping)) ctx.cwd = null;
+    else if (!piping && seg.after !== '&') follow(ctx, name, args, local);
+  }
   if (name === 'iex' || name === 'invoke-expression') flag(ctx, 'deny', 9, `${name} runs text that the hook cannot read. Run the command itself, without ${name}.`);
   if (PS_SHELLS.has(name) && args.some(isEncoded)) flag(ctx, 'deny', 9, `${name} -EncodedCommand hides what runs. Pass the command as plain text with -Command.`);
   configCommands(name, args, ctx);
@@ -659,6 +664,10 @@ function evaluate(text, shell, ctx, depth) {
     return;
   }
   const saved = ctx.cwd;
+  const joined = shell === 'powershell' ? /\S`\n\S/ : /\S\\\n\S/;
+  if (depth === 0 && joined.test(text.replace(/\r\n?/g, '\n'))) {
+    ctx.findings.push({ decision: 'ask', reason: 'Rule 1 (CLA-0083): a line continuation inside a word can hide a command, so the guardrail cannot check it. Put the word on one line.' });
+  }
   if (shell === 'powershell') dangerousPaths(text, ctx);
   for (const seg of segments(text, { shell })) segment(seg, shell, ctx, depth);
   for (const inner of substitutions(text, shell)) evaluate(inner, shell, ctx, depth + 1);
