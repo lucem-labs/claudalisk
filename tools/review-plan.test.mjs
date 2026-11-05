@@ -104,6 +104,16 @@ test('a migration is uat data and is checked against the data ADRs', () => {
   assert.equal(p.files[0].status, 'added');
 });
 
+test('the agent hooks of an app and of the plugin are uat data, and React hooks are not', () => {
+  for (const path of ['hooks/guardrail.mjs', '.claude/hooks/guard.mjs']) {
+    const p = plan(change(path));
+    assert.equal(p.highRisk, true, path);
+    assert.deepEqual(p.reasons, [`${path}: uat data`]);
+    assert.deepEqual(p.domains.find((d) => d.name === 'uat-data').models, ['opus', 'sonnet', 'haiku']);
+  }
+  assert.equal(plan(change('frontend/src/shared/hooks/useCards.ts')).highRisk, false);
+});
+
 test('a security-relevant change is high-risk without a uat data quorum', () => {
   const p = plan(change('backend/Host/Authentication/JwtSetup.cs'));
   assert.equal(p.highRisk, true);
