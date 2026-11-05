@@ -89,6 +89,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
 | [CLA-0081](0081-releases-tagged-by-a-workflow.md) | A workflow tags, checks and publishes each release from the plugin version | accepted | workflow |
 | [CLA-0082](0082-app-config-and-machine-registry.md) | An app's config has one schema, and a machine-wide registry lists every app | accepted | environments |
+| [CLA-0083](0083-guardrail-hook.md) | One guardrail hook checks every shell command against the protected resources | accepted | environments |
 
 ## Format
 

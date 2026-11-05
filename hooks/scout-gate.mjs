@@ -2,6 +2,9 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { command, segments } from './shell.mjs';
+
+export { segments };
 
 export const MAX_LINES = 300;
 
@@ -10,7 +13,6 @@ const SEARCHES = new Set(['grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'select-s
 const FINDERS = new Set(['find', 'fd', 'tree']);
 const LISTERS = new Set(['ls', 'dir', 'get-childitem', 'gci']);
 const READERS = new Set(['cat', 'head', 'tail', 'less', 'more', 'bat', 'nl', 'get-content', 'gc']);
-const REDIRECT = /^(\d|&)?(>>?|<)$/;
 
 function recursiveSearch(args) {
   return args.some((a) => /^-[a-zA-Z]*[rR][a-zA-Z]*$/.test(a) || a === '--recursive');
@@ -46,57 +48,6 @@ function isFile(path) {
 function lineCount(path) {
   const text = readFileSync(path, 'utf8');
   return text.length === 0 ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
-}
-
-function stripHeredocs(text) {
-  return text.replace(/(<<-?\s*(['"]?)(\w+)\2[^\n]*)\n[\s\S]*?\n\s*\3[ \t]*(?=\n|$)/g, '$1');
-}
-
-export function segments(text) {
-  const result = [];
-  let words = [];
-  let word = null;
-  let quote = null;
-  let piped = false;
-  const endWord = () => { if (word !== null) words.push(word); word = null; };
-  const endSegment = (pipe) => { endWord(); if (words.length) result.push({ words, piped }); words = []; piped = pipe; };
-  const source = stripHeredocs(text);
-  for (let i = 0; i < source.length; i++) {
-    const c = source[i];
-    if (quote) {
-      if (c === quote) quote = null;
-      else word = (word ?? '') + c;
-    } else if (c === '"' || c === "'") {
-      quote = c;
-      word = word ?? '';
-    } else if (c === '|' || c === ';' || c === '\n' || (c === '&' && source[i + 1] === '&')) {
-      const pipe = c === '|' && source[i + 1] !== '|';
-      if (c === '&' || (c === '|' && source[i + 1] === '|')) i++;
-      endSegment(pipe);
-    } else if (/\s/.test(c)) {
-      endWord();
-    } else {
-      word = (word ?? '') + c;
-    }
-  }
-  endSegment(false);
-  return result;
-}
-
-function command(tokens) {
-  let i = 0;
-  while (i < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i])) i++;
-  if (['sudo', 'command', 'xargs', '&'].includes(tokens[i])) i++;
-  const name = (tokens[i] ?? '').replace(/^.*[\\/]/, '').replace(/\.exe$/i, '').toLowerCase();
-  const args = [];
-  let redirected = false;
-  for (let j = i + 1; j < tokens.length; j++) {
-    const m = tokens[j].match(/^(\d|&)?(>>?|<<?)(.*)$/);
-    if (!m) { args.push(tokens[j]); continue; }
-    if (m[2].startsWith('>') && m[1] !== '2') redirected = true;
-    if (m[3] === '' && REDIRECT.test(tokens[j])) j++;
-  }
-  return { name, args, redirected };
 }
 
 function searchOperands(name, args) {
