@@ -92,9 +92,9 @@ test('an applied migration whose file changed is refused unless approved; one th
   assert.deepEqual(checkMigrations({ applied, source, recorded }), {
     changed: ['20260102000000_B'],
     missing: ['app/20260103000000_Abandoned'],
-    unrecorded: ['20260103000000_Abandoned'],
+    unrecorded: [],
   })
-  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).unrecorded, ['20260101000000_A', '20260102000000_B', '20260103000000_Abandoned'])
+  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).unrecorded, ['20260101000000_A', '20260102000000_B'])
   assert.deepEqual(checkMigrations({ applied, source, recorded, approved: new Set(['app/20260102000000_B']) }).changed, [])
   assert.deepEqual(checkMigrations({ applied: [...applied, 'legacy/20250101000000_Old'], source, recorded }).missing, ['app/20260103000000_Abandoned'], 'a schema the commit does not migrate at all is not missing')
   assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).changed, [], 'a migration seen for the first time is recorded, not refused')
@@ -157,7 +157,7 @@ test('migrations the commit lacks are refused with the owner\'s restore command 
   })
   await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Set() }), (error) => {
     assert.match(error.message, /uat has applied app\/20260104000000_X, which this commit lacks .*Nothing was changed\./)
-    assert.match(error.message, /restore\.mjs --environment uat --backup 20261001T000000Z-aaaaaaa --owner-approved --confirm 'restore uat 20261001T000000Z-aaaaaaa'/, 'the newer backup still holds the abandoned Y, so it is skipped')
+    assert.match(error.message, /restore\.mjs --environment uat --backup 20261001T000000Z-aaaaaaa --owner-approved --no-start --confirm 'restore uat 20261001T000000Z-aaaaaaa'/, 'the newer backup still holds the abandoned Y, so it is skipped')
     return true
   })
   assert.ok(runner.calls.every((call) => !call.line.includes('pg_dump') && !call.line.includes('pg_restore')))

@@ -65,7 +65,7 @@ export function checkMigrations({ applied, source, recorded, approved = new Set(
   const changed = applied
     .map(migrationId)
     .filter((id) => source.has(id) && recorded[id] && recorded[id] !== source.get(id) && !approvedIds.has(id))
-  const unrecorded = applied.map(migrationId).filter((id) => !recorded[id]).sort()
+  const unrecorded = applied.map(migrationId).filter((id) => source.has(id) && !recorded[id]).sort()
   return { changed: changed.sort(), missing: unmergedMigrations(applied, new Set(source.keys())), unrecorded }
 }
 
@@ -128,7 +128,7 @@ export async function checkUatMigrations(runner, settings, { source, approved })
     const known = (entry) => source.has(migrationId(entry)) || !migrated.has(schemaOf(entry))
     const point = restorePointFor((await listBackups(settings.backupDir)).complete, missing, known)
     const rollBack = point
-      ? `To roll uat back, the owner runs node scripts/restore.mjs --environment uat --backup ${point.name} --owner-approved --confirm 'restore uat ${point.name}' (taken ${point.manifest.createdAtUtc}; uat data entered after it is lost), then deploys again.`
+      ? `To roll uat back, the owner runs node scripts/restore.mjs --environment uat --backup ${point.name} --owner-approved --no-start --confirm 'restore uat ${point.name}' (taken ${point.manifest.createdAtUtc}; uat data entered after it is lost), then deploys again.`
       : 'No backup without them exists; the owner decides how to roll uat back.'
     throw new Error(`Refusing to deploy uat: uat has applied ${missing.join(', ')}, which this commit lacks (an abandoned or replaced pull request, or a branch behind main). Nothing was changed. ${rollBack}`)
   }

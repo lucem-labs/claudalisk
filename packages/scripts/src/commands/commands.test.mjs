@@ -60,8 +60,8 @@ test('a dev deploy initialises, builds, migrates, starts and waits for health', 
   assert.ok(at(/volume create/) < at(/network create traefik/))
   assert.ok(at(/network create traefik/) < at(/ build$/))
   assert.ok(at(/ build$/) < at(/--profile migrate run --rm migrate$/))
-  assert.ok(at(/--profile migrate run --rm migrate$/) < at(/up --detach --build --remove-orphans --wait$/))
-  assert.ok(at(/up --detach --build --remove-orphans --wait$/) < at(/compose.proxy.yml up --detach --wait$/))
+  assert.ok(at(/--profile migrate run --rm migrate$/) < at(/up --detach --no-build --remove-orphans --wait$/))
+  assert.ok(at(/up --detach --no-build --remove-orphans --wait$/) < at(/compose.proxy.yml up --detach --wait$/))
   const build = callsMatching(runner, / build$/)[0]
   assert.equal(build.options.env.DEPLOYED_SHA, sha)
   assert.equal(build.options.env.DEPLOYED_REF, 'feature')
@@ -113,6 +113,23 @@ test('a uat deploy refuses when HEAD moved or the tree became dirty after the gu
   const runner = docker({ state: dirty.state, volumes: ['shop-uat_postgres-data'], dirty: true })
   await assert.rejects(deploy({ appRoot: dirty.root, argv: ['--environment', 'uat'], env: dirty.env, runner, health: healthy, guard: approvedGuard }), /uncommitted changes/)
   assert.equal(callsMatching(runner, / build$/).length, 0)
+})
+
+test('a refused uat deploy never builds, and a uat deploy builds only after the migration checks', async () => {
+  const refused = uatSetup({ applied: ['app/20260101000000_A', 'app/20260104000000_X'] })
+  await assert.rejects(deploy({ appRoot: refused.root, argv: ['--environment', 'uat'], env: refused.env, runner: refused.runner, health: healthy, guard: approvedGuard, now: when }), /uat has applied app\/20260104000000_X/)
+  assert.equal(callsMatching(refused.runner, / build$/).length, 0)
+
+  const { root, env, runner } = uatSetup()
+  await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
+  const lines = runner.calls.map((call) => call.line)
+  const at = (pattern) => lines.findIndex((line) => pattern.test(line))
+  assert.ok(at(/show origin\/main:approved-migration-edits\.txt$/) >= 0)
+  assert.ok(at(/up --detach --wait db$/) < at(/show origin\/main:approved-migration-edits\.txt$/))
+  assert.ok(at(/show origin\/main:approved-migration-edits\.txt$/) < at(/ build$/))
+  assert.ok(at(/ build$/) < at(/pg_dump/))
+  assert.ok(at(/pg_dump/) < at(/--profile migrate run --rm migrate$/))
+  assert.ok(at(/--profile migrate run --rm migrate$/) < at(/up --detach --no-build --remove-orphans --wait$/))
 })
 
 test('a uat deploy reads the approved edits from origin/main through git', async () => {

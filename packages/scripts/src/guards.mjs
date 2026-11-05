@@ -12,6 +12,11 @@ export function ciVerdict(runs) {
   return 'failed'
 }
 
+export function remoteIsRepository(url, repo) {
+  const match = /^(?:git@github\.com:|https:\/\/github\.com\/)(.+?)(?:\.git)?\/?$/i.exec(String(url ?? '').trim())
+  return Boolean(match) && match[1].toLowerCase() === String(repo).toLowerCase()
+}
+
 export async function assertUatDeployable(runner, { root, repo, confirm, waitMinutes = 30, pollSeconds = 30, now = () => Date.now() }) {
   const git = (args, what) => runChecked(runner, 'git', ['-C', root, ...args], { what })
   const sha = (await git(['rev-parse', 'HEAD'])).stdout.trim()
@@ -21,6 +26,10 @@ export async function assertUatDeployable(runner, { root, repo, confirm, waitMin
   }
   if ((await git(['status', '--porcelain'])).stdout.trim()) {
     throw new Error('Refusing to deploy uat: the working tree has uncommitted changes. uat only runs committed, pushed, tested code.')
+  }
+  const origin = (await git(['remote', 'get-url', 'origin'], 'Refusing to deploy uat: git remote get-url origin')).stdout.trim()
+  if (!remoteIsRepository(origin, repo)) {
+    throw new Error(`Refusing to deploy uat: the origin of this checkout (${origin}) is not ${repo}, the repository named in the app config.`)
   }
   await git(['fetch', '--quiet', 'origin', 'main'], 'Refusing to deploy uat: git fetch')
   const containsMain = await runner('git', ['-C', root, 'merge-base', '--is-ancestor', 'origin/main', sha])

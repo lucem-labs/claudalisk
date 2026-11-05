@@ -80,17 +80,21 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
 
   await ensureProxyNetwork(runner)
   const versionEnv = { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref }
-  await composeChecked(runner, settings, ['build'], { inherit: true, env: versionEnv })
+  const build = () => composeChecked(runner, settings, ['build'], { inherit: true, env: versionEnv })
 
   let backupFolder = null
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
     await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
-    if ((await checkUatMigrations(runner, settings, { source, approved: await readApprovedEdits(runner, appRoot) })).firstDeploy) {
+    const { firstDeploy } = await checkUatMigrations(runner, settings, { source, approved: await readApprovedEdits(runner, appRoot) })
+    await build()
+    if (firstDeploy) {
       console.log('First uat deploy: the uat database has no schema yet, so there is nothing to back up. Skipping the pre-deploy backup.')
     } else {
       backupFolder = await takeBackup(runner, settings, { reason: 'deploy', now })
     }
+  } else {
+    await build()
   }
 
   try {
@@ -106,7 +110,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
     if (uat) await recordUatFingerprints(runner, settings, source).catch((error) => console.warn(`Warning: could not record the migration fingerprints (${error.message}).`))
   }
 
-  await composeChecked(runner, settings, ['up', '--detach', '--build', '--remove-orphans', '--wait'], { inherit: true, env: versionEnv })
+  await composeChecked(runner, settings, ['up', '--detach', '--no-build', '--remove-orphans', '--wait'], { inherit: true, env: versionEnv })
   await startProxyIfNotRunning(runner, appRoot)
 
   if (!(await health(settings))) throw new Error(`The ${environment} API did not become healthy at ${settings.baseUrl}/api/health.`)

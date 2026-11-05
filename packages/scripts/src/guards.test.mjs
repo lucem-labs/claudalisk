@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fakeRunner } from './fake-runner.mjs'
-import { assertUatDeployable, ciVerdict, deployConfirmation } from './guards.mjs'
+import { assertUatDeployable, ciVerdict, deployConfirmation, remoteIsRepository } from './guards.mjs'
 
 const sha = '3e38675abcdef0123456789abcdef0123456789a'
 
 const ownPull = { number: 7, head: sha, author: 'owner', bot: false }
 
-function repository({ dirty = false, behind = false, pulls = [ownPull], runs = [{ status: 'completed', conclusion: 'success' }] } = {}) {
+function repository({ dirty = false, behind = false, origin = 'git@github.com:acme/shop.git', pulls = [ownPull], runs = [{ status: 'completed', conclusion: 'success' }] } = {}) {
   return fakeRunner((call) => {
+    if (call.line.includes('remote get-url origin')) return { stdout: `${origin}\n` }
     if (call.line.includes('rev-parse HEAD')) return { stdout: `${sha}\n` }
     if (call.line.includes('status --porcelain')) return { stdout: dirty ? ' M file\n' : '' }
     if (call.line.includes('merge-base --is-ancestor origin/main')) return { code: behind ? 1 : 0 }
@@ -23,6 +24,22 @@ const deploy = (runner, options = {}) => assertUatDeployable(runner, { root: '/r
 
 test('the confirmation names the short commit', () => {
   assert.equal(deployConfirmation(sha), 'deploy uat 3e38675')
+})
+
+test('the origin must be the configured repository, in ssh or https form, ignoring case', () => {
+  assert.ok(remoteIsRepository('git@github.com:Acme/Shop.git', 'acme/shop'))
+  assert.ok(remoteIsRepository('git@github.com:acme/shop', 'acme/shop'))
+  assert.ok(remoteIsRepository('https://github.com/ACME/shop.git', 'acme/shop'))
+  assert.ok(remoteIsRepository('https://github.com/acme/shop', 'acme/shop'))
+  assert.ok(!remoteIsRepository('git@github.com:other/shop.git', 'acme/shop'))
+  assert.ok(!remoteIsRepository('https://github.com/acme/shop-fork.git', 'acme/shop'))
+  assert.ok(!remoteIsRepository('', 'acme/shop'))
+})
+
+test('uat refuses a checkout whose origin is another repository, before any gh call', async () => {
+  const runner = repository({ origin: 'https://github.com/other/shop.git' })
+  await assert.rejects(deploy(runner), /origin of this checkout \(https:\/\/github\.com\/other\/shop\.git\) is not acme\/shop/)
+  assert.equal(runner.calls.filter((call) => call.command === 'gh').length, 0)
 })
 
 test('CI succeeds when any run on the commit succeeded', () => {

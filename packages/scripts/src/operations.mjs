@@ -124,7 +124,7 @@ export async function restore(runner, target, { backup, confirm, ownerApproved =
   }
   await compose(runner, target, ['start', 'api'])
   if (!(await waitForHealth(target))) {
-    throw new Error(`The ${target.environment} API did not become healthy after the restore. If the backup is older than the deployed code, apply migrations (deploy again).${preRestoreNote}`)
+    throw new Error(`The ${target.environment} API did not become healthy after the restore.${preRestoreNote}`)
   }
   console.log(`Restored ${target.environment} from backup ${selected.name}.${preRestoreNote}`)
   return selected
