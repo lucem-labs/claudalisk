@@ -19,6 +19,7 @@ export const DEFAULT_UAT_DATA = [
   'compose*uat*.yml',
   '.claude/settings.json',
   '.claude/hooks/**',
+  'hooks/**',
 ];
 
 export const DEFAULT_SECURITY = [
