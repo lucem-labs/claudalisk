@@ -1370,6 +1370,32 @@ test('quoted data and plain operator breaks are no continuation inside a word', 
   }
 });
 
+test('a continuation next to a redirect, in a heredoc body or in arithmetic asks', () => {
+  for (const text of [
+    '>&\\\nx docker compose down -v',
+    '&\\\n>x docker compose down -v',
+    'cat <<EOF\nEO\\\nF\ngh pr merge 5\nEOF',
+    'cat <<EOF\n$\\\n(gh pr merge 5)\nEOF',
+    'echo $(( $\\\n(gh pr merge 5) ))',
+  ]) {
+    assert.notEqual(verdict(call(text)), 'allow', text);
+  }
+  assert.notEqual(verdict(call('echo x &\\\n> .env', { cwd: checkout })), 'allow');
+  for (const text of ["cat > s.sh <<'EOF'\nfoo\\\nbar\nEOF", 'cat <<EOF\na \\\nb\nEOF', 'npm run build &&\\\nnpm test', 'a;\\\nb', 'a |\\\nb']) {
+    assert.equal(verdict(call(text)), 'allow', text);
+  }
+});
+
+test('a redirect before the command does not hide it', () => {
+  for (const text of ['>x docker compose down -v', '2>/dev/null gh pr merge 5', '<in >out docker volume rm x', 'A=1 >x gh pr merge 5']) {
+    assert.equal(verdict(call(text)), 'deny', text);
+  }
+  assert.equal(verdict(call('>.env echo x', { cwd: checkout })), 'deny');
+  assert.equal(verdict(call('> .env', { cwd: checkout })), 'deny');
+  assert.equal(verdict(call('>x ls')), 'allow');
+  assert.equal(verdict(call('> notes.txt')), 'allow');
+});
+
 test('the uat script comparison ignores case on win32 only', () => {
   const text = 'node Scripts/Deploy.mjs --environment uat';
   assert.equal(verdict(call(text, { deps: { platform: 'win32' } })), 'allow');

@@ -66,7 +66,7 @@ export function segments(text, { shell } = {}) {
     const before = source[at - 1];
     const next = source[at + 2];
     if (before === undefined || next === undefined || /\s/.test(before) || /\s/.test(next)) return;
-    if (/[&|;]/.test(before) && next !== '&' && next !== '|') return;
+    if (/[&|;]/.test(before) && !/[&|<>]/.test(next) && !/[<>]/.test(source[at - 2] ?? '')) return;
     split = true;
   };
   const endWord = () => {
@@ -120,6 +120,7 @@ export function segments(text, { shell } = {}) {
     }
     const arithmetic = c === '$' ? arithmeticEnd(source, i, shell) : -1;
     if (arithmetic > 0) {
+      if (/\S\\\n\S/.test(source.slice(i, arithmetic))) split = true;
       add(source.slice(i, arithmetic));
       i = arithmetic - 1;
       continue;
@@ -152,6 +153,7 @@ export function segments(text, { shell } = {}) {
         let pos = i + 1;
         for (const p of pending.splice(0)) {
           const taken = takeBody(source, pos, p.delim);
+          if (p.expand && /\S\\\n\S/.test(source.slice(pos, taken.next))) split = true;
           p.into.push(taken.body);
           pos = taken.next;
         }
@@ -169,25 +171,38 @@ export function segments(text, { shell } = {}) {
 }
 
 export function command(tokens, quoted, { skip = DEFAULT_SKIP } = {}) {
-  let i = 0;
   const assignments = [];
-  while (i < tokens.length && ASSIGNMENT.test(tokens[i])) {
-    const eq = tokens[i].indexOf('=');
-    assignments.push({ name: tokens[i].slice(0, eq), value: tokens[i].slice(eq + 1) });
-    i++;
-  }
-  if (skip.includes(tokens[i])) i++;
-  const name = normalize(tokens[i]);
   const args = [];
   const redirects = [];
   let redirected = false;
-  for (let j = i + 1; j < tokens.length; j++) {
+  const redirectAt = (j) => {
     const m = quoted?.[j] ? null : tokens[j].match(/^(\d|&)?(>>?|<<?)(.*)$/);
-    if (!m) { args.push(tokens[j]); continue; }
+    if (!m) return -1;
     if (m[2].startsWith('>') && m[1] !== '2') redirected = true;
     let target = m[3];
-    if (m[3] === '' && REDIRECT.test(tokens[j])) { j++; target = tokens[j] ?? ''; }
+    let next = j + 1;
+    if (m[3] === '' && REDIRECT.test(tokens[j])) { target = tokens[j + 1] ?? ''; next = j + 2; }
     redirects.push({ op: m[2], fd: m[1] ?? null, target });
+    return next;
+  };
+  let i = 0;
+  while (i < tokens.length) {
+    if (ASSIGNMENT.test(tokens[i])) {
+      const eq = tokens[i].indexOf('=');
+      assignments.push({ name: tokens[i].slice(0, eq), value: tokens[i].slice(eq + 1) });
+      i++;
+      continue;
+    }
+    const next = redirectAt(i);
+    if (next < 0) break;
+    i = next;
+  }
+  if (skip.includes(tokens[i])) i++;
+  const name = normalize(tokens[i]);
+  for (let j = i + 1; j < tokens.length; j++) {
+    const next = redirectAt(j);
+    if (next < 0) args.push(tokens[j]);
+    else j = next - 1;
   }
   return { name, args, redirected, assignments, redirects };
 }

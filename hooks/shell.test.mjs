@@ -119,6 +119,16 @@ test('command separates redirects from args', () => {
   assert.deepEqual(found.redirects.map((r) => [r.op, r.target]), [['>', '.env'], ['>', '&1'], ['>>', 'log']]);
 });
 
+test('redirects and assignments before the command are skipped in any order', () => {
+  const found = command(['>x', 'A=1', '2>/dev/null', 'docker', 'ps', '>>log']);
+  assert.equal(found.name, 'docker');
+  assert.deepEqual(found.args, ['ps']);
+  assert.deepEqual(found.assignments, [{ name: 'A', value: '1' }]);
+  assert.deepEqual(found.redirects.map((r) => r.target), ['x', '/dev/null', 'log']);
+  assert.equal(command(['>', 'file']).name, '');
+  assert.deepEqual(command(['>', 'file']).redirects.map((r) => r.target), ['file']);
+});
+
 test('a quoted word is never a redirect', () => {
   const found = command(['git', 'commit', '-m', '>> .env'], [false, false, false, true]);
   assert.deepEqual(found.args, ['commit', '-m', '>> .env']);
