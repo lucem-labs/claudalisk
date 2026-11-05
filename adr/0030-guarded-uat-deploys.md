@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** the generated deploy script and its guards; guardrail hook (no uat Compose commands, restores or SQL by hand)
+- **Enforced by:** the deploy script of `@claudalisk/scripts` and its guards (CLA-0084); guardrail hook (no uat Compose commands, restores or SQL by hand)
 - **Issue:** #64, #66
 
 ## Context

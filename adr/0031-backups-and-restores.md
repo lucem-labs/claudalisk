@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** backup library and its tests; guardrail hook (no uat restore by the agent)
+- **Enforced by:** `@claudalisk/scripts` and its tests (CLA-0084); guardrail hook (no uat restore by the agent)
 - **Issue:** #14, #86
 
 ## Decision
@@ -11,9 +11,9 @@
 - **What is backed up.** Only uat. Backups go to a directory outside the repository, with retention by count.
 - **Backup contents.** Each backup is a folder that holds:
   - a `pg_dump -Fc` dump of the app's database, with every module's schema in one consistent snapshot (CLA-0007), plus one dump per separate database if a module has moved out
-  - a `manifest.json`, written last, with the checksums, the deployed commit and the applied migrations
+  - a `manifest.json`, written last, with the checksums, the reason for the backup, the databases, the deployed commit and the applied migrations. The commit is read from the API container, running or not, or from its image, so a backup works while the API is down
 
-  A folder without a manifest is incomplete. Tools ignore it and never prune it.
+  The folder is named `<UTC timestamp>-<sha7>`, with `unknown` when the commit cannot be read. A folder without a manifest is incomplete. Tools ignore it and never prune it.
 - **Pruning keeps the restore points the owner may need.** Retention by count never deletes the newest backup taken before any migration that uat has applied but `main` does not have yet (CLA-0030).
 - **When backups are taken:**
   - The review deploy backs up uat before every uat deploy, except the first deploy to an empty database (CLA-0030).
