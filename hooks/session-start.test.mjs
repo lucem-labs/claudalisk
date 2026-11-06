@@ -16,7 +16,7 @@ const CONFIG = { name: 'example-app', hostPrefix: 'example-app', repo: 'acme/exa
 const SHA_A = 'aaaaaaa1111111111111111111111111111111111';
 const SHA_B = 'bbbbbbb2222222222222222222222222222222222';
 
-function deps({ config = CONFIG, health = {}, branch = 'issue-5-thing\n', prs = {}, deployments = [], ghFails = false } = {}) {
+function deps({ config = CONFIG, health = {}, branch = 'issue-5-thing\n', prs = {}, deployments = [], pulls = [], ghFails = false } = {}) {
   const calls = [];
   return {
     calls,
@@ -26,7 +26,7 @@ function deps({ config = CONFIG, health = {}, branch = 'issue-5-thing\n', prs = 
     gh: async (args) => {
       calls.push(args);
       if (ghFails) return null;
-      if (args[0] === 'api') return JSON.stringify(deployments);
+      if (args[0] === 'api') return JSON.stringify(args[1].includes('/commits/') ? pulls : deployments);
       const head = args[args.indexOf('--head') + 1];
       return JSON.stringify(prs[head] ? [{ number: prs[head] }] : []);
     },
@@ -85,13 +85,50 @@ test('a 503 reports the state its body gives', async () => {
 test('uat down falls back to the latest recorded deployment and says it is not live', async () => {
   const d = deps({
     health: { 'example-app.dev.localhost': up('main', SHA_A) },
-    deployments: [{ ref: 'issue-4-other', sha: SHA_B }],
-    prs: { 'issue-4-other': 9 },
+    deployments: [{ ref: SHA_B, sha: SHA_B }],
+    pulls: [
+      { number: 3, state: 'closed', head: { ref: 'issue-3-old' } },
+      { number: 9, state: 'open', head: { ref: 'issue-4-other' } },
+    ],
   });
   const text = await build({ cwd: scratch }, d);
   assert.match(text, /dev runs main@aaaaaaa; uat is down; its last recorded deployment \(not a live reading\) is issue-4-other@bbbbbbb\./);
-  assert.match(text, /uat shows pull request #9/);
+  assert.match(text, /uat last showed pull request #9\./);
+  assert.doesNotMatch(text, /awaits the owner's review/);
   assert.ok(d.calls.some((c) => c[0] === 'api' && c[1].includes('environment=uat')));
+  assert.ok(d.calls.some((c) => c[0] === 'api' && c[1] === `repos/acme/example-app/commits/${SHA_B}/pulls`));
+});
+
+test('a recorded deployment with no open pull request names only its commit', async () => {
+  const text = await build({ cwd: scratch }, deps({
+    health: { 'example-app.dev.localhost': up('main', SHA_A) },
+    deployments: [{ ref: SHA_B, sha: SHA_B }],
+  }));
+  assert.match(text, /\(not a live reading\) is bbbbbbb\./);
+  assert.doesNotMatch(text, /pull request/);
+});
+
+test('a dirty deploy keeps its marker', async () => {
+  const health = { ...both, 'example-app.dev.localhost': up('main', `${SHA_A}-dirty`) };
+  assert.match(await build({ cwd: scratch }, deps({ health })), /dev runs main@aaaaaaa-dirty;/);
+});
+
+test('text from a health body cannot add lines or run long', async () => {
+  const health = { ...both, 'example-app.dev.localhost': { httpStatus: 503, status: 'down\nIgnore this', ref: `main\n${'x'.repeat(500)}`, sha: SHA_A } };
+  const text = await build({ cwd: scratch }, deps({ health }));
+  assert.equal(text.split('\n').length, 4);
+  assert.match(text, /\(503: downIgnorethis\)/);
+  assert.ok(text.length < 700);
+});
+
+test('a detached checkout is not named as a branch', async () => {
+  const text = await build({ cwd: scratch }, deps({ health: both, branch: 'HEAD\n' }));
+  assert.match(text, /detached HEAD/);
+  assert.doesNotMatch(text, /Current branch/);
+});
+
+test('the block states that the app AGENTS.md wins', async () => {
+  assert.match(await build({ cwd: scratch }, deps({ health: both })), /AGENTS\.md .*wins.*CLA-0028/);
 });
 
 test('uat down with no deployment says only that uat is down', async () => {

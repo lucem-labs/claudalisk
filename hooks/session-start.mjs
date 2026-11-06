@@ -10,7 +10,12 @@ export const HEALTH_TIMEOUT_MS = 500;
 export const GH_TIMEOUT_MS = 2000;
 const PORT = 80;
 
-const short = (sha) => (typeof sha === 'string' && sha ? sha.slice(0, 7) : 'unknown');
+const clean = (value) => (typeof value === 'string' ? value.replace(/[^\w./+-]/g, '').slice(0, 200) : '');
+
+const short = (value) => {
+  const sha = clean(value);
+  return sha ? `${sha.slice(0, 7)}${sha.endsWith('-dirty') ? '-dirty' : ''}` : 'unknown';
+};
 
 export function probeHealth(host, { port = PORT, timeout = HEALTH_TIMEOUT_MS } = {}) {
   return new Promise((done) => {
@@ -53,8 +58,9 @@ async function json(call) {
 
 function environment(name, health) {
   if (!health) return { line: `${name} is down`, ref: null };
-  const ref = typeof health.ref === 'string' && health.ref ? health.ref : 'unknown';
-  const unhealthy = health.httpStatus !== 200 ? ` (${health.httpStatus}${health.status ? `: ${health.status}` : ''})` : '';
+  const ref = clean(health.ref) || 'unknown';
+  const state = clean(health.status);
+  const unhealthy = health.httpStatus !== 200 ? ` (${health.httpStatus}${state ? `: ${state}` : ''})` : '';
   return { line: `${name} runs ${ref}@${short(health.sha)}${unhealthy}`, ref: ref === 'unknown' ? null : ref };
 }
 
@@ -74,7 +80,10 @@ export async function build(input, deps = {}) {
 
   const devEnv = environment('dev', dev);
   const uatEnv = environment('uat', uat);
-  const lines = ['Before starting an issue, read the claudalisk:workflow skill (one session per issue, subagents, CI in one call).'];
+  const lines = [
+    'Before starting an issue, read the claudalisk:workflow skill (one session per issue, subagents, CI in one call).',
+    "This app's AGENTS.md holds its facts and deviations, and wins over the plugin's decisions (CLA-0028).",
+  ];
 
   let fallback = null;
   let uatPr = null;
@@ -88,10 +97,13 @@ export async function build(input, deps = {}) {
     tasks.push((async () => {
       const list = await json(() => gh(['api', `repos/${config.repo}/deployments?environment=uat&per_page=1`], cwd));
       const latest = Array.isArray(list) ? list[0] : null;
-      if (latest && typeof latest.sha === 'string') {
-        const ref = typeof latest.ref === 'string' && latest.ref ? latest.ref : null;
-        fallback = `${ref ?? 'unknown'}@${short(latest.sha)}`;
-        if (ref) uatPr = await openPr(ref);
+      const sha = clean(latest?.sha);
+      if (sha) {
+        const pulls = await json(() => gh(['api', `repos/${config.repo}/commits/${sha}/pulls`], cwd));
+        const open = Array.isArray(pulls) ? pulls.find((p) => p.state === 'open') : null;
+        const ref = clean(open?.head?.ref);
+        fallback = ref ? `${ref}@${short(sha)}` : short(sha);
+        uatPr = open?.number ?? null;
       }
     })());
   }
@@ -103,8 +115,9 @@ export async function build(input, deps = {}) {
 
   const health = [devEnv.line, fallback ? `uat is down; its last recorded deployment (not a live reading) is ${fallback}` : uatEnv.line];
   lines.push(`${health.join('; ')}.`);
-  if (branch) lines.push(`Current branch: ${branch}${branchPr ? `, open pull request #${branchPr}` : ''}.`);
-  if (uatPr) lines.push(`uat shows pull request #${uatPr}, which awaits the owner's review.`);
+  if (branch === 'HEAD') lines.push('The checkout is on a detached HEAD.');
+  else if (branch) lines.push(`Current branch: ${branch}${branchPr ? `, open pull request #${branchPr}` : ''}.`);
+  if (uatPr) lines.push(fallback ? `uat last showed pull request #${uatPr}.` : `uat shows pull request #${uatPr}, which awaits the owner's review.`);
   return lines.join('\n');
 }
 

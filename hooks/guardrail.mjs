@@ -672,7 +672,7 @@ function evaluate(text, shell, ctx, depth) {
   ctx.cwd = saved;
 }
 
-function shellOf(toolName) {
+export function shellOf(toolName) {
   if (toolName === 'Bash') return 'bash';
   if (toolName === 'PowerShell') return 'powershell';
   return null;

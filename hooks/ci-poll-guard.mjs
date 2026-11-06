@@ -3,24 +3,18 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { command, segments, substitutions } from './shell.mjs';
-import { findConfig } from './guardrail.mjs';
+import { findConfig, shellOf } from './guardrail.mjs';
 
 const MAX_DEPTH = 5;
 const BASH_SHELLS = new Set(['bash', 'sh', 'zsh', 'dash']);
 const PS_SHELLS = new Set(['pwsh', 'powershell']);
 const VALUED = new Set(['-R', '--repo', '--hostname']);
 
-const REASON = 'Polling CI with a foreground gh run view or gh pr checks sends the whole context again with every check (CLA-0077). Run node scripts/verify.mjs, which waits for CI in one call, or add --watch, or run the command in the background.';
+const REASON = 'Polling CI with a foreground gh run view or gh pr checks sends the whole context again with every check (CLA-0077). Run node scripts/verify.mjs, which waits for CI in one call, or use gh pr checks --watch or gh run watch, or run the command in the background.';
 
 const ask = () => ({
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: REASON },
 });
-
-function shellOf(toolName) {
-  if (toolName === 'Bash') return 'bash';
-  if (toolName === 'PowerShell') return 'powershell';
-  return null;
-}
 
 function positionals(args) {
   const found = [];
