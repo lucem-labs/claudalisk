@@ -62,6 +62,7 @@ test('a dev deploy initialises, builds, migrates, starts and waits for health', 
   assert.ok(at(/--profile migrate run --rm migrate$/) < at(/up --detach --no-build --remove-orphans --wait$/))
   assert.equal(callsMatching(runner, /network/).length, 0)
   assert.equal(callsMatching(runner, /^docker compose .*traefik/).length, 0)
+  assert.equal(callsMatching(runner, /^docker ps .*project=traefik.*status=running/).length, 1)
   const build = callsMatching(runner, / build$/)[0]
   assert.equal(build.options.env.DEPLOYED_SHA, sha)
   assert.equal(build.options.env.DEPLOYED_REF, 'feature')

@@ -165,7 +165,7 @@ export async function deployedVersion(runner, settings) {
 }
 
 export async function requireProxyRunning(runner) {
-  const running = await runChecked(runner, 'docker', ['ps', '--quiet', '--filter', `label=com.docker.compose.project=${proxyProject}`], { what: 'docker ps' })
+  const running = await runChecked(runner, 'docker', ['ps', '--quiet', '--filter', `label=com.docker.compose.project=${proxyProject}`, '--filter', 'status=running'], { what: 'docker ps' })
   if (!running.stdout.trim()) {
     throw new Error('Refusing to deploy: no shared proxy is running. Nothing was changed. Start it with /claudalisk:proxy up (or node "<plugin>/tools/proxy.mjs" up), then deploy again.')
   }
