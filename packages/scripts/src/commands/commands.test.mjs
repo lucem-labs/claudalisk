@@ -84,6 +84,25 @@ test('a dev and a uat deploy with no proxy running refuse before changing anythi
   assert.equal(callsMatching(uatRunner, / build$| up |pg_dump|migrate|volume create|network/).length, 0)
 })
 
+test('a uat deploy refuses before changing anything when the proxy is on another port or network', async () => {
+  for (const [proxy, message] of [
+    ['127.0.0.1:8080->80/tcp|traefik', /publishes port 8080, but this deploy expects port 80.*PROXY_PORT=8080/],
+    ['127.0.0.1:80->80/tcp|bridge', /not on the 'traefik' network/],
+  ]) {
+    const uat = uatSetup()
+    const runner = docker({ state: uat.state, proxy, volumes: ['shop-uat_postgres-data'] })
+    await assert.rejects(deploy({ appRoot: uat.root, argv: ['--environment', 'uat'], env: uat.env, runner, health: healthy, guard: approvedGuard, now: when }), message)
+    assert.equal(callsMatching(runner, / build$| up |pg_dump|migrate|volume create|network/).length, 0)
+  }
+})
+
+test('a deploy on a matching non-default proxy port goes ahead', async () => {
+  const { root, state, env } = makeApp()
+  const runner = docker({ state, proxy: '127.0.0.1:8080->80/tcp|traefik' })
+  await deploy({ appRoot: root, argv: ['--environment', 'dev'], env: { ...env, PROXY_PORT: '8080' }, runner, health: healthy, guard: noGuard })
+  assert.equal(callsMatching(runner, /up --detach --no-build --remove-orphans --wait$/).length, 1)
+})
+
 test('a dev deploy of uncommitted changes marks the deployed commit dirty', async () => {
   const { root, state, env } = makeApp()
   writeEnvFile(state, 'dev')

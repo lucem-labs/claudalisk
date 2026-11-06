@@ -6,6 +6,7 @@ import { runChecked } from './process.mjs'
 
 export const environments = ['dev', 'uat']
 export const proxyProject = 'traefik'
+export const expectedProxyPort = (env) => env.PROXY_PORT || '80'
 export const placeholderPassword = 'CHANGE_ME'
 
 export function assertEnvironment(environment) {
@@ -114,7 +115,7 @@ export function loadEnvironment(environment, { app, env = process.env, stateDir 
   const envFile = join(stateDir, `${environment}.env`)
   if (!existsSync(envFile)) throw new Error(missingEnvFileMessage(environment, envFile))
   const values = parseEnvFile(readFileSync(envFile, 'utf8'))
-  return settingsFor(environment, { app, stateDir, values, proxyPort: env.PROXY_PORT || '80' })
+  return settingsFor(environment, { app, stateDir, values, proxyPort: expectedProxyPort(env) })
 }
 
 export async function volumeExists(runner, name) {
@@ -164,9 +165,18 @@ export async function deployedVersion(runner, settings) {
   return image.code === 0 ? deployedVersionFromEnv(image.stdout) : null
 }
 
-export async function requireProxyRunning(runner) {
-  const running = await runChecked(runner, 'docker', ['ps', '--quiet', '--filter', `label=com.docker.compose.project=${proxyProject}`, '--filter', 'status=running'], { what: 'docker ps' })
-  if (!running.stdout.trim()) {
+export async function requireProxyRunning(runner, proxyPort) {
+  const running = await runChecked(runner, 'docker', ['ps', '--filter', `label=com.docker.compose.project=${proxyProject}`, '--filter', 'status=running', '--format', '{{.Ports}}|{{.Networks}}'], { what: 'docker ps' })
+  const [proxy] = running.stdout.trim().split(/\r?\n/)
+  if (!proxy) {
     throw new Error('Refusing to deploy: no shared proxy is running. Nothing was changed. Start it with /claudalisk:proxy up (or node "<plugin>/tools/proxy.mjs" up), then deploy again.')
+  }
+  const [ports, networks = ''] = proxy.split('|')
+  if (!networks.split(',').includes(proxyProject)) {
+    throw new Error(`Refusing to deploy: the shared proxy is not on the '${proxyProject}' network. Nothing was changed. Rebuild it with /claudalisk:proxy recreate, which needs the owner's yes, then deploy again.`)
+  }
+  const published = /:(\d+)->80\/tcp/.exec(ports)?.[1]
+  if (published && published !== proxyPort) {
+    throw new Error(`Refusing to deploy: the shared proxy publishes port ${published}, but this deploy expects port ${proxyPort}. Nothing was changed. Set PROXY_PORT=${published}, then deploy again.`)
   }
 }

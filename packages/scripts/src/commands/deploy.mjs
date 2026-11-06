@@ -4,6 +4,7 @@ import { readApp } from '../app-config.mjs'
 import {
   assertEnvironment,
   composeChecked,
+  expectedProxyPort,
   loadEnvironment,
   requireProxyRunning,
   stateDirectory,
@@ -65,7 +66,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   } else if (options.confirm) {
     throw new Error('--confirm is only for uat.')
   }
-  await requireProxyRunning(runner)
+  await requireProxyRunning(runner, expectedProxyPort(env))
   await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env) })
 
   const settings = loadEnvironment(environment, { app, env })
