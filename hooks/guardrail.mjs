@@ -90,7 +90,7 @@ export function protectedNames(registry, config) {
   return [...names];
 }
 
-function findConfig(cwd, appConfig) {
+export function findConfig(cwd, appConfig) {
   let dir = resolve(cwd);
   for (;;) {
     if (existsSync(appConfig.configPath(dir))) return appConfig.readAppConfig(dir);
@@ -672,7 +672,7 @@ function evaluate(text, shell, ctx, depth) {
   ctx.cwd = saved;
 }
 
-function shellOf(toolName) {
+export function shellOf(toolName) {
   if (toolName === 'Bash') return 'bash';
   if (toolName === 'PowerShell') return 'powershell';
   return null;
