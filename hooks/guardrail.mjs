@@ -510,7 +510,8 @@ function guardedScripts(name, args, ctx) {
 }
 
 function proxyRecreate(name, args, ctx) {
-  if (name !== 'node' || !args.some((a) => lastSegment(a).toLowerCase() === 'proxy.mjs') || !args.includes('recreate')) return;
+  const isProxy = (word) => lastSegment(word).toLowerCase() === 'proxy.mjs';
+  if (!(isProxy(name) || (name === 'node' && args.some(isProxy))) || !args.includes('recreate')) return;
   flag(ctx, 'ask', 13, 'proxy.mjs recreate rebuilds the shared proxy and stops the URLs of every app for a moment (CLA-0033). Ask the owner before running it.');
 }
 

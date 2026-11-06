@@ -666,6 +666,8 @@ ask([
   "node '/p/tools/proxy.mjs' 'recreate'",
   'bash -c "node /p/tools/proxy.mjs recreate"',
   'cd /p && node tools/proxy.mjs recreate',
+  'node /p/tools/proxy.mjs --port 8080 recreate',
+  './tools/proxy.mjs recreate',
 ]);
 
 allow([
@@ -675,6 +677,13 @@ allow([
   'node /p/tools/other.mjs recreate',
   'echo recreate',
 ]);
+
+test('PowerShell asks before proxy.mjs recreate', () => {
+  for (const command of ['node C:\\p\\tools\\proxy.mjs recreate', '& node "C:\\p\\tools\\proxy.mjs" --port 8080 recreate']) {
+    assert.equal(verdict(call(command, { tool: 'PowerShell' })), 'ask', command);
+  }
+  assert.equal(verdict(call('node C:\\p\\tools\\proxy.mjs status', { tool: 'PowerShell' })), 'allow');
+});
 
 test('rule 12 asks in PowerShell and not in Bash', () => {
   for (const command of [
