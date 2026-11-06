@@ -26,7 +26,7 @@ The plugin cannot own the code outright:
 - **Everything else is a convention, not config:**
   - `compose.base.yml` plus `compose.<env>.yml`, with the services `api` and `db` and the Compose profile `migrate`;
   - the environments `dev` and `uat`;
-  - the proxy: the project and network `traefik`, and `compose.proxy.yml`;
+  - the proxy: the project and network `traefik`;
   - the branch `origin/main` and the workflow `ci.yml`;
   - the table `__EFMigrationsHistory`;
   - state in `~/.claudalisk/apps/<name>/` (CLA-0066);

@@ -165,20 +165,9 @@ export async function deployedVersion(runner, settings) {
   return image.code === 0 ? deployedVersionFromEnv(image.stdout) : null
 }
 
-export async function ensureProxyNetwork(runner) {
-  const result = await runChecked(runner, 'docker', ['network', 'ls', '--quiet', '--filter', `name=^${proxyNetwork}$`], { what: 'docker network ls' })
-  if (result.stdout.trim()) return
-  await runChecked(runner, 'docker', ['network', 'create', proxyNetwork], { what: `Creating the '${proxyNetwork}' Docker network` })
-}
-
-export async function startProxyIfNotRunning(runner, root) {
+export async function requireProxyRunning(runner) {
   const running = await runChecked(runner, 'docker', ['ps', '--quiet', '--filter', `label=com.docker.compose.project=${proxyProject}`], { what: 'docker ps' })
-  if (running.stdout.trim()) {
-    console.log('The shared Traefik proxy is already running; leaving it untouched.')
-    return
+  if (!running.stdout.trim()) {
+    throw new Error('Refusing to deploy: no shared proxy is running. Nothing was changed. Start it with /claudalisk:proxy up (or node "<plugin>/tools/proxy.mjs" up), then deploy again.')
   }
-  await runChecked(runner, 'docker', ['compose', '--project-directory', root, '-f', join(root, 'compose.proxy.yml'), 'up', '--detach', '--wait'], {
-    inherit: true,
-    what: 'Starting the Traefik proxy',
-  })
 }

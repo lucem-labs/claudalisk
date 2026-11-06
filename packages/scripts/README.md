@@ -33,7 +33,7 @@ Every command refuses to run when `CI` or `GITHUB_ACTIONS` is set.
 
 ## Conventions
 
-The values that differ between apps come from `.claude/claudalisk.json` (CLA-0082). The rest is fixed: `compose.base.yml` and `compose.<env>.yml`, the services `api` and `db`, the Compose profile `migrate`, the environments `dev` and `uat`, the `traefik` project and network with `compose.proxy.yml`, `origin/main`, the workflow `ci.yml`, the table `__EFMigrationsHistory`, and state in `~/.claudalisk/apps/<name>/`.
+The values that differ between apps come from `.claude/claudalisk.json` (CLA-0082). The rest is fixed: `compose.base.yml` and `compose.<env>.yml`, the services `api` and `db`, the Compose profile `migrate`, the environments `dev` and `uat`, the `traefik` project and network, `origin/main`, the workflow `ci.yml`, the table `__EFMigrationsHistory`, and state in `~/.claudalisk/apps/<name>/`.
 
 - Env files: `.env.<env>.example` in the checkout is the template for `<env>.env`. `POSTGRES_USER` and `POSTGRES_PASSWORD` configure the `db` service. The placeholder `CHANGE_ME` is replaced by the generated password, and for dev `DEV_POSTGRES_PORT` is set from `ports.devDb`.
 - Databases: each entry of `databases` names the variable that holds its connection string. The database name is its `Database=` part. An app with one database may leave the variable out of the env file and set `POSTGRES_DB`.

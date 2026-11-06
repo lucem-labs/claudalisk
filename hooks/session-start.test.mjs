@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, decide, probeHealth } from './session-start.mjs';
+import { build, decide, probeHealth, registeredPort } from './session-start.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'session-start-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -164,6 +164,13 @@ test('probeHealth sends the name in the Host header and reads a 503 body', async
   } finally {
     server.close();
   }
+});
+
+test('registeredPort reads the proxy port, and falls back to 80 without one or on a corrupt registry', () => {
+  assert.equal(registeredPort(() => ({ proxy: { composeProject: 'traefik', network: 'traefik', port: 8080 } })), 8080);
+  assert.equal(registeredPort(() => ({ apps: {} })), 80);
+  assert.equal(registeredPort(() => ({ proxy: { composeProject: 'traefik', network: 'traefik' } })), 80);
+  assert.equal(registeredPort(() => { throw new Error('corrupt registry'); }), 80);
 });
 
 test('probeHealth gives null when nothing answers within the timeout', async () => {

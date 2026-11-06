@@ -52,16 +52,16 @@ test('init creates the dev env file and volume from the config', async () => {
 
 test('a dev deploy initialises, builds, migrates, starts and waits for health', async () => {
   const { root, state, env } = makeApp()
-  const runner = docker({ state, networks: [], proxyRunning: false })
+  const runner = docker({ state })
   await deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy, guard: noGuard })
   const lines = runner.calls.map((call) => call.line)
   const at = (pattern) => lines.findIndex((line) => pattern.test(line))
   assert.ok(existsSync(join(state, 'dev.env')))
-  assert.ok(at(/volume create/) < at(/network create traefik/))
-  assert.ok(at(/network create traefik/) < at(/ build$/))
+  assert.ok(at(/volume create/) < at(/ build$/))
   assert.ok(at(/ build$/) < at(/--profile migrate run --rm migrate$/))
   assert.ok(at(/--profile migrate run --rm migrate$/) < at(/up --detach --no-build --remove-orphans --wait$/))
-  assert.ok(at(/up --detach --no-build --remove-orphans --wait$/) < at(/compose.proxy.yml up --detach --wait$/))
+  assert.equal(callsMatching(runner, /network/).length, 0)
+  assert.equal(callsMatching(runner, /^docker compose .*traefik/).length, 0)
   const build = callsMatching(runner, / build$/)[0]
   assert.equal(build.options.env.DEPLOYED_SHA, sha)
   assert.equal(build.options.env.DEPLOYED_REF, 'feature')
@@ -69,6 +69,18 @@ test('a dev deploy initialises, builds, migrates, starts and waits for health', 
   assert.ok(build.args.includes(join(root, 'compose.dev.yml')))
   assert.equal(callsMatching(runner, /pg_dump/).length, 0)
   assert.equal(callsMatching(runner, /^gh /).length, 0)
+})
+
+test('a dev and a uat deploy with no proxy running refuse before changing anything', async () => {
+  const dev = makeApp()
+  const devRunner = docker({ state: dev.state, proxyRunning: false })
+  await assert.rejects(deploy({ appRoot: dev.root, argv: ['--environment', 'dev'], env: dev.env, runner: devRunner, health: healthy, guard: noGuard }), /no shared proxy is running.*Nothing was changed.*proxy up/)
+  assert.equal(callsMatching(devRunner, / build$| up |pg_dump|migrate|volume create|network/).length, 0)
+  assert.ok(!existsSync(join(dev.state, 'dev.env')))
+  const uat = uatSetup()
+  const uatRunner = docker({ state: uat.state, proxyRunning: false, volumes: ['shop-uat_postgres-data'] })
+  await assert.rejects(deploy({ appRoot: uat.root, argv: ['--environment', 'uat'], env: uat.env, runner: uatRunner, health: healthy, guard: approvedGuard, now: when }), /no shared proxy is running/)
+  assert.equal(callsMatching(uatRunner, / build$| up |pg_dump|migrate|volume create|network/).length, 0)
 })
 
 test('a dev deploy of uncommitted changes marks the deployed commit dirty', async () => {

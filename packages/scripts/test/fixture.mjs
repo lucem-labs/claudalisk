@@ -54,7 +54,6 @@ export function writeBackup(state, name, { createdAt, migrations = [], reason = 
 export function docker({
   state,
   volumes = [],
-  networks = ['traefik'],
   proxyRunning = true,
   dbRunning = true,
   hasSchema = true,
@@ -67,7 +66,6 @@ export function docker({
   extra = () => undefined,
 } = {}) {
   const volumeSet = new Set(volumes)
-  const networkSet = new Set(networks)
   return fakeRunner((call) => {
     const { command, args, line } = call
     const text = args.join(' ')
@@ -88,8 +86,6 @@ export function docker({
     }
     if (text.startsWith('volume create')) volumeSet.add(args[2])
     if (text.startsWith('volume rm')) volumeSet.delete(args[2])
-    if (text.startsWith('network ls')) return { stdout: networkSet.has('traefik') ? 'n1\n' : '' }
-    if (text.startsWith('network create')) networkSet.add(args[2])
     if (args[0] === 'ps') return { stdout: proxyRunning ? 'p1\n' : '' }
     if (args[0] === 'compose' && args.includes('ps')) {
       if (args.includes('db')) return { stdout: dbRunning ? 'db1\n' : '' }
