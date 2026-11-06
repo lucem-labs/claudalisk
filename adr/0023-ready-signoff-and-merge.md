@@ -18,7 +18,7 @@ Tests and the owner's review on uat still miss some bugs. In one change to the u
 - **While working,** the agent pushes the issue branch. CI runs on every branch push (CLA-0034). The agent deploys to dev by hand and verifies there. Nothing else deploys dev (CLA-0030), so dev runs what the agent last deployed.
 - **A multi-agent review before opening.** When CI is green and dev is verified, the agent runs the claudalisk review skill, `/claudalisk:review`, on the branch.
   - **A script plans the review, not a model.** It maps the changed files to the knowledge skills' areas and their ADRs, decides whether the change is high-risk, and gives each agent only its slice of the diff and its ADRs.
-  - **uat data** paths are the migrations, the deploy, init, backup, restore and refresh scripts, the uat Compose file and the agent's deny list and hooks. An app adds its own, and its security-relevant paths, in `.claude/claudalisk.json`.
+  - **uat data** paths are the migrations, the deploy, init, migrate, backup, restore and refresh scripts, the uat Compose file, the agent's deny list and hooks, and any change to the `@claudalisk/scripts` version in a `package.json`, since a bump changes deploy and restore behaviour with no script in the diff. An app adds its own, and its security-relevant paths, in `.claude/claudalisk.json`.
   - **ADR conformance:** one agent for every area the change touches, on the review model of CLA-0079.
   - **uat data safety,** when the change touches migrations, backups, restores or deploys: one agent on the review model.
   - **Correctness and security:** the built-in `/code-review`, at medium effort, and high on a high-risk change.
