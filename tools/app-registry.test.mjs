@@ -262,3 +262,14 @@ test('the CLI exits 1 on a clash', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /clashes with shop/);
 });
+
+test('the proxy port is recorded and validated', () => {
+  const home = tempHome();
+  registerProxy({ composeProject: 'traefik', network: 'traefik', port: 80 }, { home });
+  assert.deepEqual(readRegistry({ home }).proxy, { composeProject: 'traefik', network: 'traefik', port: 80 });
+  registerProxy({ composeProject: 'traefik', network: 'traefik' }, { home });
+  assert.deepEqual(readRegistry({ home }).proxy, { composeProject: 'traefik', network: 'traefik' });
+  for (const port of [0, 70000, 80.5, '80', null]) {
+    assert.throws(() => registerProxy({ composeProject: 'traefik', network: 'traefik', port }, { home }), /proxy.port/);
+  }
+});
