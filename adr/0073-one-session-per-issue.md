@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** workflow
-- **Enforced by:** workflow skill; reviewer
+- **Enforced by:** workflow skill; session-start hook pointer (CLA-0085); reviewer
 - **Issue:** #92
 
 ## Context

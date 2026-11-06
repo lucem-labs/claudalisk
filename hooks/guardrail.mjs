@@ -90,7 +90,7 @@ export function protectedNames(registry, config) {
   return [...names];
 }
 
-function findConfig(cwd, appConfig) {
+export function findConfig(cwd, appConfig) {
   let dir = resolve(cwd);
   for (;;) {
     if (existsSync(appConfig.configPath(dir))) return appConfig.readAppConfig(dir);

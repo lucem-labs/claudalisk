@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** workflow
-- **Enforced by:** `scripts/verify.mjs` in the app (CLA-0076); `implementer` agent; workflow skill; reviewer. No hook yet.
+- **Enforced by:** `scripts/verify.mjs` in the app (CLA-0076); `implementer` agent; workflow skill; `hooks/ci-poll-guard.mjs` (asks before a foreground poll); reviewer.
 - **Issue:** #96
 
 ## Context
@@ -26,4 +26,4 @@ Every model request sends the whole conversation again (CLA-0073). An agent that
 - While CI runs, the session sends nothing. A wait costs one request when it starts and one when it ends, whatever the length of the run.
 - A wait in the main thread ends the turn or runs beside other work, so the main thread cannot quickly react to a job that fails early. `--fail-fast` makes the script return at the first failed job.
 - On a host with a pull request monitor, the agent depends on that monitor to learn about failures after the pull request is open.
-- Nothing stops a foreground `gh run view` or `gh pr checks` without `--watch` yet. A guardrail hook can ask before one and point to the script once the plugin has hooks; until then this rule is prompt only.
+- Inside an app, a `PreToolUse` hook on `Bash|PowerShell` (`hooks/ci-poll-guard.mjs`) asks before a foreground `gh run view` or `gh pr checks` without `--watch` and points to `node scripts/verify.mjs`. It allows a call with `run_in_background`, reads commands with the parser of CLA-0083 and fails open. Outside an app it does nothing.

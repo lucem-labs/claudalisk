@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected uat resources, CLA-0083); deny-list backstop; the environment scripts
+- **Enforced by:** guardrail hook (protected uat resources, CLA-0083); session-start hook (what each environment runs, CLA-0085); deny-list backstop; the environment scripts
 
 ## Context
 
@@ -24,7 +24,7 @@ The two environments were first called dev and prod. The second one is not produ
   - `docker compose down -v`
   - `docker volume rm` or `docker volume prune`
   - `docker system prune`
-- **Health endpoint.** It reports `status`, `database`, `environment`, `deployedSha` and `deployedRef`, so the router and the owner can see which commit each environment runs (#12).
+- **Health endpoint.** It reports `status`, `database`, `environment`, `deployedSha` and `deployedRef`, so the session-start hook (CLA-0085) and the owner can see which commit each environment runs.
 
 ## Consequences
 
