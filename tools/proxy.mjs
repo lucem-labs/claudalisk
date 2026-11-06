@@ -69,7 +69,7 @@ export function status({ docker = dockerRunner, home = homedir(), write = consol
 }
 
 function start({ port, force }, { docker, write }) {
-  docker(['compose', '-f', composeFile, '-p', PROJECT, 'up', '-d', ...(force ? ['--force-recreate'] : [])], { env: { PROXY_PORT: String(port) } });
+  docker(['compose', '-f', composeFile, '-p', PROJECT, 'up', '-d', '--wait', ...(force ? ['--force-recreate'] : [])], { env: { PROXY_PORT: String(port) } });
   write(force ? `proxy recreated on port ${port}` : `proxy started on port ${port}`);
 }
 
@@ -80,9 +80,11 @@ function blocker(docker, port) {
 export function up(flags, { docker = dockerRunner, home = homedir(), write = console.log } = {}) {
   const requested = parseFlags(flags).port;
   const running = containers(docker).filter((c) => c.inProject);
-  const port = requested ?? (running.length ? publishedPort(running[0].ports) : null) ?? readRegistry({ home }).proxy?.port ?? DEFAULT_PORT;
+  const published = running.length ? publishedPort(running[0].ports) : null;
+  const port = published ?? requested ?? readRegistry({ home }).proxy?.port ?? DEFAULT_PORT;
   const holder = blocker(docker, port);
   if (holder) throw new Error(`port ${port} is published by ${holder.name} (${holder.image}), which is not part of the ${PROJECT} project. Stop that container, or deploy the proxy first and use --port for another one. Nothing was changed`);
+  if (published && requested && requested !== published) write(`the proxy stays on port ${published} while it runs, so --port ${requested} is ignored. "recreate --port ${requested}" moves it`);
   if (!networkExists(docker)) {
     docker(['network', 'create', NETWORK]);
     write(`network ${NETWORK} created`);
@@ -97,7 +99,7 @@ export function recreate(flags, { docker = dockerRunner, home = homedir(), write
   const requested = parseFlags(flags).port;
   const running = containers(docker).filter((c) => c.inProject);
   if (running.length === 0) throw new Error('the proxy is not running, so there is nothing to recreate. Use "up"');
-  const port = requested ?? readRegistry({ home }).proxy?.port ?? publishedPort(running[0].ports) ?? DEFAULT_PORT;
+  const port = requested ?? publishedPort(running[0].ports) ?? readRegistry({ home }).proxy?.port ?? DEFAULT_PORT;
   const holder = blocker(docker, port);
   if (holder) throw new Error(`port ${port} is published by ${holder.name} (${holder.image}), which is not part of the ${PROJECT} project. Nothing was changed`);
   if (!networkExists(docker)) docker(['network', 'create', NETWORK]);

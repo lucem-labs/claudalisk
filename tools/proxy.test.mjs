@@ -36,7 +36,7 @@ test('up on a clean machine creates the network, starts the proxy and registers 
   const r = run(['up']);
   assert.deepEqual(changes(r.calls).map((c) => c.args), [
     ['network', 'create', 'traefik'],
-    ['compose', '-f', composeFile, '-p', 'traefik', 'up', '-d'],
+    ['compose', '-f', composeFile, '-p', 'traefik', 'up', '-d', '--wait'],
   ]);
   assert.equal(changes(r.calls)[1].env.PROXY_PORT, '80');
   assert.deepEqual(readRegistry({ home: r.home }).proxy, { composeProject: 'traefik', network: 'traefik', port: 80 });
@@ -63,6 +63,21 @@ test('up with the proxy already running makes no compose call and registers the 
   assert.deepEqual(changes(r.calls), []);
   assert.match(r.out.join('\n'), /already running/);
   assert.equal(readRegistry({ home: r.home }).proxy.port, 8081);
+});
+
+test('up --port on a running proxy records the port it really publishes and says so', () => {
+  const r = run(['up', '--port', '9000'], { networks: ['traefik'], ps: [row('traefik-traefik-1', '127.0.0.1:8081->80/tcp', OURS)] });
+  assert.deepEqual(changes(r.calls), []);
+  assert.equal(readRegistry({ home: r.home }).proxy.port, 8081);
+  assert.match(r.out.join('\n'), /stays on port 8081/);
+});
+
+test('recreate keeps the published port even when the registry says otherwise', () => {
+  const h = home();
+  run(['up', '--port', '9000'], { home: h });
+  const r = run(['recreate'], { home: h, networks: ['traefik'], ps: [row('traefik-traefik-1', '127.0.0.1:8081->80/tcp', OURS)] });
+  assert.equal(changes(r.calls)[0].env.PROXY_PORT, '8081');
+  assert.equal(readRegistry({ home: h }).proxy.port, 8081);
 });
 
 test('up stops and changes nothing when another container holds the port', () => {
