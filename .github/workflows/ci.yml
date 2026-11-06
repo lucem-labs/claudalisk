@@ -25,7 +25,7 @@ jobs:
       - name: Tool dependencies
         run: npm ci --prefix tools --ignore-scripts --no-audit --no-fund
       - name: Tool tests
-        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs
+        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs 'packages/scripts/**/*.test.mjs'
       - name: No comments
         run: node templates/app/scripts/no-comments.mjs
 
