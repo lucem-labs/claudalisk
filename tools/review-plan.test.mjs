@@ -114,6 +114,54 @@ test('the agent hooks of an app and of the plugin are uat data, and React hooks 
   assert.equal(plan(change('frontend/src/shared/hooks/useCards.ts')).highRisk, false);
 });
 
+test('the scripts package and the template entry scripts are uat data, wherever they live', () => {
+  for (const path of [
+    'packages/scripts/src/migration-checks.mjs',
+    'templates/app/scripts/deploy-uat.mjs',
+    'templates/app/scripts/init-env.mjs',
+    'templates/app/scripts/lib/backup-uat.mjs',
+    'templates/app/compose.uat.yml',
+    'scripts/deploy.mjs',
+    'compose.uat.yml',
+  ]) {
+    const p = plan(change(path));
+    assert.equal(p.highRisk, true, path);
+    assert.deepEqual(p.reasons, [`${path}: uat data`]);
+  }
+  assert.equal(plan(change('templates/app/scripts/verify.mjs')).highRisk, false);
+});
+
+test('a version change of the scripts package in package.json is uat data', () => {
+  const bump = [
+    'diff --git a/package.json b/package.json',
+    '--- a/package.json',
+    '+++ b/package.json',
+    '@@ -2,3 +2,3 @@',
+    ' {',
+    '-    "@claudalisk/scripts": "1.0.0",',
+    '+    "@claudalisk/scripts": "1.1.0",',
+    ' }',
+  ].join('\n');
+  const p = plan(bump);
+  assert.equal(p.highRisk, true);
+  assert.deepEqual(p.reasons, ['package.json: uat data']);
+  assert.deepEqual(p.domains.find((d) => d.name === 'uat-data').models, ['opus', 'sonnet', 'haiku']);
+});
+
+test('a package.json change that leaves the scripts package alone is not uat data', () => {
+  const nearby = [
+    'diff --git a/package.json b/package.json',
+    '--- a/package.json',
+    '+++ b/package.json',
+    '@@ -2,3 +2,3 @@',
+    '     "@claudalisk/scripts": "1.0.0",',
+    '-    "react": "18.0.0",',
+    '+    "react": "18.1.0",',
+  ].join('\n');
+  assert.equal(plan(nearby).highRisk, false);
+  assert.equal(plan(change('notes/package.md', ['"@claudalisk/scripts": "1.0.0"'])).highRisk, false);
+});
+
 test('a security-relevant change is high-risk without a uat data quorum', () => {
   const p = plan(change('backend/Host/Authentication/JwtSetup.cs'));
   assert.equal(p.highRisk, true);

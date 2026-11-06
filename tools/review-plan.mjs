@@ -11,12 +11,13 @@ export const REVIEW_MODEL = 'sonnet';
 
 export const DEFAULT_UAT_DATA = [
   '**/Migrations/**',
-  'scripts/deploy*.mjs',
-  'scripts/init*.mjs',
-  'scripts/**/*backup*',
-  'scripts/**/*restore*',
-  'scripts/**/*refresh*',
-  'compose*uat*.yml',
+  '**/scripts/deploy*.mjs',
+  '**/scripts/init*.mjs',
+  '**/scripts/**/*backup*',
+  '**/scripts/**/*restore*',
+  '**/scripts/**/*refresh*',
+  'packages/scripts/**',
+  '**/compose*uat*.yml',
   '.claude/settings.json',
   '.claude/hooks/**',
   'hooks/**',
@@ -35,6 +36,8 @@ export const DEFAULT_SECURITY = [
 
 const BRIEF_FILE = /^(adr-conformance|uat-data)(-[a-z]+)?.md$/;
 const SKIPPED = [/(^|\/)package-lock\.json$/, /\.lock$/, /\.snap$/, /(^|\/)packages\.lock\.json$/];
+const CHANGES_SCRIPTS_PACKAGE = /^[+-]\s*"@claudalisk\/scripts"\s*:/m;
+const changesScriptsPackage = (f) => /(^|\/)package\.json$/.test(f.path) && CHANGES_SCRIPTS_PACKAGE.test(f.patch);
 const SKILL_ADR_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\) \(([^)]+)\): (.+)$/;
 
 export function globToRegExp(glob, flags = '') {
@@ -139,7 +142,7 @@ export function planReview({ diff, knowledge, config, deviations = '', round = '
     return {
       ...f,
       skills: knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name),
-      uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')),
+      uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')) || changesScriptsPackage(f),
       security: paths.some((p) => matchesAny(p, config.security, 'i')),
     };
   });
