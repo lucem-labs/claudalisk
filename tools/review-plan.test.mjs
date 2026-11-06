@@ -117,11 +117,15 @@ test('the agent hooks of an app and of the plugin are uat data, and React hooks 
 test('the scripts package and the template entry scripts are uat data, wherever they live', () => {
   for (const path of [
     'packages/scripts/src/migration-checks.mjs',
-    'templates/app/scripts/deploy-uat.mjs',
-    'templates/app/scripts/init-env.mjs',
-    'templates/app/scripts/lib/backup-uat.mjs',
-    'templates/app/compose.uat.yml',
+    'templates/app/scripts/deploy.mjs',
+    'templates/app/scripts/init.mjs',
+    'templates/app/scripts/migrate.mjs',
+    'templates/app/scripts/backup.mjs',
+    'templates/app/scripts/prune-backups.mjs',
+    'templates/app/scripts/restore.mjs',
+    'templates/app/scripts/refresh-dev.mjs',
     'scripts/deploy.mjs',
+    'scripts/migrate.mjs',
     'compose.uat.yml',
   ]) {
     const p = plan(change(path));

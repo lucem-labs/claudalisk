@@ -26,7 +26,7 @@ node "${CLAUDE_PLUGIN_ROOT}/tools/review-plan.mjs" [--pr <number> | --base <ref>
 - `--comment` belongs to this skill, not the script; the script ignores it.
 - `--since <sha>` is a fix round: it plans only the diff from the head you reviewed last, so only the domains whose files the fix changed are reviewed again.
 
-The script uses no model. It maps each changed file to the knowledge skills through their `paths` and lists their ADRs. It marks the change high-risk when it touches uat data (migrations, the deploy, init, backup, restore and refresh scripts, the uat Compose file, the agent's deny list and hooks) or security-relevant paths. An app adds its own paths under `review.uatData` and `review.security` in `.claude/claudalisk.json`. The script writes one brief per agent and prints a JSON summary: `agents` (domain, model, brief path), `codeReview.effort`, `highRisk` and its `reasons`, `unmapped` files and `skipped` lock files.
+The script uses no model. It maps each changed file to the knowledge skills through their `paths` and lists their ADRs. It marks the change high-risk when it touches uat data (migrations, the deploy, init, migrate, backup, restore and refresh scripts, the uat Compose file, the agent's deny list and hooks, a change to the `@claudalisk/scripts` version in a `package.json`) or security-relevant paths. An app adds its own paths under `review.uatData` and `review.security` in `.claude/claudalisk.json`. The script writes one brief per agent and prints a JSON summary: `agents` (domain, model, brief path), `codeReview.effort`, `highRisk` and its `reasons`, `unmapped` files and `skipped` lock files.
 
 ## 3. Run the reviewers
 
