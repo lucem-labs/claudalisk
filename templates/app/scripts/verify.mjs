@@ -154,7 +154,7 @@ function must(result, what) {
 }
 
 export function commitAndPush({ git, message }) {
-  const branch = must(git(['rev-parse', '--abbrev-ref', 'HEAD']), 'git rev-parse');
+  const branch = must(git(['branch', '--show-current']), 'git branch') || 'HEAD';
   if (['HEAD', 'main', 'master'].includes(branch)) throw new UsageError(`verify pushes the issue branch; it will not push ${branch}.`);
   const notes = [];
   if (must(git(['status', '--porcelain']), 'git status')) {
@@ -164,9 +164,11 @@ export function commitAndPush({ git, message }) {
     notes.push('committed');
   }
   const sha = must(git(['rev-parse', 'HEAD']), 'git rev-parse');
-  const upstream = git(['rev-parse', '--verify', '-q', '@{u}']);
-  if (upstream.status !== 0) { must(git(['push', '-q', '-u', 'origin', 'HEAD']), 'git push'); notes.push('pushed'); }
-  else if (upstream.stdout.trim() !== sha) { must(git(['push', '-q']), 'git push'); notes.push('pushed'); }
+  const pushed = git(['rev-parse', '--verify', '-q', `refs/remotes/origin/${branch}`]);
+  if (pushed.status !== 0 || pushed.stdout.trim() !== sha) {
+    must(git(['push', '-q', '-u', 'origin', `HEAD:refs/heads/${branch}`]), 'git push');
+    notes.push('pushed');
+  }
   return { sha, branch, notes };
 }
 
