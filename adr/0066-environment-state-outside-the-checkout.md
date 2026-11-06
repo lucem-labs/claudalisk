@@ -21,7 +21,7 @@ A deploy that writes a missing env file with a new password breaks the database 
   - Any other per-app state that a claudalisk script or hook keeps goes in its own subfolder here, named after it.
   - The machine-wide registry `~/.claudalisk/apps.json` sits next to the per-app folders (CLA-0082).
 - **The checkout holds no env files.** It holds only `.env.*.example` files with placeholders that cannot work (CLA-0026).
-- **Who reads it:** the environment scripts, run by the agent on the machine: dev deploys, uat review deploys (CLA-0030), backups and refreshes.
+- **Who reads it:** the environment scripts (`@claudalisk/scripts`, CLA-0084), run by the agent on the machine: dev deploys, uat review deploys (CLA-0030), backups and refreshes.
 - **An init script creates each environment.** The app's init script (`node scripts/init.mjs --environment <env>`) generates the database password and writes it into every variable of `<env>.env` that needs it, such as `POSTGRES_PASSWORD` and the connection string, so the file is complete when it is written. It then creates the data volume with that password.
   - The owner runs it for uat (CLA-0029). The first dev deploy runs it for dev.
   - It refuses when the env file or the volume already exists, so it never invents a password for a volume that has one.

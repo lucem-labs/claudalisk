@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** the generated deploy script and its guards; guardrail hook (no uat Compose commands, restores or SQL by hand)
+- **Enforced by:** the deploy script of `@claudalisk/scripts` and its guards (CLA-0084); guardrail hook (no uat Compose commands, restores or SQL by hand)
 - **Issue:** #64, #66
 
 ## Context
@@ -20,6 +20,7 @@ An earlier version of this ADR had CD deploy uat from a workflow on a **deploy r
 - **Who deploys uat:** the agent, with the app's deploy script (`node scripts/deploy.mjs --environment uat`), and only as a **review deploy**: when it opens a pull request, or when the head of an open pull request changes. There is no CD workflow and no deploy runner.
 - **What may be deployed.** The script refuses before it builds or changes anything unless:
   - the confirmation names the exact commit (`--confirm 'deploy uat <sha7>'`);
+  - the `origin` remote of the checkout is the repository named in the app config;
   - the working tree is clean, and the commit contains the latest `main` (a branch that fell behind after its CI passed is refused, so a migration merged in the meantime is never taken for one the commit lacks);
   - the commit is the head of an open pull request into `main`, opened by the account the agent and the owner use. A pull request opened by a bot, such as Dependabot (CLA-0072), or by anyone else is never deployed;
   - every CI job succeeded on the commit, including the `up to date with main` check (CLA-0034).
@@ -27,13 +28,13 @@ An earlier version of this ADR had CD deploy uat from a workflow on a **deploy r
   - **`main`.** A pull request merges only from a branch that contains `main` (CLA-0034), so the merge commit has the tree that uat already runs. Nothing deploys `main`, and after a merge uat keeps running the merged head. If a branch is merged while behind `main` anyway, uat differs from `main` until the next pull request deploys. The owner accepts that, because the red `up to date with main` status warned before the merge.
   - **dev.** dev is the agent's (CLA-0029). The agent deploys it by hand whenever it needs to; the review deploy never touches it.
 - **Steps:**
-  1. Build the images from the commit.
-  2. Start the database, and compare the migrations uat has applied with the commit's migration files.
-  3. **Refuse a changed migration** that uat has applied (CLA-0010), with nothing changed.
-  4. **Refuse migrations the commit lacks** (below), with nothing changed.
+  1. Start the database, and compare the migrations uat has applied with the commit's migration files.
+  2. **Refuse a changed migration** that uat has applied (CLA-0010), with nothing changed.
+  3. **Refuse migrations the commit lacks** (below), with nothing changed.
+  4. Build the images from the commit, only after those refusals, so a refused commit never leaves a tagged image.
   5. Take a uat backup (CLA-0031). Skip it on the very first deploy, while the database is empty.
   6. Migrate with the same image (CLA-0008), and record the applied migrations' fingerprints right away, even if a later step fails.
-  7. Start the new version, and check health.
+  7. Start the image built in step 4 without rebuilding it, and check health.
   8. Record the deployment as a GitHub deployment for `uat`.
 - **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit to deploy lacks a migration that uat has already applied, the deploy **refuses** and changes nothing. It names the newest backup that holds none of those migrations and only migrations the commit knows, and prints the owner's restore command for it (CLA-0031). The deploy never restores uat: replacing real data is the owner's decision. This happens when a pull request is abandoned, or when another pull request replaced it on uat. Only schemas the commit migrates count: a migration history in a schema none of whose migrations the commit has, such as a retired one, is not missing.
 - **Nothing else changes uat.** The agent never runs Compose commands against uat, restores it, or writes SQL against it by hand. The guardrail hook denies those, and the deploy script is the only way to change uat.

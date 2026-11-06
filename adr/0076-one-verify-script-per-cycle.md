@@ -14,7 +14,7 @@ Every model request sends the whole conversation again (CLA-0073). Checking a ch
 
 - **CI is the only verifier.** The agent does not run the build, the tests or the linters locally to check a change. It pushes, and reads the result of CI on that commit.
 - **Every app has `node scripts/verify.mjs`** (CLA-0027, CLA-0064). One call does a whole cycle:
-  - commits any changes with `-m "<message>"` and pushes the issue branch. It refuses `main`, and it pushes nothing when the remote already has the commit;
+  - commits any changes with `-m "<message>"` and pushes the issue branch to its own name on `origin`, whatever the branch tracks and whatever `push.default` says, and sets that as its upstream. It refuses `main`, and it pushes nothing when the remote already has the commit;
   - waits for the CI runs of that exact commit, found by its SHA and never as "the latest run";
   - prints one line per job, then only the failures, capped at about 4 KB, and exits non-zero when a job failed.
 - **Watching is quiet and cheap.** The script polls the Actions API itself and prints nothing while it waits. It starts at 5 seconds and backs off to 20. It fetches jobs only when it needs them, and rides out two API errors in a row.
