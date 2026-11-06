@@ -10,6 +10,7 @@ export const registryPath = ({ home = homedir() } = {}) => join(home, '.claudali
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isText = (value) => typeof value === 'string' && value !== '';
 const isPort = (value) => Number.isInteger(value) && value >= 1024 && value <= 65535;
+const isListenPort = (value) => Number.isInteger(value) && value >= 1 && value <= 65535;
 
 function problemsOf(registry) {
   if (!isObject(registry)) return ['the registry must be an object'];
@@ -24,6 +25,7 @@ function problemsOf(registry) {
     if (!isObject(app.ports) || !isPort(app.ports.devDb) || !isPort(app.ports.apiLocal)) problems.push(`${where}.ports needs devDb and apiLocal`);
   });
   if (registry.proxy !== undefined && (!isObject(registry.proxy) || !isText(registry.proxy.composeProject) || !isText(registry.proxy.network))) problems.push('"proxy" needs composeProject and network');
+  else if (registry.proxy !== undefined && registry.proxy.port !== undefined && !isListenPort(registry.proxy.port)) problems.push('"proxy.port" must be an integer from 1 to 65535');
   if (registry.runners !== undefined && (!isObject(registry.runners) || !isText(registry.runners.composeProject))) problems.push('"runners" needs composeProject');
   if (problems.length) return problems;
   const stacks = [registry.proxy?.composeProject, registry.runners?.composeProject];
@@ -109,8 +111,9 @@ export function registerApp(config, { home = homedir(), replace = false } = {}) 
   return entry;
 }
 
-export function registerProxy({ composeProject, network }, { home = homedir() } = {}) {
-  writeRegistry({ ...readRegistry({ home }), proxy: { composeProject, network } }, { home });
+export function registerProxy({ composeProject, network, port }, { home = homedir() } = {}) {
+  const proxy = port === undefined ? { composeProject, network } : { composeProject, network, port };
+  writeRegistry({ ...readRegistry({ home }), proxy }, { home });
 }
 
 export function registerRunners({ composeProject }, { home = homedir() } = {}) {

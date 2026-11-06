@@ -59,7 +59,7 @@ const allow = (commands, options) => expectAll('allow', commands, options);
 const deny = (commands, options) => expectAll('deny', commands, options);
 const ask = (commands, options) => expectAll('ask', commands, options);
 
-test('the rule table lists the twelve rules with their decision and enforcement', () => {
+test('the rule table lists the thirteen rules with their decision and enforcement', () => {
   assert.deepEqual(
     RULES.map(({ id, decision, adr, enforcedBy }) => ({ id, decision, adr, enforcedBy })),
     [
@@ -75,6 +75,7 @@ test('the rule table lists the twelve rules with their decision and enforcement'
       { id: 10, decision: 'ask', adr: 'CLA-0026', enforcedBy: ['hook speed bump', 'CI/test'] },
       { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: ['hook speed bump'] },
       { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: ['hook speed bump'] },
+      { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: ['hook speed bump'] },
     ],
   );
   for (const rule of RULES) assert.ok(rule.summary.length > 10, `rule ${rule.id} has a summary`);
@@ -655,6 +656,24 @@ allow([
   'gh api --method GET orgs/o/actions/runner-groups/2/repositories',
   'gh api -X PATCH repos/o/r/issues/2 -f title=x',
   'gh api -X PATCH orgs/o/actions/secrets/x',
+]);
+
+ask([
+  'node "$CLAUDE_PLUGIN_ROOT/tools/proxy.mjs" recreate',
+  'node /plugins/claudalisk/tools/proxy.mjs recreate --port 8080',
+  'node ./tools/proxy.mjs recreate',
+  'node "C:\\plugins\\claudalisk\\tools\\proxy.mjs" recreate',
+  "node '/p/tools/proxy.mjs' 'recreate'",
+  'bash -c "node /p/tools/proxy.mjs recreate"',
+  'cd /p && node tools/proxy.mjs recreate',
+]);
+
+allow([
+  'node /p/tools/proxy.mjs status',
+  'node /p/tools/proxy.mjs up',
+  'node /p/tools/proxy.mjs up --port 8080',
+  'node /p/tools/other.mjs recreate',
+  'echo recreate',
 ]);
 
 test('rule 12 asks in PowerShell and not in Bash', () => {

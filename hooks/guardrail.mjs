@@ -21,6 +21,7 @@ export const RULES = [
   { id: 10, decision: 'ask', adr: 'CLA-0026', enforcedBy: [HOOK, 'CI/test'], summary: 'Ask before git add -f of env, backup or dump files and before setting an ALLOW_UAT variable.' },
   { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before changing a runner group\'s access.' },
   { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path, in a scripts directory or relative with ./ or ../, appears anywhere in a PowerShell command.' },
+  { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before node proxy.mjs recreate, which stops the URLs of every app while the shared proxy is rebuilt.' },
 ];
 
 export function hostPath(path, platform) {
@@ -508,6 +509,11 @@ function guardedScripts(name, args, ctx) {
   }
 }
 
+function proxyRecreate(name, args, ctx) {
+  if (name !== 'node' || !args.some((a) => lastSegment(a).toLowerCase() === 'proxy.mjs') || !args.includes('recreate')) return;
+  flag(ctx, 'ask', 13, 'proxy.mjs recreate rebuilds the shared proxy and stops the URLs of every app for a moment (CLA-0033). Ask the owner before running it.');
+}
+
 function dangerousPaths(text, ctx) {
   for (const token of text.split(SCRIPT_SEPARATORS)) {
     const cut = Math.max(token.lastIndexOf('/'), token.lastIndexOf('\\'));
@@ -643,6 +649,7 @@ function segment(whole, shell, ctx, depth) {
   if (PS_SHELLS.has(name) && args.some(isEncoded)) flag(ctx, 'deny', 9, `${name} -EncodedCommand hides what runs. Pass the command as plain text with -Command.`);
   configCommands(name, args, ctx);
   guardedScripts(name, args, ctx);
+  proxyRecreate(name, args, ctx);
   if (CONTAINER.has(name)) container(name, args, local, ctx);
   else if (DATABASE.has(name)) database(args, local, ctx);
   else if (name === 'gh') gh(args, ctx, ctx.cwd);
