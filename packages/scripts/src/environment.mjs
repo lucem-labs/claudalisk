@@ -6,7 +6,6 @@ import { runChecked } from './process.mjs'
 
 export const environments = ['dev', 'uat']
 export const proxyProject = 'traefik'
-export const proxyNetwork = 'traefik'
 export const placeholderPassword = 'CHANGE_ME'
 
 export function assertEnvironment(environment) {
