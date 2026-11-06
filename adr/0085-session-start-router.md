@@ -19,7 +19,7 @@ A session starts without knowing which commit dev and uat run, which pull reques
   - `dev runs <ref>@<sha7>; uat runs <ref>@<sha7>`, from `GET /api/health` on `<hostPrefix>.dev.localhost` and `<hostPrefix>.uat.localhost`;
   - the current branch and its open pull request number, if any;
   - the open pull request whose head is the ref uat runs, and that it awaits the owner's review.
-- **The hook connects to 127.0.0.1 and sends the name in the `Host` header,** the way `curl --resolve` does, on port 80. The two requests run in parallel with a 500 ms timeout each. An environment with no answer reads `dev is down` or `uat is down`.
+- **The hook connects to 127.0.0.1 and sends the name in the `Host` header,** the way `curl --resolve` does, on the port the proxy registration records, 80 by default. The two requests run in parallel with a 500 ms timeout each. An environment with no answer reads `dev is down` or `uat is down`.
 - **A 503 still has a JSON body,** so the hook reports the ref and sha the body gives, with the status code and state.
 - **When uat gives no answer, the hook falls back to the latest GitHub `uat` deployment** (CLA-0030), read through `gh api`. A deployment's `ref` is its commit sha, so the branch and pull request come from the commit's pull requests. The line says it is the last recorded deployment and not a live reading, and a pull request found this way reads as the one uat last showed.
 - **Text from the health body and GitHub is reduced to the characters a ref or state uses, with a length limit,** because it goes into the session's context. A `-dirty` sha keeps its marker.
@@ -30,5 +30,5 @@ A session starts without knowing which commit dev and uat run, which pull reques
 
 - A session knows what runs where from its first turn, without a request or a Docker command.
 - The block is a few lines, so it adds little to every later request (CLA-0073).
-- The router reads the proxy on port 80. The proxy port is owned by the proxy registration, and the hook changes with it.
+- The router reads the proxy on the registered port, 80 when the registry has none or cannot be read. The proxy port is owned by the proxy registration, and the hook follows it.
 - The fallback can name a deployment that no longer runs, and says so.

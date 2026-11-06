@@ -2,13 +2,14 @@
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findConfig } from './guardrail.mjs';
 
 export const HEALTH_TIMEOUT_MS = 500;
 export const GH_TIMEOUT_MS = 2000;
-const PORT = 80;
+export const DEFAULT_PORT = 80;
 
 const clean = (value) => (typeof value === 'string' ? value.replace(/[^\w./+-]/g, '').slice(0, 200) : '');
 
@@ -17,7 +18,7 @@ const short = (value) => {
   return sha ? `${sha.slice(0, 7)}${sha.endsWith('-dirty') ? '-dirty' : ''}` : 'unknown';
 };
 
-export function probeHealth(host, { port = PORT, timeout = HEALTH_TIMEOUT_MS } = {}) {
+export function probeHealth(host, { port = DEFAULT_PORT, timeout = HEALTH_TIMEOUT_MS } = {}) {
   return new Promise((done) => {
     const req = request({ host: '127.0.0.1', port, path: '/api/health', method: 'GET', headers: { Host: host }, timeout }, (res) => {
       const chunks = [];
@@ -131,13 +132,28 @@ export async function decide(input, deps = {}) {
   }
 }
 
+export function registeredPort(readRegistry) {
+  try {
+    const port = readRegistry().proxy?.port;
+    return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : DEFAULT_PORT;
+  } catch {
+    return DEFAULT_PORT;
+  }
+}
+
 async function main() {
   try {
     const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
     const appConfig = await import('../tools/app-config.mjs');
+    let port = DEFAULT_PORT;
+    try {
+      const registry = await import('../tools/app-registry.mjs');
+      port = registeredPort(() => registry.readRegistry({ home: homedir() }));
+    } catch {
+    }
     const result = await Promise.race([decide(input, {
       findConfig: (cwd) => { try { return findConfig(cwd, appConfig); } catch { return null; } },
-      probe: (host) => probeHealth(host),
+      probe: (host) => probeHealth(host, { port }),
       gh: realGh,
       git: realGit,
     }), new Promise((done) => setTimeout(() => done(null), 4500).unref())]);

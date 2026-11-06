@@ -21,6 +21,8 @@ node "${CLAUDE_PLUGIN_ROOT}/tools/proxy.mjs" <command>
   2. Creates the `traefik` network if it is missing.
   3. Starts the proxy only if none runs. A running proxy is left untouched, so one app's deploy never reconfigures what serves another app's uat.
   4. Records the proxy and its port in the machine registry.
+
+  An app's deploy refuses when no proxy runs; it never starts one.
 - `recreate [--port N]` rebuilds the running proxy from the current definition, for a version bump. Every app's URLs go down for a moment, so ask the owner first; the guardrail asks too.
 
 There is no `down`. Stopping the proxy is the owner's to do by hand. An app never stops, restarts or reconfigures it.
@@ -36,7 +38,11 @@ node "${CLAUDE_PLUGIN_ROOT}/tools/app-registry.mjs" register <appRoot>
 
 ## Moving an app onto the shared proxy
 
-Do it in this order: the `traefik` network exists (`up` creates it), then the app's environment joins that network with its labels, then the proxy starts or keeps running. A proxy already running under the project `traefik` and the network `traefik` is adopted as it is.
+Do it in this order:
+
+1. Release the port if an old stack holds it.
+2. Run `up`, which creates the network and starts the proxy, or adopts one already running under the project `traefik` and the network `traefik`.
+3. Deploy the app. A deploy refuses, changing nothing, when no proxy runs.
 
 ## Checking a URL
 

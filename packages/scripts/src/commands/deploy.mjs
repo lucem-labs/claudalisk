@@ -4,9 +4,9 @@ import { readApp } from '../app-config.mjs'
 import {
   assertEnvironment,
   composeChecked,
-  ensureProxyNetwork,
+  expectedProxyPort,
   loadEnvironment,
-  startProxyIfNotRunning,
+  requireProxyRunning,
   stateDirectory,
 } from '../environment.mjs'
 import { assertUatDeployable } from '../guards.mjs'
@@ -66,6 +66,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   } else if (options.confirm) {
     throw new Error('--confirm is only for uat.')
   }
+  await requireProxyRunning(runner, expectedProxyPort(env))
   await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env) })
 
   const settings = loadEnvironment(environment, { app, env })
@@ -78,7 +79,6 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const deployed = { sha: version.dirty ? `${version.sha}-dirty` : version.sha, ref: version.ref }
   console.log(`Deploying ${environment} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
 
-  await ensureProxyNetwork(runner)
   const versionEnv = { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref }
   const build = () => composeChecked(runner, settings, ['build'], { inherit: true, env: versionEnv })
 
@@ -111,7 +111,6 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   }
 
   await composeChecked(runner, settings, ['up', '--detach', '--no-build', '--remove-orphans', '--wait'], { inherit: true, env: versionEnv })
-  await startProxyIfNotRunning(runner, appRoot)
 
   if (!(await health(settings))) throw new Error(`The ${environment} API did not become healthy at ${settings.baseUrl}/api/health.`)
 
