@@ -102,7 +102,7 @@ test('recreate rebuilds a running proxy with --force-recreate on the registered 
   const h = home();
   run(['up', '--port', '8080'], { home: h });
   const r = run(['recreate'], { home: h, networks: ['traefik'], ps: [row('traefik-traefik-1', '127.0.0.1:8080->80/tcp', OURS)] });
-  assert.deepEqual(changes(r.calls).map((c) => c.args), [['compose', '-f', composeFile, '-p', 'traefik', 'up', '-d', '--force-recreate']]);
+  assert.deepEqual(changes(r.calls).map((c) => c.args), [['compose', '-f', composeFile, '-p', 'traefik', 'up', '-d', '--wait', '--force-recreate']]);
   assert.equal(changes(r.calls)[0].env.PROXY_PORT, '8080');
 });
 
