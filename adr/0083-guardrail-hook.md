@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-05
 - **Area:** environments
-- **Enforced by:** `hooks/guardrail.mjs` and its tests, `hooks/shell.mjs` and its tests in CI's `adrs` job
+- **Enforced by:** `hooks/guardrail.mjs` and its tests, `hooks/shell.mjs` and its tests, `hooks/stack-config-guard.mjs` and its tests in CI's `adrs` job
 - **Issue:** #2
 
 ## Context
@@ -26,7 +26,7 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 |---|------|----------|-----|-------------|
 | 1 | Tokenizing: quotes, escapes, separators, assignments | n/a | CLA-0083 | hook speed bump |
 | 2 | Compose project from `-p`, `COMPOSE_PROJECT_NAME` and the `-f` set | deny | CLA-0029 | hook speed bump |
-| 3 | A container tool or database client naming a protected resource | deny | CLA-0029, CLA-0033 | hook speed bump, structural |
+| 3 | A container tool or database client naming a protected resource, or pointing into a registered runners config folder | deny | CLA-0029, CLA-0033, CLA-0086 | hook speed bump, structural |
 | 4 | Guarded uat scripts: only deploy and backup run against uat; restore, init and `prune-backups --apply` are the owner's | deny | CLA-0030, CLA-0031, CLA-0066 | guarded by the script, hook speed bump |
 | 5 | Merging: `gh pr merge`, the merge API, pushes to the default branch | deny | CLA-0024 | hook speed bump |
 | 6 | `gh pr create` only when CI succeeded on the head commit | deny | CLA-0023 | hook speed bump, prompt only |
@@ -34,11 +34,12 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 | 8 | Shell writes of an env file with real values inside a checkout | deny | CLA-0066 | hook speed bump, CI/test |
 | 9 | Opaque PowerShell: `-EncodedCommand`, `iex` | deny | CLA-0083 | hook speed bump |
 | 10 | `git add -f` of env, backup or dump files; setting `*ALLOW_UAT*` variables | ask | CLA-0026 | hook speed bump, CI/test |
-| 11 | Changing a runner group's access | ask | CLA-0033 | hook speed bump |
+| 11 | Changing a runner group's access, or registering a repository runner through the API | ask | CLA-0033 | hook speed bump |
 | 12 | A dangerous script's path (in a `scripts` directory, or relative with `./` or `../`) anywhere in a PowerShell command | ask | CLA-0083 | hook speed bump |
 | 13 | `proxy.mjs recreate`, which stops every app's URLs for a moment | ask | CLA-0033 | hook speed bump |
 | 14 | `dotnet ef migrations remove`, also as `dotnet-ef` and `dotnet tool run dotnet-ef` | ask | CLA-0010 | hook speed bump |
 | 15 | A `deploy.mjs` command with `--adopt-unrecorded-migrations` | ask | CLA-0010 | hook speed bump |
+| 16 | `runners.mjs` `init`, `up`, `enroll`, `app create` or `group --apply` | ask | CLA-0033, CLA-0086 | hook speed bump |
 
   - In rule 6, the hook checks CI. That dev was verified and that the review was done stay with the workflow, as prompt only.
   - In rule 3, the uat volume is external, so Compose cannot remove it, which is the structural part.

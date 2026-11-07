@@ -11,7 +11,7 @@ const HOOK = 'hook speed bump';
 export const RULES = [
   { id: 1, decision: 'n/a', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Tokenizing: split on separators, strip quotes and escapes, keep assignments, look inside substitutions and nested shells.' },
   { id: 2, decision: 'deny', adr: 'CLA-0029', enforcedBy: [HOOK], summary: 'Project resolution: the Compose project comes from -p, COMPOSE_PROJECT_NAME and the -f files.' },
-  { id: 3, decision: 'deny', adr: 'CLA-0029, CLA-0033', enforcedBy: [HOOK, 'structural'], summary: 'A container tool or database client may not name a protected uat, proxy or runners resource.' },
+  { id: 3, decision: 'deny', adr: 'CLA-0029, CLA-0033', enforcedBy: [HOOK, 'structural'], summary: 'A container tool or database client may not name a protected uat, proxy or runners resource, or point into a registered runners config folder.' },
   { id: 4, decision: 'deny', adr: 'CLA-0030, CLA-0031, CLA-0066', enforcedBy: ['guarded by the script', HOOK], summary: 'Only the guarded deploy and backup scripts run against uat; restore, init and prune-backups --apply are the owner\'s.' },
   { id: 5, decision: 'deny', adr: 'CLA-0024', enforcedBy: [HOOK], summary: 'No merging: gh pr merge, the merge API and any push to the default branch.' },
   { id: 6, decision: 'deny', adr: 'CLA-0023', enforcedBy: [HOOK, 'prompt only'], summary: 'gh pr create only when CI succeeded on the head commit.' },
@@ -19,11 +19,12 @@ export const RULES = [
   { id: 8, decision: 'deny', adr: 'CLA-0066', enforcedBy: [HOOK, 'CI/test'], summary: 'No shell write of an env file with real values inside a checkout.' },
   { id: 9, decision: 'deny', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'No opaque PowerShell: -EncodedCommand and iex.' },
   { id: 10, decision: 'ask', adr: 'CLA-0026', enforcedBy: [HOOK, 'CI/test'], summary: 'Ask before git add -f of env, backup or dump files and before setting an ALLOW_UAT variable.' },
-  { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before changing a runner group\'s access.' },
+  { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before changing a runner group\'s access or registering a repository runner through the API.' },
   { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path, in a scripts directory or relative with ./ or ../, appears anywhere in a PowerShell command.' },
   { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before node proxy.mjs recreate, which stops the URLs of every app while the shared proxy is rebuilt.' },
   { id: 14, decision: 'ask', adr: 'CLA-0010', enforcedBy: [HOOK], summary: 'Ask before dotnet ef migrations remove, which deletes a migration that may have run on uat or be tracked on origin/main.' },
   { id: 15, decision: 'ask', adr: 'CLA-0010', enforcedBy: [HOOK], summary: 'Ask before a deploy.mjs command that carries --adopt-unrecorded-migrations, which records fingerprints the owner has to vouch for.' },
+  { id: 16, decision: 'ask', adr: 'CLA-0033, CLA-0086', enforcedBy: [HOOK], summary: 'Ask before runners.mjs init, up, enroll, app create or group --apply, which create, start or open up the shared runners.' },
 ];
 
 export function hostPath(path, platform) {
@@ -89,7 +90,7 @@ export function protectedNames(registry, config) {
   if (config) addApp(config.uat, config.hostPrefix);
   add(registry?.proxy?.composeProject);
   add(registry?.proxy?.network);
-  add(registry?.runners?.composeProject);
+  for (const stack of registry?.runners ?? []) add(stack.composeProject);
   return [...names];
 }
 
@@ -126,7 +127,7 @@ export async function realDeps() {
         error.config = config;
         throw error;
       }
-      return { names: protectedNames(registry, config), config };
+      return { names: protectedNames(registry, config), config, configDirs: (registry.runners ?? []).map((stack) => stack.configDir) };
     },
   };
 }
@@ -134,9 +135,10 @@ export async function realDeps() {
 function protection(ctx) {
   if (!ctx.protection) {
     try {
-      const { names, config } = ctx.deps.protect(ctx.root);
+      const { names, config, configDirs } = ctx.deps.protect(ctx.root);
       ctx.protection = {
         config: config ?? null,
+        configDirs: configDirs ?? [],
         matchers: names.filter(Boolean).map((name) => ({ name, re: new RegExp(`(?<![a-z0-9_-])${escapeRegExp(name)}(?![a-z0-9])`, 'i') })),
       };
     } catch (error) {
@@ -242,6 +244,27 @@ function composeFileProject(file, baseDir) {
   }
 }
 
+const slashes = (text, platform) => {
+  const forward = text.replace(/\\/g, '/').replace(/\/+$/, '');
+  return platform === 'win32' ? forward.toLowerCase() : forward;
+};
+
+export function configDirHit(texts, dirs, ctx) {
+  for (const dir of dirs) {
+    const wanted = slashes(dir, ctx.platform);
+    if (wanted === '') continue;
+    const absolute = new RegExp(`(?<![A-Za-z0-9_.~/\\\\-])${escapeRegExp(wanted)}(?![A-Za-z0-9_.-])`);
+    for (const text of texts) {
+      const hosted = slashes(ctx.host(text), ctx.platform);
+      if (absolute.test(hosted)) return { text, dir };
+      if (ctx.cwd === null || /^-/.test(text) || /[\s$`]/.test(text) || isAbsolute(ctx.host(text))) continue;
+      const resolved = slashes(resolve(ctx.cwd, ctx.host(text)), ctx.platform);
+      if (absolute.test(resolved)) return { text, dir };
+    }
+  }
+  return null;
+}
+
 function container(name, args, local, ctx) {
   const parsed = parseDocker(name, args);
   destructive(parsed, ctx);
@@ -257,6 +280,11 @@ function container(name, args, local, ctx) {
   const hit = firstHit(texts, state.matchers);
   if (hit) {
     flag(ctx, 'deny', 3, `"${hit.text}" names ${hit.name}, a protected uat, proxy or runners resource (CLA-0029, CLA-0033). Work on the dev environment instead, or ask the owner.`);
+    return;
+  }
+  const inside = configDirHit(texts, state.configDirs, ctx);
+  if (inside) {
+    flag(ctx, 'deny', 3, `"${inside.text}" points into ${inside.dir}, the config folder of a registered runners stack, and that bypasses the project-name check (CLA-0033, CLA-0086). Use node tools/runners.mjs, or ask the owner.`);
     return;
   }
   if (!parsed.compose) return;
@@ -335,6 +363,9 @@ function ghApi(args, ctx) {
   }
   if (/orgs\/[^/]+\/actions\/runner-groups/.test(path) && ((method && method.toUpperCase() !== 'GET') || fields)) {
     flag(ctx, 'ask', 11, `${path} changes who can use the shared runners (CLA-0033). Ask the owner before running it.`);
+  }
+  if (/^repos\/[^/]+\/[^/]+\/actions\/runners(\/|$)/.test(path) && ((method && method.toUpperCase() !== 'GET') || fields)) {
+    flag(ctx, 'ask', 11, `${path} registers or removes a self-hosted runner (CLA-0033). Ask the owner before running it.`);
   }
 }
 
@@ -517,6 +548,16 @@ function proxyRecreate(name, args, ctx) {
   flag(ctx, 'ask', 13, 'proxy.mjs recreate rebuilds the shared proxy and stops the URLs of every app for a moment (CLA-0033). Ask the owner before running it.');
 }
 
+function runnersChange(name, args, ctx) {
+  const isRunners = (word) => lastSegment(word).toLowerCase() === 'runners.mjs';
+  const at = isRunners(name) ? -1 : args.findIndex(isRunners);
+  if (!isRunners(name) && (name !== 'node' || at < 0)) return;
+  const rest = args.slice(at + 1).filter((a) => !a.startsWith('--') || a === '--apply');
+  const [sub, next] = rest;
+  const asks = ['init', 'up', 'enroll'].includes(sub) || (sub === 'app' && next === 'create') || (sub === 'group' && rest.includes('--apply'));
+  if (asks) flag(ctx, 'ask', 16, `runners.mjs ${sub} ${sub === 'app' ? 'create ' : ''}creates, starts or opens up the shared runners (CLA-0033, CLA-0086). Ask the owner before running it.`);
+}
+
 function migrationsRemove(name, args, ctx) {
   const rest = name === 'dotnet-ef' ? args : name === 'dotnet' ? args.slice(args.findIndex((a) => a === 'ef' || a === 'dotnet-ef') + 1) : null
   if (!rest || (name === 'dotnet' && !args.some((a) => a === 'ef' || a === 'dotnet-ef'))) return
@@ -667,6 +708,7 @@ function segment(whole, shell, ctx, depth) {
   configCommands(name, args, ctx);
   guardedScripts(name, args, ctx);
   proxyRecreate(name, args, ctx);
+  runnersChange(name, args, ctx);
   migrationsRemove(name, args, ctx);
   adoptUnrecorded(name, args, ctx);
   if (CONTAINER.has(name)) container(name, args, local, ctx);
