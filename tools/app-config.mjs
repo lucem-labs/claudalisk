@@ -50,7 +50,7 @@ export function readAppConfig(appRoot) {
   if (!existsSync(path)) return null;
   let value;
   try {
-    value = JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, ''));
+    value = JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''));
   } catch (e) {
     throw new Error(`${path} is not valid JSON: ${e.message}`);
   }

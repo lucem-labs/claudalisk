@@ -198,7 +198,7 @@ test('the app config adds its own uat data and security paths', () => {
 });
 
 test('an app config with a BOM is read', () => {
-  const root = tempDir({ '.claude/claudalisk.json': `﻿${JSON.stringify({ review: { uatData: ['tools/db/**'] } })}` });
+  const root = tempDir({ '.claude/claudalisk.json': `\uFEFF${JSON.stringify({ review: { uatData: ['tools/db/**'] } })}` });
   try {
     assert.ok(readAppConfig(root).uatData.includes('tools/db/**'));
   } finally { rmSync(root, { recursive: true, force: true }); }

@@ -31,7 +31,7 @@ export function githubClient(env, fetchImpl = fetch) {
 }
 
 export async function commitsBehindMain(call, repository, sha) {
-  const comparison = await call('GET', `/repos/${repository}/compare/main...${sha}?per_page=1`)
+  const comparison = await call('GET', `/repos/${repository}/compare/heads/main...${sha}?per_page=1`)
   if (!Number.isInteger(comparison?.behind_by)) throw new Error(`The comparison of main with ${sha} has no behind_by.`)
   return comparison.behind_by
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
 
 const repository = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,11 +41,25 @@ test('the jobs the layer flags and the base status need exist', () => {
   assert.deepEqual(Object.keys(base.jobs), ['base']);
 });
 
-test('every job of ci and base runs on the runner the repository variable names, with a timeout', () => {
-  for (const workflow of [ci, base]) {
+test('every job of ci, base and security has a timeout, and all but the ZAP job use the runner the repository variable names', () => {
+  for (const workflow of [ci, base, security]) {
     for (const [id, job] of jobsOf(workflow)) {
-      assert.equal(job['runs-on'], RUNS_ON, id);
+      if (workflow === security && id === 'zap') assert.deepEqual(job['runs-on'], ['self-hosted', 'linux', 'ci']);
+      else assert.equal(job['runs-on'], RUNS_ON, id);
       assert.ok(Number.isInteger(job['timeout-minutes']) && job['timeout-minutes'] > 0, id);
+    }
+  }
+});
+
+test('every job that runs npm sets up Node 24 before it', () => {
+  for (const workflow of [ci, base, security]) {
+    for (const [id, job] of jobsOf(workflow)) {
+      const runsNpm = job.steps.findIndex((step) => /(?:^|\s)npm /.test(step.run ?? ''));
+      if (runsNpm < 0) continue;
+      const setup = job.steps.findIndex((step) => step.uses?.startsWith('actions/setup-node@'));
+      assert.ok(setup >= 0 && setup < runsNpm, id);
+      assert.equal(job.steps[setup].with['node-version'], 24, id);
+      assert.equal(job.steps[setup].if, undefined, id);
     }
   }
 });
@@ -132,6 +146,16 @@ test('the backend job checks migrations, builds without node reuse and annotates
   assert.ok(ci.jobs.backend.steps.some((step) => step.uses?.startsWith('actions/setup-dotnet@') && step.if === undefined));
 });
 
+test('a failing migration check still shows the build and test results', () => {
+  const steps = ci.jobs.backend.steps;
+  const build = steps.find((step) => step.name === 'Build');
+  const tests = steps.find((step) => step.name === 'Tests');
+  assert.equal(build.id, 'build');
+  assert.equal(build.if, '${{ !cancelled() }}');
+  assert.equal(tests.if, "${{ !cancelled() && steps.build.outcome == 'success' }}");
+  assert.ok(steps.indexOf(build) > steps.findIndex((step) => step.run === 'node scripts/check-migrations.mjs'));
+});
+
 test('the e2e job gets free ports and uploads the Playwright report when it fails', () => {
   const steps = ci.jobs.e2e.steps;
   assert.ok(steps.some((step) => step.run === 'node scripts/free-ports.mjs E2E_API_PORT E2E_WEB_PORT'));
@@ -147,6 +171,11 @@ test('the e2e job gets free ports and uploads the Playwright report when it fail
 test('the frontend job runs lint with GitHub annotations, typecheck, tests and the build', () => {
   const runs = ci.jobs.frontend.steps.filter((step) => step['working-directory'] === 'frontend').map((step) => step.run);
   assert.deepEqual(runs, [ROOT_INSTALL, 'npm run lint:ci', 'npm run typecheck', 'npm test', 'npm run build']);
+  const frontend = ci.jobs.frontend.steps.filter((step) => step['working-directory'] === 'frontend');
+  assert.equal(frontend.find((step) => step.run === 'npm run lint:ci').if, undefined);
+  for (const command of ['npm run typecheck', 'npm test', 'npm run build']) {
+    assert.equal(frontend.find((step) => step.run === command).if, '${{ !cancelled() }}', command);
+  }
 });
 
 test('the scripts job runs the app tests and the comment check', () => {
@@ -163,6 +192,37 @@ test('the security job runs the checks of CLA-0026 and CLA-0071, each even when 
   }
   const signatures = steps.findIndex((step) => step.run === 'npm audit signatures');
   assert.ok(signatures > steps.findIndex(isRootInstall));
+});
+
+test('each security step runs its command, and the scanners only when they were installed', () => {
+  const steps = ci.jobs.security.steps;
+  const always = '${{ !cancelled() }}';
+  const installed = "${{ !cancelled() && steps.tools.outcome == 'success' }}";
+  const install = steps.find((step) => step.id === 'tools');
+  assert.equal(install.run, 'node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv');
+  const expected = [
+    ['gitleaks', 'gitleaks git --redact --exit-code 1 .', installed],
+    ['OSV-Scanner', 'osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile frontend/package-lock.json', installed],
+    ['zizmor', 'zizmor --format github --config .github/zizmor.yml .github/workflows', installed],
+    ['Trivy', 'trivy config --exit-code 1 --ignorefile .trivyignore.yaml .', installed],
+    ['forbidden files', 'node scripts/check-forbidden-files.mjs', always],
+    ['source hygiene', 'node scripts/check-source-hygiene.mjs', always],
+    ['suppressions', 'node scripts/check-suppressions.mjs', always],
+    ['npm audit signatures', 'npm audit signatures', always],
+  ];
+  for (const [name, run, condition] of expected) {
+    const matching = steps.filter((step) => step.run === run);
+    assert.equal(matching.length, 1, name);
+    assert.equal(matching[0].if, condition, name);
+  }
+  const semgrep = steps.filter((step) => step.run?.includes(' semgrep scan '));
+  assert.equal(semgrep.length, 1);
+  assert.equal(semgrep[0].if, installed);
+  assert.match(semgrep[0].run, /^uv tool run --python 3\.13 --from "semgrep==\$SEMGREP_VERSION" semgrep scan .*--error/);
+  const nuget = steps.filter((step) => step.uses?.startsWith('lucem-labs/nuget-audit-action@'));
+  assert.equal(nuget.length, 1);
+  assert.equal(nuget[0].if, always);
+  assert.equal(nuget[0].with.path.endsWith('.slnx'), true);
 });
 
 test('the base job passes the token through env, never inline', () => {
@@ -186,6 +246,23 @@ test('every entry in the template scripts folder has an exports entry in the pac
   for (const file of entries) {
     const name = file.replace(/\.mjs$/, '');
     assert.ok(Object.hasOwn(manifest.exports, `./${name}`), name);
+  }
+});
+
+test('every name an entry imports is exported by the module its export path points at', async () => {
+  const entries = readdirSync(join(app, 'scripts')).filter((file) => file.endsWith('.mjs') && !file.endsWith('.test.mjs') && file !== 'verify.mjs');
+  for (const file of entries) {
+    const source = readFileSync(join(app, 'scripts', file), 'utf8');
+    const imports = [...source.matchAll(/import\s*\{([^}]+)\}\s*from\s*'@claudalisk\/scripts\/([\w-]+)'/g)];
+    assert.ok(imports.length > 0, file);
+    for (const [, names, subpath] of imports) {
+      const target = manifest.exports[`./${subpath}`];
+      assert.ok(target, `${file}: ./${subpath}`);
+      const exported = await import(pathToFileURL(join(repository, 'packages', 'scripts', target)).href);
+      for (const name of names.split(',').map((item) => item.trim().split(/\s+as\s+/)[0]).filter(Boolean)) {
+        assert.ok(Object.hasOwn(exported, name), `${file}: ${name} from ./${subpath}`);
+      }
+    }
   }
 });
 

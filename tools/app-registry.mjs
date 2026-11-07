@@ -38,7 +38,7 @@ export function readRegistry({ home = homedir() } = {}) {
   if (!existsSync(path)) return { apps: [] };
   let registry;
   try {
-    registry = JSON.parse(readFileSync(path, 'utf8').replace(/^﻿/, ''));
+    registry = JSON.parse(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''));
   } catch (e) {
     throw new Error(`${path} is not valid JSON: ${e.message}`);
   }

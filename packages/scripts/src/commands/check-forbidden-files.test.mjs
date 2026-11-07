@@ -28,10 +28,11 @@ test('local json files are forbidden', () => {
   assert.equal(forbiddenReason('local.json'), null)
 })
 
-function gitWith({ tracked = [], added = [], hasMain = true }) {
+function gitWith({ tracked = [], added = [], hasMain = true, shallow = false }) {
   return fakeRunner((call) => {
     const line = call.args.join(' ')
     if (line.startsWith('ls-files')) return { stdout: tracked.map((file) => `${file}\0`).join('') }
+    if (line.startsWith('rev-parse --is-shallow')) return { stdout: `${shallow}\n` }
     if (line.startsWith('rev-parse')) return { code: hasMain ? 0 : 1 }
     if (line.startsWith('log')) return { stdout: added.map((file) => `${file}\0`).join('') }
     return undefined
@@ -73,7 +74,7 @@ test('the git commands are plain argument arrays in the app root', async () => {
   assert.deepEqual(runner.calls.map((call) => [call.command, call.args, call.options.cwd]), [
     ['git', ['ls-files', '-z'], '/repo'],
     ['git', ['rev-parse', '--verify', '--quiet', 'origin/main'], '/repo'],
-    ['git', ['log', '-z', '--diff-filter=A', '--name-only', '--format=', 'origin/main..HEAD'], '/repo'],
+    ['git', ['log', '-z', '-m', '--no-renames', '--diff-filter=A', '--name-only', '--format=', 'origin/main..HEAD'], '/repo'],
   ])
 })
 
@@ -82,10 +83,15 @@ test('a missing origin/main is a warning and the tracked files are still checked
   assert.equal(warned.code, 0)
   assert.match(warned.out[0], /origin\/main is missing/)
   assert.equal(warned.runner.calls.filter((call) => call.args[0] === 'log').length, 0)
-  const annotated = await check({ tracked: ['a.ts'], hasMain: false }, { GITHUB_ACTIONS: 'true' })
-  assert.match(annotated.out[0], /^::warning::origin\/main is missing/)
   const failing = await check({ tracked: ['x.dump'], hasMain: false })
   assert.equal(failing.code, 1)
+})
+
+test('in GitHub Actions a missing origin/main or a shallow clone fails the check', async () => {
+  await assert.rejects(check({ tracked: ['a.ts'], hasMain: false }, { GITHUB_ACTIONS: 'true' }), /origin\/main is missing/)
+  await assert.rejects(check({ tracked: ['a.ts'], shallow: true }, { GITHUB_ACTIONS: 'true' }), /shallow clone/)
+  const local = await check({ tracked: ['a.ts'], shallow: true })
+  assert.equal(local.code, 0)
 })
 
 test('GitHub Actions gets an error annotation per file', async () => {

@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseOptions } from '../cli.mjs'
 import { isSkipped, parseSkips, reportFindings } from '../findings.mjs'
-import { trackedFiles } from '../git-files.mjs'
+import { isRegularFile, trackedFiles } from '../git-files.mjs'
 import { run } from '../process.mjs'
 
-const SUSPECT = /[﻿​-‍⁠‪-‮⁦-⁩‎‏؜]/gu
+const SUSPECT = /[\u00AD\u061C\u180E\u200B-\u200F\u2028-\u202E\u2060-\u2064\u2066-\u2069\uFE00-\uFE0F\uFEFF\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}]/gu
 
 const NAMES = new Map([
   [0xfeff, 'byte order mark inside the file'],
@@ -25,7 +25,22 @@ const NAMES = new Map([
   [0x2067, 'right-to-left isolate'],
   [0x2068, 'first strong isolate'],
   [0x2069, 'pop directional isolate'],
+  [0x00ad, 'soft hyphen'],
+  [0x180e, 'Mongolian vowel separator'],
+  [0x2028, 'line separator'],
+  [0x2029, 'paragraph separator'],
+  [0x2061, 'function application'],
+  [0x2062, 'invisible times'],
+  [0x2063, 'invisible separator'],
+  [0x2064, 'invisible plus'],
 ])
+
+const nameOf = (codePoint) => {
+  if (NAMES.has(codePoint)) return NAMES.get(codePoint)
+  if (codePoint >= 0xfe00 && codePoint <= 0xfe0f) return 'variation selector'
+  if (codePoint >= 0xe0100) return 'variation selector supplement'
+  return 'tag character'
+}
 
 const hex = (codePoint) => `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`
 
@@ -44,16 +59,16 @@ export function suspectCharacters(text) {
   return found
 }
 
-export async function checkSourceHygiene({ appRoot, argv, env = process.env, runner = run, read = (file) => readFileSync(join(appRoot, file)), log = console.log, error = console.error }) {
+export async function checkSourceHygiene({ appRoot, argv, env = process.env, runner = run, regular = (file) => isRegularFile(appRoot, file), read = (file) => readFileSync(join(appRoot, file)), log = console.log, error = console.error }) {
   const options = parseOptions({ skip: { type: 'string', multiple: true } }, argv)
   const skips = parseSkips(options.skip)
   const findings = []
   for (const file of await trackedFiles(runner, appRoot)) {
-    if (inFixtures(file) || isSkipped(file, skips)) continue
+    if (inFixtures(file) || isSkipped(file, skips) || !regular(file)) continue
     const buffer = read(file)
     if (isBinary(buffer)) continue
     for (const { line, codePoint } of suspectCharacters(buffer.toString('utf8'))) {
-      findings.push({ file, line, message: `${hex(codePoint)} ${NAMES.get(codePoint)} (CLA-0071)` })
+      findings.push({ file, line, message: `${hex(codePoint)} ${nameOf(codePoint)} (CLA-0071)` })
     }
   }
   return reportFindings(findings, { heading: 'Invisible or bidirectional control characters found (CLA-0071):', env, log, error })

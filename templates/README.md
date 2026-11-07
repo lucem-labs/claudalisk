@@ -121,7 +121,7 @@ Pin `@playwright/test` in `frontend/package.json` to the exact version of the br
 `verify.mjs` reads the failures from the annotations of the failed CI jobs, so each job has to produce them:
 
 - Name each job after its layer, such as `backend`, `frontend` or `e2e`, so the layer flags can find it.
-- `setup-dotnet` and `setup-node` register problem matchers that turn .NET compiler and `tsc` errors into annotations, so `ci.yml` uses them even where the runner image has the tools.
+- `setup-dotnet` and `setup-node` register problem matchers that turn .NET compiler and `tsc` errors into annotations, so `ci.yml` uses them even where the runner image has the tools. `setup-dotnet` therefore runs unguarded in `backend` and `e2e`, for its problem matcher; only `security` guards it with `runner.environment == 'github-hosted'`. The `setup-node` steps use Node 24, the major of the runner image.
 - Vitest adds its `github-actions` reporter in GitHub Actions. If the app sets `reporters`, list `github-actions` too.
 - Give Playwright the `github` reporter in CI, such as `reporter: process.env.CI ? [['github'], ['list']] : 'list'`.
 - `no-comments.mjs` needs a `--skip` for each generated or vendored path. Add them to the `scripts` job.
@@ -142,9 +142,11 @@ CLA-0071's scans run on the shared self-hosted runners (CLA-0033). Those runners
 - Trivy scans images from `docker save` archives, not from the daemon.
 - ZAP gets its rules on stdin and writes its report to a `tmpfs` folder. The script prints the report to the log, and to the job summary when it runs in GitHub Actions.
 
+The app's first CI run needs the root `package-lock.json` committed, because every job starts with `npm ci` at the root and fails without it.
+
 The `security` job in `ci.yml` runs beside the test jobs. After `npm ci` it runs `npm audit signatures`, installs the scanners, and runs the forbidden-file (CLA-0026), source-hygiene and suppression checks, gitleaks, the NuGet audit, OSV-Scanner, Semgrep, zizmor and Trivy. Every step runs when an earlier one failed (`!cancelled()`), so one run shows all the findings. Its checkout fetches all history, because the forbidden-file check reads the commits of `origin/main..HEAD`.
 
-- The gitleaks step scans the whole history on every push. An app that scans only the pushed commits replaces it with a script of its own that takes `github.event.before`, through `env`, never inline.
+- The gitleaks step scans the whole history on every push, on purpose: that is a superset of the pushed commits and does not depend on how much the checkout fetched. An app that wants only the pushed commits replaces it with a script of its own that takes `github.event.before`, through `env`, never inline.
 - `NuGetAudit: "false"` stays on the audit step until lucem-labs/nuget-audit-action#1 is fixed. With warnings as errors, the action's second restore fails on a vulnerable package and reports "Restore failed" instead of the advisory. The build's own NuGet audit (NU1901 to NU1904) stays on, so a vulnerable package still fails the build.
 - `!cancelled()` lets every scan run after another one fails, so one run shows all the findings.
 

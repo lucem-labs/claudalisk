@@ -44,7 +44,7 @@ test('the status says how many commits behind when it is', () => {
 })
 
 test('the compare step reads behind_by without writing anything', async () => {
-  const api = fakeApi([['GET', /^\/repos\/acme\/shop\/compare\/main\.\.\.b+\?per_page=1$/, ok({ behind_by: 4, ahead_by: 2 })]])
+  const api = fakeApi([['GET', /^\/repos\/acme\/shop\/compare\/heads\/main\.\.\.b+\?per_page=1$/, ok({ behind_by: 4, ahead_by: 2 })]])
   assert.equal(await commitsBehindMain(githubClient(env, api.fetchImpl), 'acme/shop', 'b'.repeat(40)), 4)
   assert.deepEqual(api.calls.map((call) => call.method), ['GET'])
 })
@@ -71,7 +71,7 @@ test('a branch that is up to date gets a success status and exit code 0', async 
   const api = fakeApi([['GET', /compare/, ok({ behind_by: 0 })], ['POST', /statuses/, created]])
   const { code, lines } = await run([], api)
   assert.equal(code, 0)
-  assert.deepEqual(api.calls.map((call) => `${call.method} ${call.path}`), [`GET /repos/acme/shop/compare/main...${env.GITHUB_SHA}?per_page=1`, `POST /repos/acme/shop/statuses/${env.GITHUB_SHA}`])
+  assert.deepEqual(api.calls.map((call) => `${call.method} ${call.path}`), [`GET /repos/acme/shop/compare/heads/main...${env.GITHUB_SHA}?per_page=1`, `POST /repos/acme/shop/statuses/${env.GITHUB_SHA}`])
   assert.deepEqual(api.calls[1].body, statusFor(0, runUrl))
   assert.match(lines[0], /up to date with main/)
 })
@@ -114,7 +114,7 @@ test('--open-pulls sets the status on every open pull request and exits 0 even w
   const behind = { sha1: 0, sha2: 3 }
   const api = fakeApi([
     ['GET', /pulls/, ok([{ number: 1, head: { sha: 'sha1' } }, { number: 2, head: { sha: 'sha2' } }])],
-    ['GET', /compare\/main\.\.\.(sha\d)/, (path) => ok({ behind_by: behind[/\.\.\.(sha\d)/.exec(path)[1]] })],
+    ['GET', /compare\/heads\/main\.\.\.(sha\d)/, (path) => ok({ behind_by: behind[/\.\.\.(sha\d)/.exec(path)[1]] })],
     ['POST', /statuses/, created],
   ])
   const { code } = await run(['--open-pulls'], api)
@@ -127,8 +127,8 @@ test('--open-pulls sets the status on every open pull request and exits 0 even w
 test('--open-pulls reports every pull request it could not set and fails', async () => {
   const api = fakeApi([
     ['GET', /pulls/, ok([{ number: 1, head: { sha: 'sha1' } }, { number: 2, head: { sha: 'sha2' } }])],
-    ['GET', /compare\/main\.\.\.sha1/, { status: 500, body: {} }],
-    ['GET', /compare\/main\.\.\.sha2/, ok({ behind_by: 0 })],
+    ['GET', /compare\/heads\/main\.\.\.sha1/, { status: 500, body: {} }],
+    ['GET', /compare\/heads\/main\.\.\.sha2/, ok({ behind_by: 0 })],
     ['POST', /statuses/, created],
   ])
   await assert.rejects(run(['--open-pulls'], api), /1 of 2 open pull requests.*#1:.*HTTP 500/s)

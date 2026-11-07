@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { parseOptions } from '../cli.mjs'
 import { reportFindings } from '../findings.mjs'
-import { trackedFiles } from '../git-files.mjs'
+import { isRegularFile, trackedFiles } from '../git-files.mjs'
 import { run } from '../process.mjs'
 
 export const MAX_DAYS = 90
@@ -89,7 +89,7 @@ export function csharpSuppressions(text) {
 
 function tomlEntries(text) {
   const entries = []
-  const headers = [...text.matchAll(/^[ \t]*\[\[(IgnoredVulns|PackageOverrides)\]\][ \t]*$/gm)]
+  const headers = [...text.matchAll(/^[ \t]*\[\[(IgnoredVulns|PackageOverrides)\]\][ \t]*(?:#.*)?$/gm)]
   headers.forEach((header, index) => {
     const body = text.slice(header.index + header[0].length, headers[index + 1]?.index ?? text.length)
     const block = body.split(/^\s*\[/m)[0]
@@ -105,7 +105,10 @@ function trivyEntries(text) {
   const rows = text.split('\n')
   for (let i = 0; i < rows.length; i++) {
     const start = /^(\s*)-\s+id:/.exec(rows[i])
-    if (!start) continue
+    if (!start) {
+      if (/^\s*-(?:\s|$)/.test(rows[i]) || /^\s*[\w-]+:\s*\[\s*[^\]\s]/.test(rows[i])) entries.push({ line: i + 1, value: null, unrecognised: true })
+      continue
+    }
     const indent = start[1].length
     let block = rows[i]
     let j = i + 1
@@ -119,7 +122,11 @@ function trivyEntries(text) {
 
 function datedEntryFindings(file, entries, key, today) {
   const findings = []
-  for (const { line, value } of entries) {
+  for (const { line, value, unrecognised } of entries) {
+    if (unrecognised) {
+      findings.push({ file, line, message: `${key}: the list item is not in the supported '- id:' block form (CLA-0071)` })
+      continue
+    }
     const date = value === null ? null : DATE.exec(value)?.[0] ?? null
     if (date === null) {
       findings.push({ file, line, message: `${key} is missing or has no yyyy-MM-dd date (CLA-0071)` })
@@ -146,13 +153,14 @@ export function findSuppressionProblems(file, text, today) {
   return []
 }
 
-export async function checkSuppressions({ appRoot, argv, env = process.env, runner = run, now = () => new Date(), read = (file) => readFileSync(join(appRoot, file), 'utf8'), log = console.log, error = console.error }) {
+export async function checkSuppressions({ appRoot, argv, env = process.env, runner = run, regular = (file) => isRegularFile(appRoot, file), now = () => new Date(), read = (file) => readFileSync(join(appRoot, file), 'utf8'), log = console.log, error = console.error }) {
   parseOptions({}, argv)
   const today = now().toISOString().slice(0, 10)
   const findings = []
   for (const file of await trackedFiles(runner, appRoot)) {
     const name = basename(file)
     if (!file.endsWith('.cs') && name !== 'osv-scanner.toml' && name !== '.trivyignore.yaml') continue
+    if (!regular(file)) continue
     findings.push(...findSuppressionProblems(file, read(file).replace(/\r\n/g, '\n'), today))
   }
   return reportFindings(findings, { heading: 'Suppressions without a valid expiry (CLA-0071):', env, log, error })

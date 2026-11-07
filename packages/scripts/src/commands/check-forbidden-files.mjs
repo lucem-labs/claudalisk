@@ -1,6 +1,6 @@
 import { parseOptions } from '../cli.mjs'
 import { reportFindings } from '../findings.mjs'
-import { addedSinceMain, trackedFiles } from '../git-files.mjs'
+import { addedSinceMain, isShallow, trackedFiles } from '../git-files.mjs'
 import { run } from '../process.mjs'
 
 const DUMP = /\.(?:dump|pgdump|backup|bak|sql\.gz)$/
@@ -27,9 +27,12 @@ export async function checkForbiddenFiles({ appRoot, argv, env = process.env, ru
     findings.push({ file, message: `Forbidden file (CLA-0026): ${reason}, ${where}.` })
   }
   for (const file of await trackedFiles(runner, appRoot)) add(file, 'tracked')
+  const inActions = env.GITHUB_ACTIONS === 'true'
+  if (inActions && (await isShallow(runner, appRoot))) throw new Error('The repository is a shallow clone, so the commits of this branch cannot be checked. Fetch the full history (fetch-depth: 0).')
   const added = await addedSinceMain(runner, appRoot)
+  if (added === null && inActions) throw new Error('origin/main is missing, so the commits of this branch cannot be checked. Fetch the full history (fetch-depth: 0).')
   if (added === null) {
-    warn(env.GITHUB_ACTIONS === 'true' ? '::warning::origin/main is missing, so the commits of this branch were not checked.' : 'origin/main is missing, so the commits of this branch were not checked.')
+    warn('origin/main is missing, so the commits of this branch were not checked.')
   } else {
     for (const file of added) add(file, 'added by a commit of this branch')
   }

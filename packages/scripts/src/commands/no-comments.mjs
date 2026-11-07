@@ -56,7 +56,7 @@ export function syntaxOf(path) {
   return SYNTAX_BY_EXTENSION[extname(name)];
 }
 
-export const isGenerated = (path, text) => GENERATED_NAMES.some((p) => p.test(path)) || GENERATED_HEADER.test(text.replace(/^﻿/, ''));
+export const isGenerated = (path, text) => GENERATED_NAMES.some((p) => p.test(path)) || GENERATED_HEADER.test(text.replace(/^\uFEFF/, ''));
 
 function lineAt(text, index) {
   let line = 1;

@@ -119,15 +119,39 @@ test('.trivyignore.yaml needs a valid expired_at on every entry', () => {
   ])
 })
 
+test('a comment after an IgnoredVulns header is accepted', () => {
+  const text = '[[IgnoredVulns]] # why\nid = "GHSA-1"\n\n[[IgnoredVulns]]\t#x\nid = "GHSA-2"\nignoreUntil = 2026-12-01\n'
+  assert.deepEqual(findSuppressionProblems('osv-scanner.toml', text, today).map((item) => item.line), [1])
+})
+
+test('.trivyignore.yaml fails on a list item it does not understand', () => {
+  const file = '.trivyignore.yaml'
+  const text = [
+    'vulnerabilities:',
+    '  - {id: CVE-1, expired_at: 2026-12-01}',
+    '  - statement: x',
+    '    id: CVE-2',
+    '    expired_at: 2026-12-01',
+    '  -',
+    '    id: CVE-3',
+    '  - id: CVE-4',
+    '    expired_at: 2026-12-01',
+    'misconfigurations: [{id: AVD-1}]',
+  ].join('\n')
+  const problems = findSuppressionProblems(file, text, today)
+  assert.deepEqual(problems.map((item) => item.line), [2, 3, 6, 10])
+  assert.match(problems[0].message, /not in the supported '- id:' block form/)
+})
+
 test('other files are not judged', () => {
   assert.deepEqual(findSuppressionProblems('a.ts', '[SuppressMessage("S", "X")]', today), [])
 })
 
-async function check(files, env = {}) {
+async function check(files, env = {}, gone = {}) {
   const runner = fakeRunner(() => ({ stdout: Object.keys(files).map((file) => `${file}\0`).join('') }))
   const out = []
   const err = []
-  const code = await checkSuppressions({ appRoot: '/repo', argv: [], env, runner, now: () => new Date('2026-11-07T23:30:00Z'), read: (file) => files[file], log: (t) => out.push(t), error: (t) => err.push(t) })
+  const code = await checkSuppressions({ appRoot: '/repo', argv: [], env, runner, regular: (file) => !(file in gone), now: () => new Date('2026-11-07T23:30:00Z'), read: (file) => files[file], log: (t) => out.push(t), error: (t) => err.push(t) })
   return { code, out, err }
 }
 
@@ -146,6 +170,17 @@ test('the command fails with annotations for file and line', async () => {
   assert.equal(result.code, 1)
   assert.deepEqual(result.out, ['::error file=backend/A.cs,line=2::SuppressMessage has no Justification (CLA-0071)'])
   assert.match(result.err[0], /backend\/A\.cs:2:/)
+})
+
+test('tracked paths that are not regular files are skipped', async () => {
+  const result = await check({ 'backend/A.cs': '[SuppressMessage("S", "X")]', 'osv-scanner.toml': '[[IgnoredVulns]]' }, {}, { 'backend/A.cs': true, 'osv-scanner.toml': true })
+  assert.equal(result.code, 0)
+})
+
+test('the real check skips a tracked path that is missing on disk', async () => {
+  const runner = fakeRunner(() => ({ stdout: 'gone/A.cs\0' }))
+  const code = await checkSuppressions({ appRoot: '/nowhere', argv: [], env: {}, runner, log: () => {}, error: () => {} })
+  assert.equal(code, 0)
 })
 
 test('today comes from the injected clock, in UTC', async () => {

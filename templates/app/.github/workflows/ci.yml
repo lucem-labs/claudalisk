@@ -33,6 +33,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
 
@@ -56,7 +60,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -65,9 +69,12 @@ jobs:
         run: node scripts/check-migrations.mjs
 
       - name: Build
+        id: build
+        if: ${{ !cancelled() }}
         run: dotnet build backend/<Root>.slnx -nodeReuse:false
 
       - name: Tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: dotnet test backend/<Root>.slnx --no-build --logger trx --results-directory "$RUNNER_TEMP/trx"
 
       - name: Failing tests
@@ -84,7 +91,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -126,7 +133,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -165,7 +172,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -194,6 +201,10 @@ jobs:
         if: runner.environment == 'github-hosted'
         with:
           dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
 
       - name: Install the scripts package
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -246,7 +257,7 @@ jobs:
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: zizmor --config .github/zizmor.yml .github/workflows
+        run: zizmor --format github --config .github/zizmor.yml .github/workflows
 
       - name: Dockerfiles (Trivy)
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
