@@ -33,7 +33,7 @@ The main thread plans and writes the brief for the implementer. Code discovery g
 
 ## 4. Verify
 
-The implementer verifies with `scripts/verify.mjs`, and the change is checked on dev (CLA-0076, CLA-0077, CLA-0029).
+The implementer verifies with `scripts/verify.mjs`, and the change is checked on dev, which the implementer reports as `devVerified` (CLA-0076, CLA-0077, CLA-0029). The workflow stops at the implement stage unless both are true.
 
 ## 5. Review
 
@@ -52,13 +52,7 @@ Without the Workflow tool, do the same with the Agent tool: the implementer with
 
 ## 6. Open the pull request and deploy uat
 
-Open the pull request, never as a draft, and review-deploy uat with the command step 0 prints:
-
-```
-node scripts/deploy.mjs --environment uat --confirm "deploy uat <sha7>"
-```
-
-(CLA-0023, CLA-0030). Then tell the owner what to check on uat. The `review-handover` output style shapes that message; it is optional.
+Open the pull request when the conditions of CLA-0023 hold, then review-deploy uat with the command step 0 prints (CLA-0030). Then tell the owner what to check on uat. The `review-handover` output style shapes that message; it is optional.
 
 ## 7. Hand over
 

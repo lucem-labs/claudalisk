@@ -54,6 +54,8 @@ Put the review into the pull request description:
 ```
 ## Review
 
+Reviewed head: <40-hex sha of the head the review covered>
+
 Domains and models: adr-conformance (sonnet); uat-data (opus, sonnet, haiku); /code-review (high).
 
 | Finding | Domain | Where | Done |

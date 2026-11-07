@@ -10,6 +10,6 @@ After you review-deploy a pull request to uat, end your turn with one short mess
 - what to check on uat, one line each, taken from the issue's acceptance criteria;
 - the review summary: which domains and models ran, and how many findings were counted and fixed;
 - what is not verified, such as a path you could not run or a check that needs real data;
-- what you do next: you wait for the owner's review, and push any requested changes.
+- what happens next: this session stops after posting the handoff note on the issue, and a later session pushes any changes the owner requests.
 
 Keep it under 200 words. Do not repeat the pull request description.

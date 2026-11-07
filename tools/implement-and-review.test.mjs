@@ -24,7 +24,7 @@ const plan = (agents, domains, effort = 'medium') => ({
 const conformance = { name: 'adr-conformance', files: 2, adrs: 3, models: ['sonnet'], quorum: false };
 const uatData = { name: 'uat-data', files: 1, adrs: 2, models: ['opus', 'sonnet', 'haiku'], quorum: true };
 
-function fakes({ implement = { status: 'green', head: SHA, report: 'done', questions: [] }, summary = plan([], []) } = {}) {
+function fakes({ implement = { status: 'green', devVerified: true, head: SHA, report: 'done', questions: [] }, summary = plan([], []) } = {}) {
   const calls = [];
   const phases = [];
   const agent = async (prompt, options = {}) => {
@@ -87,12 +87,12 @@ test('the implementer gets the issue, the worktree and the brief', async () => {
   const { f } = await run(goodArgs);
   const first = f.calls[0];
   assert.equal(first.options.agentType, 'claudalisk:implementer');
-  for (const part of ['#16', 'C:/git/app-16', 'C:/tmp/brief.md']) assert.ok(first.prompt.includes(part), part);
+  for (const part of ['#16', 'C:/git/app-16', 'C:/tmp/brief.md', 'dev', 'devVerified']) assert.ok(first.prompt.includes(part), part);
   assert.deepEqual(f.phases, ['Implement', 'Plan review', 'Review']);
 });
 
 test('a blocked, failed or null implementer stops early with its result', async () => {
-  for (const implement of [{ status: 'blocked', head: SHA, report: 'r', questions: ['which?'] }, { status: 'failed', head: SHA, report: 'r', questions: [] }, null]) {
+  for (const implement of [{ status: 'green', devVerified: false, head: SHA, report: 'r', questions: [] }, { status: 'blocked', head: SHA, report: 'r', questions: ['which?'] }, { status: 'failed', head: SHA, report: 'r', questions: [] }, null]) {
     const { result, f } = await run(goodArgs, fakes({ implement }));
     assert.deepEqual(result, { stage: 'implement', implement });
     assert.equal(f.calls.length, 1);
@@ -103,6 +103,7 @@ test('the plan agent runs fetch and review-plan at low effort, with --since when
   const { f } = await run(goodArgs);
   const planCall = f.calls[1];
   assert.equal(planCall.options.effort, 'low');
+  assert.equal(planCall.options.model, 'haiku');
   assert.ok(planCall.prompt.includes('git fetch origin main'));
   assert.ok(planCall.prompt.includes('node "C:/plugin/tools/review-plan.mjs"'));
   assert.ok(!planCall.prompt.includes('--since'));

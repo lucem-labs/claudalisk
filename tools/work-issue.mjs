@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const GREEN_CONCLUSIONS = ['SUCCESS', 'NEUTRAL', 'SKIPPED'];
 const HANDOFF = /^## Handoff/;
 const REVIEW_SECTION = /^## Review\s*$/m;
+const REVIEWED_HEAD = /^Reviewed head: ([0-9a-f]{40})\s*$/im;
 const BRANCH_REF = /^refs\/heads\//;
 
 export const slugify = (title) =>
@@ -17,7 +18,7 @@ export const slugify = (title) =>
     .slice(0, 4)
     .join('-')
     .slice(0, 40)
-    .replace(/-+$/, '');
+    .replace(/-+$/, '') || 'work';
 
 export function parseWorktrees(porcelain) {
   return porcelain
@@ -49,6 +50,14 @@ export function latestHandoff(comments) {
 }
 
 const pickPr = (prs) => prs.find((p) => p.state === 'OPEN') ?? prs.find((p) => p.state === 'MERGED') ?? prs[0] ?? null;
+export function reviewedHead(body) {
+  const text = (body ?? '').replace(/\r\n/g, '\n');
+  const at = text.search(REVIEW_SECTION);
+  if (at < 0) return { hasReview: false, reviewedHead: null };
+  const sha = text.slice(at).match(REVIEWED_HEAD)?.[1].toLowerCase() ?? null;
+  return { hasReview: true, reviewedHead: sha };
+}
+
 const json = (text) => JSON.parse(text);
 
 export function readFacts(issue, run) {
@@ -58,17 +67,19 @@ export function readFacts(issue, run) {
   const prefix = `issue-${issue}-`;
   const worktree = worktrees.find((w) => w.branch?.startsWith(prefix)) ?? null;
   const branches = run('git', ['for-each-ref', '--format=%(refname:short)', `refs/heads/${prefix}*`]).split('\n').map((b) => b.trim()).filter(Boolean);
-  const branch = worktree?.branch ?? branches[0] ?? null;
 
+  const light = 'number,state,headRefName';
   const fields = 'number,url,state,isDraft,headRefOid,headRefName,body,mergedAt,statusCheckRollup';
   const closing = (view.closedByPullRequestsReferences ?? []).map((r) => r.number);
-  let prs;
-  if (branch) prs = json(run('gh', ['pr', 'list', '--head', branch, '--state', 'all', '--json', fields]));
+  let candidates;
+  if (worktree) candidates = json(run('gh', ['pr', 'list', '--head', worktree.branch, '--state', 'all', '--json', light]));
   else {
-    const all = json(run('gh', ['pr', 'list', '--state', 'all', '--limit', '200', '--json', fields]));
-    prs = all.filter((p) => p.headRefName?.startsWith(prefix) || closing.includes(p.number));
+    const all = json(run('gh', ['pr', 'list', '--state', 'all', '--limit', '200', '--json', light]));
+    candidates = all.filter((p) => p.headRefName?.startsWith(prefix) || closing.includes(p.number));
   }
-  const pr = pickPr(prs);
+  const picked = pickPr(candidates);
+  const branch = worktree?.branch ?? picked?.headRefName ?? branches[0] ?? null;
+  const pr = picked ? json(run('gh', ['pr', 'view', String(picked.number), '--json', fields])) : null;
   let deployment = null;
   if (pr?.state === 'OPEN') {
     const deployments = json(run('gh', ['api', `repos/{owner}/{repo}/deployments?environment=uat&sha=${pr.headRefOid}`]));
@@ -81,8 +92,8 @@ export function readFacts(issue, run) {
     handoff: handoff ? { createdAt: handoff.createdAt, body: handoff.body } : null,
     repo: basename(worktrees[0]?.path ?? ''),
     worktree: worktree?.path ?? null,
-    branch: branch ?? pr?.headRefName ?? null,
-    pr: pr && { number: pr.number, url: pr.url, state: pr.state, isDraft: pr.isDraft, headRefOid: pr.headRefOid, hasReview: REVIEW_SECTION.test(pr.body ?? ''), mergedAt: pr.mergedAt, green: isGreen(pr.statusCheckRollup) },
+    branch,
+    pr: pr && { number: pr.number, url: pr.url, state: pr.state, isDraft: pr.isDraft, headRefOid: pr.headRefOid, ...reviewedHead(pr.body), mergedAt: pr.mergedAt, green: isGreen(pr.statusCheckRollup) },
     deployment,
   };
 }
@@ -129,8 +140,11 @@ export function lifecycleStep(facts) {
   if (!pr.green) {
     return { step: 4, title: 'Verify', next: `CI is not green on ${pr.headRefOid.slice(0, 7)}. Run node scripts/verify.mjs in the worktree.`, adrs: ['CLA-0076', 'CLA-0077', 'CLA-0029'] };
   }
-  if (!pr.hasReview) {
-    return { step: 5, title: 'Review', next: `Run /claudalisk:review and put its result in a "## Review" section of #${pr.number}.`, adrs: ['CLA-0023'] };
+  if (!pr.hasReview || !pr.reviewedHead) {
+    return { step: 5, title: 'Review', next: `Run /claudalisk:review and put its result, with its "Reviewed head:" line, in the "## Review" section of #${pr.number}.`, adrs: ['CLA-0023'] };
+  }
+  if (pr.reviewedHead !== pr.headRefOid.toLowerCase()) {
+    return { step: 5, title: 'Review the new head', next: `Run /claudalisk:review --since ${pr.reviewedHead}, then update the "## Review" section of #${pr.number} with the new "Reviewed head:" line.`, adrs: ['CLA-0023'] };
   }
   if (!facts.deployment) {
     return { step: 6, title: 'Review-deploy uat', next: `node scripts/deploy.mjs --environment uat --confirm "deploy uat ${pr.headRefOid.slice(0, 7)}"`, adrs: ['CLA-0023', 'CLA-0030'] };
@@ -142,7 +156,7 @@ export function lifecycleStep(facts) {
   return {
     step: 8,
     title: 'Waiting on the owner',
-    next: `Wait for the owner's review of #${pr.number}. After requested changes, push them, redeploy uat and run /claudalisk:review --since ${pr.headRefOid}.`,
+    next: `Wait for the owner's review of #${pr.number}. After requested changes, push them and redeploy uat; status then sends you to step 5 to review the new head with --since.`,
     adrs: ['CLA-0023', 'CLA-0024'],
     blocked: true,
   };
