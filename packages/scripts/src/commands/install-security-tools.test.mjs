@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SECURITY_TOOLS, UsageError, installTool, main, parseArgs } from './install-security-tools.mjs';
+import { SECURITY_TOOLS, UsageError, installTool, main, parseArgs, installSecurityTools } from './install-security-tools.mjs';
 
 const sha256 = (content) => createHash('sha256').update(content).digest('hex');
 
@@ -116,4 +116,8 @@ test('main leaves GITHUB_PATH alone when a tool fails its checksum', async (t) =
   const io = { download: async () => Buffer.from('tampered'), untar: () => {}, tools: { scanner: { url: 'https://example.invalid/scanner', sha256: sha256('binary'), binary: 'scanner' } } };
   await assert.rejects(main(['--tool', 'scanner', '--destination', join(root, 'bin')], { env: { GITHUB_PATH: githubPath }, log: () => {}, io }), /Checksum mismatch/);
   assert.equal(existsSync(githubPath), false);
+});
+
+test('the command refuses an unknown tool with a usage error that exits 2', async () => {
+  await assert.rejects(installSecurityTools({ argv: ['--tool', 'nope'], env: {} }), (error) => error instanceof UsageError && error.exitCode === 2);
 });

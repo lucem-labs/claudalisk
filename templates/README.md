@@ -5,13 +5,14 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | File | What it is |
 |---|---|
 | `app/scripts/verify.mjs` | `node scripts/verify.mjs [-m "<message>"] [--backend] [--frontend] [--e2e] [--fail-fast] [--timeout <minutes>]`: commits, pushes, waits for CI on that commit and prints only the failures ([CLA-0076](../adr/0076-one-verify-script-per-cycle.md)) |
-| `app/scripts/check-e2e-locators.mjs` | `node scripts/check-e2e-locators.mjs [<folder>]`: fails on CSS and element locators in the end-to-end tests ([CLA-0070](../adr/0070-testing-layers.md)). Without a folder it checks `frontend/e2e`, found from the script's own location. Add `node ../scripts/check-e2e-locators.mjs` to the frontend's `lint` script |
-| `app/scripts/trx-annotations.mjs` | Run in CI: turns the failing tests of .NET TRX reports into annotations and a job summary |
+| `app/scripts/check-e2e-locators.mjs` | `node scripts/check-e2e-locators.mjs [<folder>]`: fails on CSS and element locators in the end-to-end tests ([CLA-0070](../adr/0070-testing-layers.md)). Without a folder it checks `frontend/e2e`, found from the script's own location (`scripts/..`). Add `node ../scripts/check-e2e-locators.mjs` to the frontend's `lint` script |
+| `app/scripts/trx-annotations.mjs` | Run in CI, a thin entry like the next five: turns the failing tests of .NET TRX reports into annotations and a job summary |
 | `app/scripts/no-comments.mjs` | `node scripts/no-comments.mjs [<root>] [--skip <path>]...`: fails when a tracked file has a comment ([CLA-0035](../adr/0035-no-code-comments.md)) |
 | `app/scripts/install-security-tools.mjs` | `node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a pinned release, refuses a download whose SHA-256 differs, installs into a new folder under `RUNNER_TEMP` unless `--destination` names one, and adds the folder to `GITHUB_PATH` ([CLA-0071](../adr/0071-security-scans.md)) |
 | `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
 | `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
 | `app/scripts/deploy.mjs`, `backup.mjs`, `restore.mjs`, `prune-backups.mjs`, `refresh-dev.mjs`, `init.mjs`, `migrate.mjs`, `check-migrations.mjs` | The environment entry scripts ([CLA-0084](../adr/0084-environment-scripts-package.md)). Each only calls `runMain` with the function of the same name from `@claudalisk/scripts`, so the guards, backups and restores live in the package, not in the app. See Environment scripts below |
+| `app/scripts/no-comments.mjs`, `check-e2e-locators.mjs`, `install-security-tools.mjs`, `scan-images.mjs`, `zap-baseline.mjs`, `trx-annotations.mjs` | The CI-run scripts above are thin entries of the same kind: their logic, including the scanner SHA-256 pins, is in `@claudalisk/scripts`, so an app gets a fix or a pin bump by a version bump |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
 | `app/frontend/.oxlintrc.json` | The frontend's oxlint configuration ([CLA-0065](../adr/0065-frontend-tooling.md)). It keeps `fetch` inside `src/shared/api` ([CLA-0014](../adr/0014-frontend-stack-and-api-module.md)) and turns `react/only-export-components` off in `src/shared/ui`, where shadcn's components export their variants beside them, so the warning stays meaningful everywhere else |
 | `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
@@ -37,20 +38,20 @@ It validates the config and fails, writing nothing, when another app already use
 
 ## Environment scripts
 
-The deploy, backup, restore, prune, refresh, init, migrate and check-migrations scripts are the npm package `@claudalisk/scripts` (CLA-0084), built from `packages/scripts` in the plugin repository. The app keeps only the eight thin entries at `scripts/<name>.mjs`, copied from `app/scripts/`. They hold no logic and are never edited, because a fix arrives as a new package version.
+The deploy, backup, restore, prune, refresh, init, migrate and check-migrations scripts, and the CI-run no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline and trx-annotations scripts, are the npm package `@claudalisk/scripts` (CLA-0084), built from `packages/scripts` in the plugin repository. The app keeps only the fourteen thin entries at `scripts/<name>.mjs`, copied from `app/scripts/`. They hold no logic and are never edited, because a fix arrives as a new package version.
 
 To add the package to an app:
 
-1. Copy the eight entries into the app's `scripts/` folder.
+1. Copy the fourteen entries into the app's `scripts/` folder.
 2. Pin an exact version, and commit the lockfile so a deploy is reproducible from its commit: `npm install --save-dev --save-exact @claudalisk/scripts`. CI installs it with `npm ci`, and the owner runs the same commands by hand.
 3. Fill in `.claude/claudalisk.json` (see App config). The package reads the databases, ports, uat project and volume, repository and backup count from it, and stops with a message naming any missing field.
 4. Keep the conventions the package expects: `compose.base.yml` plus `compose.<env>.yml` with the services `api` and `db` and the profile `migrate`, `.env.<env>.example` files with `CHANGE_ME` as the password, and an API image that sets `DEPLOYED_SHA` and `DEPLOYED_REF`. The package README lists them all.
 
-Every command refuses to run when `CI` or `GITHUB_ACTIONS` is set. `node --test packages/scripts/**/*.test.mjs` runs the package's tests in the plugin repository, and the entries are checked there as text, because `@claudalisk/scripts` does not resolve inside it.
+Every environment command refuses to run when `CI` or `GITHUB_ACTIONS` is set. The CI-run scripts and check-migrations run in CI. `node --test packages/scripts/**/*.test.mjs` runs the package's tests in the plugin repository, and the entries are checked there as text, because `@claudalisk/scripts` does not resolve inside it.
 
 ## Comment check
 
-CLA-0035's CI check is `no-comments.mjs`. It reads the files `git ls-files` lists and needs no packages, so it doesn't depend on a linter or test runner staying in the app. It covers:
+CLA-0035's CI check is `no-comments.mjs`, a thin entry of `@claudalisk/scripts`. It reads the files `git ls-files` lists and needs no linter or test runner, so it doesn't depend on a linter or test runner staying in the app. It covers:
 
 | Files | Comments it finds |
 |---|---|
@@ -76,7 +77,7 @@ It allows the exceptions CLA-0035 lists:
 
 Name any other vendored or generated file or folder with `--skip`, such as `--skip frontend/.claude/skills/shadcn`, or a generated API types file whose generator writes no header. A migration that has run (applied to uat or tracked on `origin/main`), or SQL it runs, is never edited to pass the check: name it with `--skip` (CLA-0010). In GitHub Actions the checker also writes an `::error` annotation for each comment, so `verify.mjs` can print it. Markdown is documentation and isn't checked. In JSX text, write `//`, `/*` and a backtick as strings, such as `{'//'}`: the checker reads them as code.
 
-When a file type the app uses isn't in the table, add it to the checker in claudalisk.
+When a file type the app uses isn't in the table, add it to the checker in claudalisk (`packages/scripts/src/commands/no-comments.mjs`).
 
 ## Wiring CI
 
@@ -97,7 +98,7 @@ When a file type the app uses isn't in the table, add it to the checker in claud
     run: node scripts/trx-annotations.mjs "${{ runner.temp }}/trx"
   ```
 
-- Run `node --test scripts/*.test.mjs` in a job of its own.
+- Run `node --test scripts/*.test.mjs` in a job of its own, when the app has tests of its own there. The CI-run scripts' tests live in the package.
 - Run `node scripts/no-comments.mjs` as a step of its own, with a `--skip` for each generated or vendored path.
 - Keep every step's `run` to one line ([CLA-0027](../adr/0027-scripts-in-node.md)). Anything longer goes into a tested script under `scripts/`.
 
@@ -105,7 +106,7 @@ When a file type the app uses isn't in the table, add it to the checker in claud
 
 CLA-0071's scans run on the shared self-hosted runners (CLA-0033). Those runners use a Docker-in-Docker sidecar, which doesn't share the job's workspace with the Docker daemon: container actions and `docker run -v "$PWD"` see an empty folder. So the scanners avoid mounts:
 
-- gitleaks, OSV-Scanner, Trivy, zizmor and uv are release binaries that `install-security-tools.mjs` checks against a SHA-256 before they run. Each run installs them into a new folder of its own, so nothing left on a shared runner lands on `PATH`. To move a scanner to a new release, change its URL and SHA-256 in that script, in claudalisk first.
+- gitleaks, OSV-Scanner, Trivy, zizmor and uv are release binaries that `install-security-tools.mjs` checks against a SHA-256 before they run. Each run installs them into a new folder of its own, so nothing left on a shared runner lands on `PATH`. To move a scanner to a new release, change its URL and SHA-256 in `packages/scripts/src/commands/install-security-tools.mjs`, in claudalisk first, and bump the package version the apps pin.
 - Semgrep runs through `uv` at a pinned version, on a pinned Python. The runner image has no Python, and an unpinned `uv` picked a pre-release that one of Semgrep's dependencies has no wheel for. `UV_EXCLUDE_NEWER` makes uv resolve Semgrep's dependencies as they were on that date, so a release published later can't reach the job. Move it forward together with `SEMGREP_VERSION`. Unlike the binaries, these packages aren't checked against a SHA-256 of ours: PyPI's own hashes are the check. The `p/csharp` and `p/typescript` rule packs also come from the Semgrep registry on each run, unpinned. The `UV_*` and `TRIVY_CACHE_DIR` folders under `RUNNER_TEMP` keep uv's cache, tools and Python, and Trivy's vulnerability database, out of the runner's home folder, where another job's could be reused.
 - Trivy scans images from `docker save` archives, not from the daemon.
 - ZAP gets its rules on stdin and writes its report to a `tmpfs` folder. The script prints the report to the log, and to the job summary when it runs in GitHub Actions.

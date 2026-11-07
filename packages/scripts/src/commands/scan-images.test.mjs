@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { UsageError, buildImages, main, parseArgs, parseImage, runner, scanImages } from './scan-images.mjs';
+import { UsageError, buildImages, main, parseArgs, parseImage, runner, scanSavedImages } from './scan-images.mjs';
 
 const root = join('repo');
 const work = join('work');
@@ -53,9 +53,9 @@ test('buildImages stops at the first failed build', () => {
   assert.equal(calls.length, 1);
 });
 
-test('scanImages scans each image from a docker save archive', () => {
+test('scanSavedImages scans each image from a docker save archive', () => {
   const { calls, run } = recorder();
-  scanImages({ images, root, run, work });
+  scanSavedImages({ images, root, run, work });
   const archive = (name) => join(work, `${name}-security.tar`);
   const trivy = (name) => [
     'trivy', 'image', '--input', archive(name), '--scanners', 'vuln', '--severity', 'HIGH,CRITICAL', '--ignore-unfixed',
@@ -69,15 +69,15 @@ test('scanImages scans each image from a docker save archive', () => {
   ]);
 });
 
-test('scanImages scans every image and then fails on the ones with findings', () => {
+test('scanSavedImages scans every image and then fails on the ones with findings', () => {
   const { calls, run } = recorder((command, args) => command === 'trivy' && args.includes(join(work, 'api-security.tar')));
-  assert.throws(() => scanImages({ images, root, run, work }), /vulnerabilities in api:security\.$/);
+  assert.throws(() => scanSavedImages({ images, root, run, work }), /vulnerabilities in api:security\.$/);
   assert.equal(calls.length, 4);
 });
 
-test('scanImages stops when an image was not built', () => {
+test('scanSavedImages stops when an image was not built', () => {
   const { calls, run } = recorder((command, args) => command === 'docker' && args[0] === 'save');
-  assert.throws(() => scanImages({ images, root, run, work }), /build it first with --build/);
+  assert.throws(() => scanSavedImages({ images, root, run, work }), /build it first with --build/);
   assert.equal(calls.length, 1);
 });
 

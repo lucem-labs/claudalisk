@@ -40,6 +40,21 @@ test('runMain prints a failure and exits 1', async () => {
   assert.deepEqual(exits, [1])
 })
 
+test('runMain exits with the number a command returns and the exit code of an error', async () => {
+  const exits = []
+  const original = console.error
+  console.error = () => {}
+  try {
+    assert.equal(await runMain(async () => 3, { argv: ['node', '/app/scripts/x.mjs'], exit: (value) => exits.push(value) }), 3)
+    assert.equal(await runMain(async () => 0, { argv: ['node', '/app/scripts/x.mjs'], exit: (value) => exits.push(value) }), 0)
+    const usage = Object.assign(new Error('usage'), { exitCode: 2 })
+    assert.equal(await runMain(async () => { throw usage }, { argv: ['node', '/app/scripts/x.mjs'], exit: (value) => exits.push(value) }), 2)
+  } finally {
+    console.error = original
+  }
+  assert.deepEqual(exits, [3, 2])
+})
+
 test('run captures output and the exit code', async () => {
   const result = await run(process.execPath, ['-e', 'console.log("out"); console.error("err"); process.exit(3)'])
   assert.deepEqual([result.code, result.stdout.trim(), result.stderr.trim()], [3, 'out', 'err'])

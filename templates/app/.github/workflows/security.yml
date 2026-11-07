@@ -27,6 +27,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         if: runner.environment == 'github-hosted'
         with:
@@ -59,6 +62,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Install scanners
         run: node scripts/install-security-tools.mjs --tool trivy
 
@@ -80,6 +86,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: ZAP baseline against dev
         run: node scripts/zap-baseline.mjs --target http://<app>.dev.localhost

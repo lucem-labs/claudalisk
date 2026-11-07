@@ -1,6 +1,6 @@
 # @claudalisk/scripts
 
-The guarded environment scripts of a claudalisk app (CLA-0084), published to npm from lucem-labs/claudalisk by its release workflow.
+The scripts of a claudalisk app (CLA-0084): the guarded environment scripts and the scripts its CI runs, published to npm from lucem-labs/claudalisk by its release workflow.
 
 An app depends on an exact version, so a deploy is reproducible from its commit and a safety fix reaches the app as a version bump:
 
@@ -27,10 +27,16 @@ runMain(deploy)
 | `scripts/init.mjs` | `@claudalisk/scripts/init` | `--environment dev\|uat`: env file and volume (CLA-0066) |
 | `scripts/migrate.mjs` | `@claudalisk/scripts/migrate` | `[--project <csproj>]`: migrates the dev databases from a directly launched Host (CLA-0008) |
 | `scripts/check-migrations.mjs` | `@claudalisk/scripts/check-migrations` | Fails when a migration on `origin/main` is changed or missing on this branch, unless `approved-migration-edits.txt` on main covers its new content (CLA-0010). A branch is judged only on what it changed since its merge base with main; CI wiring is #18 |
+| `scripts/no-comments.mjs` | `@claudalisk/scripts/no-comments` | `[<root>] [--skip <path>]...`: fails when a tracked file has a comment (CLA-0035) |
+| `scripts/check-e2e-locators.mjs` | `@claudalisk/scripts/check-e2e-locators` | `[<folder>]`: fails on CSS and element locators in the end-to-end tests, `frontend/e2e` of the app by default (CLA-0070) |
+| `scripts/install-security-tools.mjs` | `@claudalisk/scripts/install-security-tools` | `--tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a release pinned in the package and refuses a download whose SHA-256 differs (CLA-0071) |
+| `scripts/scan-images.mjs` | `@claudalisk/scripts/scan-images` | `[--build] [--scan] --image <name>=<Dockerfile>...`: builds the images and scans each with Trivy from a `docker save` archive (CLA-0071) |
+| `scripts/zap-baseline.mjs` | `@claudalisk/scripts/zap-baseline` | `--target http://<app>.dev.localhost [--proxy-host <IPv4 address>]`: the ZAP baseline against dev with `.zap/rules.tsv` (CLA-0071) |
+| `scripts/trx-annotations.mjs` | `@claudalisk/scripts/trx-annotations` | `<TRX results folder>`: turns the failing tests of .NET TRX reports into annotations and a job summary (CLA-0076) |
 
 `@claudalisk/scripts/fake-runner` is the injectable command runner the library's own tests use, for an app's tests of its entries.
 
-Every command except check-migrations refuses to run when `CI` or `GITHUB_ACTIONS` is set.
+The environment commands refuse to run when `CI` or `GITHUB_ACTIONS` is set. check-migrations and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations) run in CI.
 
 ## Conventions
 
