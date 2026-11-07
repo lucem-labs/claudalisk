@@ -38,7 +38,7 @@ jobs:
 
       - name: NuGet packages
         if: ${{ !cancelled() }}
-        uses: lucem-labs/nuget-audit-action@v1
+        uses: lucem-labs/nuget-audit-action@cf1e4925eb904fe8ba518eefe18f45c33501af5d
         env:
           NuGetAudit: "false"
         with:
