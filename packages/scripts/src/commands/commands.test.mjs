@@ -530,7 +530,7 @@ test('a check-migrations refusal gives the entry to paste for each changed migra
   })
 })
 
-test('a uat deploy refuses when the fetch of origin/main fails, before it builds', async () => {
+test('a uat deploy refuses when the fetch of origin/main fails, before it starts the database', async () => {
   const fixture = makeApp()
   writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=false\n')
   mkdirSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations'), { recursive: true })
@@ -538,4 +538,5 @@ test('a uat deploy refuses when the fetch of origin/main fails, before it builds
   const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], applied: ['app/20260101000000_A'], extra: (call) => (call.line.includes('fetch --quiet origin main') ? { code: 1, stderr: 'no network' } : undefined) })
   await assert.rejects(uatDeploy({ ...fixture, runner }), /git fetch origin main failed \(no network\).*stale.*Nothing was changed\./s)
   assert.equal(callsMatching(runner, / build$/).length, 0)
+  assert.equal(callsMatching(runner, / up /).length, 0)
 })

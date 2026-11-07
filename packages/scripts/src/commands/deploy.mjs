@@ -88,8 +88,8 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   let backupFolder = null
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
-    await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
     await fetchMain(runner, appRoot, { strict: true })
+    await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
     const { firstDeploy } = await checkUatMigrations(runner, settings, {
       source,
       approved: await readApprovedEdits(runner, appRoot),
