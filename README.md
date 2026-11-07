@@ -15,6 +15,7 @@ Vibe-coding is fast but drifts. Claudalisk keeps the speed and adds the craft: y
 - **Opinionated.** One stack, one architecture and one way of working, so neither you nor Claude has to decide the structural things again.
 - **Guided.** Skills and subagents for the recurring moves, from starting a new app to taking an issue through to a merged pull request.
 - **Reviewed.** `/claudalisk:review` reviews a branch before its pull request opens. A script plans the review from the diff, Sonnet reviewer agents check it against the ADRs and for uat data safety, the built-in `/code-review` checks correctness and security, and three models form a quorum only where a change can lose uat data.
+- **Lifecycle.** `/claudalisk:work-issue` takes an issue from its worktree through implementation, review and the uat review deploy to the owner's merge. A status script reads the step an issue is at, and a workflow runs the implement and review stretch.
 - **Guardrailed.** Hooks and tests check the rules, so they don't depend on a prompt being followed.
 - **Layered on Claude.** It adds to Claude Code's built-in behaviour rather than replacing it, and loads its knowledge only when the work needs it.
 
