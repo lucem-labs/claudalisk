@@ -117,3 +117,16 @@ test('runnerPrefix reads RUNNERS_NAME_PREFIX from the stack folder and gives an 
   assert.equal(runnerPrefix({ configDir: '/c' }, () => 'A=1\n'), '');
   assert.equal(runnerPrefix({ configDir: '/c' }, () => { throw new Error('gone'); }), '');
 });
+
+test('a public repository is told the runners never serve it, with no enroll hint', async () => {
+  const routes = { ...ROUTES, 'repos/acme/example-app': { id: 99, private: false }, 'orgs/Acme/actions/runner-groups/7/repositories': { repositories: [] } };
+  const [line] = await linesOf(deps({ ghRoutes: routes }));
+  assert.match(line, /acme.example-app is public, so these runners never serve it.$/);
+  assert.doesNotMatch(line, /enroll/);
+});
+
+test('a truncated member page reads unknown instead of NOT in the group', async () => {
+  const routes = { ...ROUTES, 'orgs/Acme/actions/runner-groups/7/repositories': { total_count: 150, repositories: [{ id: 1 }] } };
+  const [line] = await linesOf(deps({ ghRoutes: routes }));
+  assert.match(line, /whether acme.example-app is in its runner group is unknown.$/);
+});

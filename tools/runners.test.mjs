@@ -815,3 +815,10 @@ test('there is no down command, and unknown input prints the usage', async () =>
   for (const argv of [[], ['down'], ['app'], ['status', '--bogus'], ['adopt']]) await assert.rejects(t.run(argv), /usage|unknown argument/);
   assert.deepEqual(t.docker.calls, []);
 });
+
+test('logs accepts --config for a folder that is not registered', async () => {
+  const { dir } = makeFolder();
+  const t = setup();
+  await t.run(['logs', '--config', dir]);
+  assert.deepEqual(t.docker.calls[0].args, ['logs', '--tail', '100', 'acme-runners-supervisor-1']);
+});

@@ -51,7 +51,7 @@ export const gitRunner = (args, options) => spawn('git', args, options);
 
 export function parseEnv(text) {
   const values = {};
-  for (const raw of String(text).replace(/^﻿/, '').split(/\r?\n/)) {
+  for (const raw of String(text).replace(/^\uFEFF/, '').split(/\r?\n/)) {
     const line = raw.trim();
     if (line === '' || line.startsWith('#')) continue;
     const m = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
@@ -373,7 +373,7 @@ function waitForCode({ makeServer, state, timeoutMs, page, announce }) {
 }
 
 function mergeEnv(path, entries) {
-  const existing = existsSync(path) ? readFileSync(path, 'utf8').replace(/^﻿/, '').split(/\r?\n/).filter((l) => l !== '') : [];
+  const existing = existsSync(path) ? readFileSync(path, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l !== '') : [];
   const kept = existing.filter((line) => !entries.some(([k]) => line.startsWith(`${k}=`)));
   writeFileSync(path, `${[...kept, ...entries.map(([k, v]) => `${k}=${v}`)].join('\n')}\n`);
 }
@@ -545,7 +545,7 @@ function up(args, deps) {
 }
 
 function logs(args, deps) {
-  const { flags } = parseFlags(args, { values: ['--project'] });
+  const { flags } = parseFlags(args, { values: ['--project', '--config'] });
   const { stack } = single(flags, deps);
   if (!stack) refuse('the stack cannot be read from its config folder');
   deps.write(deps.docker(['logs', '--tail', '100', `${stack.composeProject}-supervisor-1`], { both: true }));

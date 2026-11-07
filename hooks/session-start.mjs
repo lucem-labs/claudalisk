@@ -106,7 +106,9 @@ export async function runnersLine(config, deps, cwd) {
   let where;
   if (!org) where = repoInfo ? `${repo} is ${repoInfo.private === true ? 'private' : 'PUBLIC'}` : `whether ${repo} is private is unknown`;
   else if (!repoInfo || !groupInfo || !members || !Array.isArray(members.repositories)) where = `whether ${repo} is in its runner group is unknown`;
+  else if (repoInfo.private !== true) where = `${repo} is public, so these runners never serve it`;
   else if (members.repositories.some((r) => r.id === repoInfo.id)) where = `${repo} is in runner group ${label(groupInfo.name)}`;
+  else if (members.total_count > members.repositories.length) where = `whether ${repo} is in its runner group is unknown`;
   else where = `${repo} is NOT in runner group ${label(groupInfo.name)}, so its CI jobs queue until GitHub cancels them (/claudalisk:runners enroll)`;
   return `Runners ${clean(stack.composeProject)}: ${head}, ${counts}; ${where}.`;
 }
