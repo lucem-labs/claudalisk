@@ -12,7 +12,7 @@ import {
 import { assertUatDeployable } from '../guards.mjs'
 import { waitForHealth } from '../http.mjs'
 import { ensureInitialised } from '../init.mjs'
-import { checkUatMigrations, readApprovedEdits, readMainMigrations, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
+import { checkUatMigrations, fetchMain, readApprovedEdits, readMainMigrations, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
 import { migrate, takeBackup } from '../operations.mjs'
 import { runChecked } from '../process.mjs'
 import { pruneBackups } from './prune-backups.mjs'
@@ -89,6 +89,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
     await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
+    await fetchMain(runner, appRoot)
     const { firstDeploy } = await checkUatMigrations(runner, settings, {
       source,
       approved: await readApprovedEdits(runner, appRoot),

@@ -1,38 +1,12 @@
-import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listBackups, migrationId, restorePointFor, schemaOf, unmergedMigrations } from './backups.mjs'
 import { appliedMigrations, hasSchema } from './database.mjs'
 import { runningContainer } from './environment.mjs'
+import { fingerprints, isMigrationFile, migrationIdsOf } from './migration-files.mjs'
 import { runChecked } from './process.mjs'
 
-export function isMigrationFile(path) {
-  const segments = path.replace(/\\/g, '/').split('/')
-  const file = segments.at(-1)
-  return segments[0] === 'backend'
-    && segments.slice(1, -1).includes('Migrations')
-    && file.endsWith('.cs')
-    && !segments.some((segment) => segment.endsWith('.Tests'))
-    && !file.endsWith('.Designer.cs')
-    && !file.endsWith('ModelSnapshot.cs')
-}
-
-export function migrationIdsOf(path, text) {
-  const declared = [...text.matchAll(/\[Migration\("(\d{14}_[A-Za-z0-9_]+)"\)\]/g)].map((match) => match[1])
-  if (declared.length > 0) return declared
-  const named = /(\d{14}_[A-Za-z0-9_]+)\.cs$/.exec(path.replace(/\\/g, '/'))?.[1]
-  return named ? [named] : []
-}
-
-export function fingerprints(files) {
-  const migrations = new Map()
-  for (const { path, text } of files) {
-    const normal = text.replace(/\r\n/g, '\n')
-    const hash = createHash('sha256').update(normal).digest('hex')
-    for (const id of migrationIdsOf(path, normal)) migrations.set(id, hash)
-  }
-  return migrations
-}
+export { fingerprints, isMigrationFile, migrationIdsOf }
 
 export function sourceMigrations(root) {
   const files = []
@@ -86,7 +60,9 @@ export function checkAgainstMain({ main, source, approved = new Map(), base = ma
   for (const id of new Set([...main.keys(), ...base.keys()])) {
     const mine = source.get(id)
     if (mine === base.get(id)) continue
-    if (mine === undefined) missing.push(id)
+    if (mine === undefined) {
+      if (main.has(id)) missing.push(id)
+    }
     else if (mine !== main.get(id) && !isApproved(approved, id, mine)) changed.push(id)
   }
   return { changed: changed.sort(), missing: missing.sort() }
@@ -143,8 +119,12 @@ async function readMigrationsAt(runner, root, ref) {
   return fingerprints(files)
 }
 
+export async function fetchMain(runner, root) {
+  const result = await runner('git', ['-C', root, 'fetch', '--quiet', 'origin', 'main'])
+  if (result.code !== 0) console.warn(`Warning: git fetch origin main failed (${(result.stderr ?? '').trim()}), so origin/main may be stale.`)
+}
+
 export async function readMainMigrations(runner, root) {
-  await runner('git', ['-C', root, 'fetch', '--quiet', 'origin', 'main'])
   return readMigrationsAt(runner, root, 'origin/main')
 }
 
@@ -152,6 +132,10 @@ export async function readMergeBaseMigrations(runner, root) {
   const found = await runner('git', ['-C', root, 'merge-base', 'origin/main', 'HEAD'])
   const base = found.code === 0 ? found.stdout.trim() : ''
   return base ? readMigrationsAt(runner, root, base) : null
+}
+
+export function pasteEntries(ids, source, schemas = new Map()) {
+  return ids.map((id) => `${schemas.get(id) ?? '<schema>'}/${id} ${source.get(id)}`).join('; ')
 }
 
 export async function checkUatMigrations(runner, settings, { source, approved, main = new Map(), adoptUnrecorded = false }) {
@@ -162,7 +146,11 @@ export async function checkUatMigrations(runner, settings, { source, approved, m
   }
   const { changed, missing, unrecorded } = checkMigrations({ applied, source, recorded: readFingerprints(settings.stateDir), approved, main })
   if (changed.length > 0) {
-    throw new Error(`Refusing to deploy uat: ${changed.join(', ')} changed after uat applied it (CLA-0010). Fix forward with a new migration, or ask the owner to add '<schema>/<id> <sha256 of the file> <what happened>. #<issue>' to approved-migration-edits.txt on main. Nothing was changed.`)
+    const recordedHashes = readFingerprints(settings.stateDir)
+    const schemas = new Map(applied.map((entry) => [migrationId(entry), schemaOf(entry)]))
+    const behind = changed.filter((id) => !recordedHashes[id])
+    const rebase = behind.length > 0 ? ` ${behind.join(', ')} was compared with origin/main because uat has no recorded hash for it: if this branch is only behind main, rebase it onto main and deploy again.` : ''
+    throw new Error(`Refusing to deploy uat: ${changed.join(', ')} changed after uat applied it (CLA-0010). Fix forward with a new migration, or ask the owner to approve the edit by adding '<entry> <what happened>. #<issue>' to approved-migration-edits.txt on main, where <entry> is one of: ${pasteEntries(changed, source, schemas)} (the hash is of this commit's file with LF line endings).${rebase} Nothing was changed.`)
   }
   if (missing.length > 0) {
     const migrated = new Set(missing.map(schemaOf))
@@ -174,7 +162,7 @@ export async function checkUatMigrations(runner, settings, { source, approved, m
     throw new Error(`Refusing to deploy uat: uat has applied ${missing.join(', ')}, which this commit lacks (an abandoned or replaced pull request, or a branch behind main). Nothing was changed. ${rollBack}`)
   }
   if (unrecorded.length > 0 && !adoptUnrecorded) {
-    throw new Error(`Refusing to deploy uat: uat has applied ${unrecorded.join(', ')}, which has no recorded fingerprint and is not on origin/main, so there is no baseline to compare with (CLA-0010). If the owner has checked that this commit's file is the one uat applied, deploy again with --adopt-unrecorded-migrations to record it. Nothing was changed.`)
+    throw new Error(`Refusing to deploy uat: uat has applied ${unrecorded.join(', ')}, which has no recorded fingerprint and is not on origin/main, so there is no baseline to compare with (CLA-0010). Ask the owner: if they have checked that this commit's file is the one uat applied, they run the uat deploy with --adopt-unrecorded-migrations to record it. Nothing was changed.`)
   }
   return { firstDeploy: false }
 }

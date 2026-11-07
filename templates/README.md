@@ -11,7 +11,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/install-security-tools.mjs` | `node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a pinned release, refuses a download whose SHA-256 differs, installs into a new folder under `RUNNER_TEMP` unless `--destination` names one, and adds the folder to `GITHUB_PATH` ([CLA-0071](../adr/0071-security-scans.md)) |
 | `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
 | `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
-| `app/scripts/deploy.mjs`, `backup.mjs`, `restore.mjs`, `prune-backups.mjs`, `refresh-dev.mjs`, `init.mjs`, `migrate.mjs` | The environment entry scripts ([CLA-0084](../adr/0084-environment-scripts-package.md)). Each only calls `runMain` with the function of the same name from `@claudalisk/scripts`, so the guards, backups and restores live in the package, not in the app. See Environment scripts below |
+| `app/scripts/deploy.mjs`, `backup.mjs`, `restore.mjs`, `prune-backups.mjs`, `refresh-dev.mjs`, `init.mjs`, `migrate.mjs`, `check-migrations.mjs` | The environment entry scripts ([CLA-0084](../adr/0084-environment-scripts-package.md)). Each only calls `runMain` with the function of the same name from `@claudalisk/scripts`, so the guards, backups and restores live in the package, not in the app. See Environment scripts below |
 | `app/scripts/*.test.mjs` | Their tests: `node --test scripts/*.test.mjs` |
 | `app/frontend/.oxlintrc.json` | The frontend's oxlint configuration ([CLA-0065](../adr/0065-frontend-tooling.md)). It keeps `fetch` inside `src/shared/api` ([CLA-0014](../adr/0014-frontend-stack-and-api-module.md)) and turns `react/only-export-components` off in `src/shared/ui`, where shadcn's components export their variants beside them, so the warning stays meaningful everywhere else |
 | `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
@@ -37,11 +37,11 @@ It validates the config and fails, writing nothing, when another app already use
 
 ## Environment scripts
 
-The deploy, backup, restore, prune, refresh, init and migrate scripts are the npm package `@claudalisk/scripts` (CLA-0084), built from `packages/scripts` in the plugin repository. The app keeps only the seven thin entries at `scripts/<name>.mjs`, copied from `app/scripts/`. They hold no logic and are never edited, because a fix arrives as a new package version.
+The deploy, backup, restore, prune, refresh, init, migrate and check-migrations scripts are the npm package `@claudalisk/scripts` (CLA-0084), built from `packages/scripts` in the plugin repository. The app keeps only the eight thin entries at `scripts/<name>.mjs`, copied from `app/scripts/`. They hold no logic and are never edited, because a fix arrives as a new package version.
 
 To add the package to an app:
 
-1. Copy the seven entries into the app's `scripts/` folder.
+1. Copy the eight entries into the app's `scripts/` folder.
 2. Pin an exact version, and commit the lockfile so a deploy is reproducible from its commit: `npm install --save-dev --save-exact @claudalisk/scripts`. CI installs it with `npm ci`, and the owner runs the same commands by hand.
 3. Fill in `.claude/claudalisk.json` (see App config). The package reads the databases, ports, uat project and volume, repository and backup count from it, and stops with a message naming any missing field.
 4. Keep the conventions the package expects: `compose.base.yml` plus `compose.<env>.yml` with the services `api` and `db` and the profile `migrate`, `.env.<env>.example` files with `CHANGE_ME` as the password, and an API image that sets `DEPLOYED_SHA` and `DEPLOYED_REF`. The package README lists them all.

@@ -104,3 +104,10 @@ test('as a hook process it prints the deny, and nothing for an allowed edit or b
   assert.equal(bad.status, 0);
   assert.equal(bad.stdout, '');
 }));
+
+test('a path that cannot be a migration never starts git', () => {
+  const git = () => { throw new Error('git must not run'); };
+  for (const file of ['/r/backend/Shop/Program.cs', '/r/backend/Shop/Migrations/notes.md', '/r/frontend/src/App.tsx']) {
+    assert.equal(decide({ cwd: '/r', tool_name: 'Edit', tool_input: { file_path: file } }, { git, exists: () => true }), null);
+  }
+});

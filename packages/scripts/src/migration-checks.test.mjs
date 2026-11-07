@@ -12,6 +12,8 @@ import {
   approvedMigrationEdits,
   checkAgainstMain,
   checkMigrations,
+  fetchMain,
+  pasteEntries,
   checkUatMigrations,
   fingerprints,
   isMigrationFile,
@@ -137,6 +139,31 @@ test('with no recorded fingerprint, main is the baseline; a migration not on mai
   assert.deepEqual(checkMigrations({ applied, source, recorded: { '20260102000000_B': 'h2' }, main }).changed, [], 'the recorded fingerprint wins over main')
 })
 
+test('fetching main warns when the fetch fails, and stays quiet when it works', async () => {
+  const warnings = []
+  const warn = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    await fetchMain(gitRunner(() => ({})), '/repo')
+    assert.equal(warnings.length, 0)
+    await fetchMain(gitRunner(() => ({ code: 128, stderr: 'no network' })), '/repo')
+  } finally {
+    console.warn = warn
+  }
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /origin\/main may be stale/)
+})
+
+test('a migration absent from both main and the branch is not missing', () => {
+  const base = new Map([['20260101000000_A', 'h1']])
+  assert.deepEqual(checkAgainstMain({ main: new Map(), base, source: new Map() }), { changed: [], missing: [] })
+})
+
+test('the paste entries name the schema when it is known and carry the hash of the commit file', () => {
+  const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2']])
+  assert.equal(pasteEntries(['20260101000000_A', '20260102000000_B'], source, new Map([['20260101000000_A', 'app']])), 'app/20260101000000_A h1; <schema>/20260102000000_B h2')
+})
+
 test('against main, a changed or missing migration fails unless an approval covers the new content', () => {
   const main = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2'], ['20260103000000_C', 'h3']])
   const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2-new'], ['20260104000000_New', 'h4']])
@@ -153,7 +180,7 @@ test('main migrations are read through git ls-tree and git show, with line endin
   })
   const main = await readMainMigrations(runner, '/repo')
   assert.deepEqual(main, fingerprints([{ path: 'x/20260101000000_A.cs', text: 'one\ntwo' }]))
-  assert.ok(runner.calls.some((call) => call.args.includes('fetch')))
+  assert.ok(!runner.calls.some((call) => call.args.includes('fetch')))
   await assert.rejects(readMainMigrations(gitRunner(() => ({ code: 128, stderr: 'bad' })), '/repo'), /git ls-tree origin\/main/)
 })
 

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isMigrationFile } from '../packages/scripts/src/migration-checks.mjs';
+import { isMigrationFile } from '../packages/scripts/src/migration-files.mjs';
 
 const TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 
@@ -32,6 +32,7 @@ export function decide(input, deps = {}) {
     const git = deps.git ?? realGit;
     const exists = deps.exists ?? existsSync;
     const path = resolve(input.cwd ?? process.cwd(), given);
+    if (!path.endsWith('.cs') || !path.split(/[\\/]/).includes('Migrations')) return null;
     const folder = existingFolder(path, exists);
     const prefix = git(folder, ['rev-parse', '--show-prefix']);
     if (prefix.code !== 0) return null;

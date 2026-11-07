@@ -498,3 +498,34 @@ test('check-migrations accepts a changed migration only when main approves exact
   await assert.rejects(checkRun(checkSetup({ branch, main, approvals: entry('edited again') })), /Changed after reaching/)
   await assert.rejects(checkRun(checkSetup({ branch, main, approvals: 'shop/20260101000000_A not-a-hash Kept the old index name. #42\n' })), /Changed after reaching/)
 })
+
+test('a uat deploy fetches origin/main once, before it reads the approvals and the main migrations', async () => {
+  const { root, env, runner } = uatSetup()
+  await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
+  const lines = runner.calls.map((call) => call.line)
+  assert.equal(lines.filter((line) => /fetch --quiet origin main$/.test(line)).length, 1)
+  const at = (pattern) => lines.findIndex((line) => pattern.test(line))
+  assert.ok(at(/fetch --quiet origin main$/) < at(/show origin\/main:approved-migration-edits\.txt$/))
+  assert.ok(at(/fetch --quiet origin main$/) < at(/ls-tree -r --name-only origin\/main/))
+})
+
+test('a uat refusal for a changed migration gives the entry to paste and says to rebase when main was the baseline', async () => {
+  const differs = uatSetup({ main: { [mainPath]: 'migration as merged' } })
+  const expected = createHash('sha256').update('migration').digest('hex')
+  await assert.rejects(uatDeploy(differs), (error) => {
+    assert.ok(error.message.includes(`app/20260101000000_A ${expected}`), error.message)
+    assert.match(error.message, /LF line endings/)
+    assert.match(error.message, /rebase it onto main/)
+    return true
+  })
+})
+
+test('a check-migrations refusal gives the entry to paste for each changed migration', async () => {
+  const setup = checkSetup({ branch: { '20260101000000_A.cs': 'edited' }, main: { '20260101000000_A.cs': 'a' } })
+  const expected = createHash('sha256').update('edited').digest('hex')
+  await assert.rejects(checkRun(setup), (error) => {
+    assert.ok(error.message.includes(`<schema>/20260101000000_A ${expected}`), error.message)
+    assert.match(error.message, /LF line endings/)
+    return true
+  })
+})

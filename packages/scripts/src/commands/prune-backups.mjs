@@ -4,7 +4,7 @@ import { readApp } from '../app-config.mjs'
 import { listBackups, migrationsToProtect, selectBackupsToKeep } from '../backups.mjs'
 import { appliedMigrations } from '../database.mjs'
 import { loadEnvironment, runningContainer } from '../environment.mjs'
-import { readMainMigrations } from '../migration-checks.mjs'
+import { fetchMain, readMainMigrations } from '../migration-checks.mjs'
 
 export const defaultKeep = 10
 
@@ -28,6 +28,7 @@ export async function pruneBackups({ appRoot, argv, env, runner }) {
   if (!Number.isInteger(keep) || keep < 1) throw new Error(`--keep takes a whole number of at least 1, not '${options.keep}'.`)
 
   const { complete, incomplete } = await listBackups(uat.backupDir)
+  await fetchMain(runner, appRoot)
   const unmerged = migrationsToProtect(await uatMigrations(runner, uat, complete[0]), new Set((await readMainMigrations(runner, appRoot)).keys()))
   const selection = selectBackupsToKeep(complete, keep, unmerged)
   const remove = complete.filter((backup) => !selection.keep.has(backup.name))
