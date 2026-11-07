@@ -100,7 +100,7 @@ test('the example placeholder is replaced wherever it appears', () => {
 })
 
 test('env files with a byte order mark parse', () => {
-  assert.deepEqual(parseEnvFile('﻿POSTGRES_DB=shop\n'), { POSTGRES_DB: 'shop' })
+  assert.deepEqual(parseEnvFile('\uFEFFPOSTGRES_DB=shop\n'), { POSTGRES_DB: 'shop' })
 })
 
 test('the database name is read from the connection string', () => {

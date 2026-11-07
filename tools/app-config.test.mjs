@@ -152,7 +152,7 @@ test('readAppConfig returns a valid config', () => {
 });
 
 test('readAppConfig strips a BOM', () => {
-  assert.deepEqual(readAppConfig(appWith(`﻿${JSON.stringify(minimal())}`)), minimal());
+  assert.deepEqual(readAppConfig(appWith(`\uFEFF${JSON.stringify(minimal())}`)), minimal());
 });
 
 test('readAppConfig names the file when the JSON is broken', () => {

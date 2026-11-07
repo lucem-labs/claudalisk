@@ -1,0 +1,41 @@
+name: base
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: base
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  base:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Status of the open pull requests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/base-status.mjs --open-pulls

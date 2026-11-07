@@ -132,7 +132,7 @@ export function configuredName(top, readFile = readFileSync) {
   }
   let config;
   try {
-    config = JSON.parse(text.replace(/^﻿/, ''));
+    config = JSON.parse(text.replace(/^\uFEFF/, ''));
   } catch (e) {
     throw new Error(`.claude/claudalisk.json is not valid JSON: ${e.message}`);
   }

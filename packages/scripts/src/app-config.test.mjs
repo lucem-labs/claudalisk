@@ -70,7 +70,7 @@ test('wrong types and empty lists are rejected', () => {
 test('a config with a byte order mark is read, and the app carries its root', () => {
   const root = join(scratch, 'app')
   mkdirSync(join(root, '.claude'), { recursive: true })
-  writeFileSync(configPath(root), `﻿${JSON.stringify(sampleConfig)}`)
+  writeFileSync(configPath(root), `\uFEFF${JSON.stringify(sampleConfig)}`)
   const app = readApp(root)
   assert.equal(app.root, root)
   assert.equal(app.uat.volume, 'shop-uat_postgres-data')

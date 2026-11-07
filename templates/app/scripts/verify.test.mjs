@@ -371,7 +371,7 @@ test('a clone in a differently named folder gets the same app folder', () => {
 test('gitNames falls back to the folder name without a config or a name', () => {
   assert.equal(gitNames(fakeGit().git, configFile(undefined)).app, 'shop');
   assert.equal(gitNames(fakeGit().git, configFile({ review: {} })).app, 'shop');
-  assert.equal(gitNames(fakeGit().git, configFile('﻿{"name":"storefront"}')).app, 'storefront');
+  assert.equal(gitNames(fakeGit().git, configFile('\uFEFF{"name":"storefront"}')).app, 'storefront');
 });
 
 test('gitNames throws on a name that is not a safe folder name', () => {
