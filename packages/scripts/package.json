@@ -1,7 +1,7 @@
 {
   "name": "@claudalisk/scripts",
   "version": "0.1.0",
-  "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, prune-backups, refresh-dev, init, migrate, check-migrations) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations).",
+  "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, prune-backups, refresh-dev, init, migrate, check-migrations) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions).",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -37,6 +37,11 @@
     "./scan-images": "./src/commands/scan-images.mjs",
     "./zap-baseline": "./src/commands/zap-baseline.mjs",
     "./trx-annotations": "./src/commands/trx-annotations.mjs",
+    "./base-status": "./src/commands/base-status.mjs",
+    "./free-ports": "./src/commands/free-ports.mjs",
+    "./check-forbidden-files": "./src/commands/check-forbidden-files.mjs",
+    "./check-source-hygiene": "./src/commands/check-source-hygiene.mjs",
+    "./check-suppressions": "./src/commands/check-suppressions.mjs",
     "./fake-runner": "./src/fake-runner.mjs",
     "./package.json": "./package.json"
   }

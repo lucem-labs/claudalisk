@@ -25,6 +25,11 @@ const commands = {
   'scan-images': 'scanImages',
   'zap-baseline': 'zapBaseline',
   'trx-annotations': 'trxAnnotations',
+  'base-status': 'baseStatus',
+  'free-ports': 'exportFreePorts',
+  'check-forbidden-files': 'checkForbiddenFiles',
+  'check-source-hygiene': 'checkSourceHygiene',
+  'check-suppressions': 'checkSuppressions',
 }
 
 test('the release workflow finds the package and its name', () => {

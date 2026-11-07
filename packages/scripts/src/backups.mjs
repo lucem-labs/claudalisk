@@ -41,7 +41,7 @@ export function writeManifest(folder, manifest) {
 export function parseManifest(text, folder) {
   let manifest
   try {
-    manifest = JSON.parse(text.replace(/^﻿/, ''))
+    manifest = JSON.parse(text.replace(/^\uFEFF/, ''))
   } catch {
     throw new Error(`Backup '${folder}': manifest.json is not valid JSON.`)
   }

@@ -42,7 +42,7 @@ function rejectUnknownKeys(value, allowed, path, file) {
 export function parseAppConfig(text, file = '.claude/claudalisk.json') {
   let config
   try {
-    config = JSON.parse(text.replace(/^﻿/, ''))
+    config = JSON.parse(text.replace(/^\uFEFF/, ''))
   } catch (error) {
     throw new Error(`${file} is not valid JSON: ${error.message}`)
   }

@@ -89,7 +89,7 @@ test('a manifest without a reason or a database is rejected', () => {
 
 test('a manifest written with a byte order mark is read', () => {
   const text = JSON.stringify({ createdAtUtc: '2026-10-16T09:30:05.000Z', reason: 'manual', databases: [{ role: 'app', database: 'shop', file: 'shop.dump', sizeBytes: 4, sha256: 'x' }] })
-  assert.equal(parseManifest('﻿' + text, 'f').reason, 'manual')
+  assert.equal(parseManifest('\uFEFF' + text, 'f').reason, 'manual')
 })
 
 test('a verified backup matches its size and SHA-256', async () => {
