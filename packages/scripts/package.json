@@ -1,7 +1,7 @@
 {
   "name": "@claudalisk/scripts",
   "version": "0.1.0",
-  "description": "The guarded environment scripts of a claudalisk app: deploy, backup, restore, prune-backups, refresh-dev, init and migrate.",
+  "description": "The guarded environment scripts of a claudalisk app: deploy, backup, restore, prune-backups, refresh-dev, init, migrate and check-migrations.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -30,6 +30,7 @@
     "./refresh-dev": "./src/commands/refresh-dev.mjs",
     "./init": "./src/commands/init.mjs",
     "./migrate": "./src/commands/migrate.mjs",
+    "./check-migrations": "./src/commands/check-migrations.mjs",
     "./fake-runner": "./src/fake-runner.mjs",
     "./package.json": "./package.json"
   }

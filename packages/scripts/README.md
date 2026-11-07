@@ -26,10 +26,11 @@ runMain(deploy)
 | `scripts/refresh-dev.mjs` | `@claudalisk/scripts/refresh-dev` | `[--backup <name\|latest>] [--fresh]` (CLA-0032) |
 | `scripts/init.mjs` | `@claudalisk/scripts/init` | `--environment dev\|uat`: env file and volume (CLA-0066) |
 | `scripts/migrate.mjs` | `@claudalisk/scripts/migrate` | `[--project <csproj>]`: migrates the dev databases from a directly launched Host (CLA-0008) |
+| `scripts/check-migrations.mjs` | `@claudalisk/scripts/check-migrations` | Fails when a migration on `origin/main` is changed or missing on this branch, unless `approved-migration-edits.txt` on main covers its new content (CLA-0010). A branch is judged only on what it changed since its merge base with main; CI wiring is #18 |
 
 `@claudalisk/scripts/fake-runner` is the injectable command runner the library's own tests use, for an app's tests of its entries.
 
-Every command refuses to run when `CI` or `GITHUB_ACTIONS` is set.
+Every command except check-migrations refuses to run when `CI` or `GITHUB_ACTIONS` is set.
 
 ## Conventions
 
@@ -39,4 +40,5 @@ The values that differ between apps come from `.claude/claudalisk.json` (CLA-008
 - Databases: each entry of `databases` names the variable that holds its connection string. The database name is its `Database=` part. An app with one database may leave the variable out of the env file and set `POSTGRES_DB`.
 - Deployed commit: the API image sets `DEPLOYED_SHA` and `DEPLOYED_REF` in its environment. A backup reads them from the `api` container, running or not, or from the image `<compose project>-api`.
 - `migrate` runs the single `backend/<Name>.Api/<Name>.Api.csproj`, or the one `--project` names, with each database's connection variable pointing at the dev database.
-- `approved-migration-edits.txt` in the app root lists the migrations a uat deploy may accept as edited.
+- `approved-migration-edits.txt` in the app root, read from `origin/main` only, has one line per approved edit: `<schema>/<migration id> <sha256 of the file with LF endings> <what happened>. #<issue>`. An entry approves that one content of that migration.
+- `deploy.mjs --environment uat --adopt-unrecorded-migrations`: the owner records the fingerprints of migrations uat applied that are neither recorded nor on `origin/main`.

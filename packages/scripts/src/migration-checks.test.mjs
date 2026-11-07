@@ -10,13 +10,17 @@ import { fakeRunner } from './fake-runner.mjs'
 import { sampleApp, sampleValues } from '../test/sample-app.mjs'
 import {
   approvedMigrationEdits,
+  checkAgainstMain,
   checkMigrations,
+  fetchMain,
+  pasteEntries,
   checkUatMigrations,
   fingerprints,
   isMigrationFile,
   migrationIdsOf,
   readApprovedEdits,
   readFingerprints,
+  readMainMigrations,
   recordApplied,
   recordUatFingerprints,
   sourceMigrations,
@@ -77,28 +81,107 @@ test('the source scan finds migrations at any depth under backend and skips bin 
   assert.deepEqual([...sourceMigrations(root).keys()], ['20260101000000_Initial'])
 })
 
-test('the approved edits file lists schema/id entries, with or without a reason', () => {
-  assert.deepEqual(
-    [...approvedMigrationEdits('catalog/20261028131259_InitialCreate moved ... #168\npublic/20261016120952_InitialCreate\nnot an entry\n')],
-    ['catalog/20261028131259_InitialCreate', 'public/20261016120952_InitialCreate'],
-  )
+const hashA = 'a'.repeat(64)
+const hashB = 'b'.repeat(64)
+
+test('the approved edits file lists schema/id entries with the sha256 of the approved content, a reason and an issue', () => {
+  const approved = approvedMigrationEdits([
+    `catalog/20261028131259_InitialCreate ${hashA} Kept the old primary-key index name. #168`,
+    `public/20261016120952_InitialCreate ${hashA.toUpperCase()} Renamed it. #5\r`,
+    `catalog/20261028131259_InitialCreate ${hashB} A second content of the same migration. #170`,
+  ].join('\n'))
+  assert.deepEqual([...approved.keys()], ['20261028131259_InitialCreate', '20261016120952_InitialCreate'])
+  assert.deepEqual([...approved.get('20261028131259_InitialCreate')], [hashA, hashB])
+  assert.deepEqual([...approved.get('20261016120952_InitialCreate')], [hashA])
 })
 
-test('an applied migration whose file changed is refused unless approved; one the commit lacks is missing', () => {
+test('malformed approval lines approve nothing', () => {
+  const approved = approvedMigrationEdits([
+    'catalog/20261028131259_InitialCreate moved the index. #168',
+    'catalog/20261028131259_InitialCreate',
+    `catalog/20261028131259_InitialCreate ${hashA}`,
+    `catalog/20261028131259_InitialCreate ${hashA} no issue number`,
+    `catalog/20261028131259_InitialCreate ${hashA} #168`,
+    `catalog/20261028131259_InitialCreate ${'a'.repeat(63)} short hash. #168`,
+    `20261028131259_InitialCreate ${hashA} no schema. #168`,
+    `catalog/InitialCreate ${hashA} no timestamp. #168`,
+    'not an entry',
+    '',
+  ].join('\n'))
+  assert.equal(approved.size, 0)
+  assert.equal(approvedMigrationEdits(undefined).size, 0)
+})
+
+test('an applied migration whose file changed is refused unless approved with its content; one the commit lacks is missing', () => {
   const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2-new']])
   const applied = ['app/20260101000000_A', 'app/20260102000000_B', 'app/20260103000000_Abandoned']
   const recorded = { '20260101000000_A': 'h1', '20260102000000_B': 'h2-old' }
+  const approving = (hash) => new Map([['20260102000000_B', new Set([hash])]])
 
   assert.deepEqual(checkMigrations({ applied, source, recorded }), {
     changed: ['20260102000000_B'],
     missing: ['app/20260103000000_Abandoned'],
     unrecorded: [],
   })
-  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).unrecorded, ['20260101000000_A', '20260102000000_B'])
-  assert.deepEqual(checkMigrations({ applied, source, recorded, approved: new Set(['app/20260102000000_B']) }).changed, [])
+  assert.deepEqual(checkMigrations({ applied, source, recorded, approved: approving('h2-new') }).changed, [])
+  assert.deepEqual(checkMigrations({ applied, source, recorded, approved: approving('h2-other') }).changed, ['20260102000000_B'], 'an approval covers exactly one content')
   assert.deepEqual(checkMigrations({ applied: [...applied, 'legacy/20250101000000_Old'], source, recorded }).missing, ['app/20260103000000_Abandoned'], 'a schema the commit does not migrate at all is not missing')
-  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).changed, [], 'a migration seen for the first time is recorded, not refused')
   assert.deepEqual(recordApplied({ applied, source, recorded }), { '20260101000000_A': 'h1', '20260102000000_B': 'h2-new' })
+})
+
+test('with no recorded fingerprint, main is the baseline; a migration not on main is unrecorded', () => {
+  const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2'], ['20260103000000_C', 'h3']])
+  const applied = ['app/20260101000000_A', 'app/20260102000000_B', 'app/20260103000000_C']
+  const main = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2-merged']])
+  assert.deepEqual(checkMigrations({ applied, source, recorded: {}, main }), { changed: ['20260102000000_B'], missing: [], unrecorded: ['20260103000000_C'] })
+  assert.deepEqual(checkMigrations({ applied, source, recorded: {} }).unrecorded, ['20260101000000_A', '20260102000000_B', '20260103000000_C'])
+  assert.deepEqual(checkMigrations({ applied, source, recorded: {}, main, approved: new Map([['20260102000000_B', new Set(['h2'])]]) }).changed, [])
+  assert.deepEqual(checkMigrations({ applied, source, recorded: { '20260102000000_B': 'h2' }, main }).changed, [], 'the recorded fingerprint wins over main')
+})
+
+test('fetching main warns when the fetch fails, and stays quiet when it works', async () => {
+  const warnings = []
+  const warn = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    await fetchMain(gitRunner(() => ({})), '/repo')
+    assert.equal(warnings.length, 0)
+    await fetchMain(gitRunner(() => ({ code: 128, stderr: 'no network' })), '/repo')
+  } finally {
+    console.warn = warn
+  }
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /origin\/main may be stale/)
+})
+
+test('a migration absent from both main and the branch is not missing', () => {
+  const base = new Map([['20260101000000_A', 'h1']])
+  assert.deepEqual(checkAgainstMain({ main: new Map(), base, source: new Map() }), { changed: [], missing: [] })
+})
+
+test('the paste entries name the schema when it is known and carry the hash of the commit file', () => {
+  const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2']])
+  assert.equal(pasteEntries(['20260101000000_A', '20260102000000_B'], source, new Map([['20260101000000_A', 'app']])), 'app/20260101000000_A h1; <schema>/20260102000000_B h2')
+})
+
+test('against main, a changed or missing migration fails unless an approval covers the new content', () => {
+  const main = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2'], ['20260103000000_C', 'h3']])
+  const source = new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2-new'], ['20260104000000_New', 'h4']])
+  assert.deepEqual(checkAgainstMain({ main, source }), { changed: ['20260102000000_B'], missing: ['20260103000000_C'] })
+  assert.deepEqual(checkAgainstMain({ main, source, approved: new Map([['20260102000000_B', new Set(['h2-new'])]]) }).changed, [])
+  assert.deepEqual(checkAgainstMain({ main, source, approved: new Map([['20260102000000_B', new Set(['h2'])]]) }).changed, ['20260102000000_B'])
+})
+
+test('main migrations are read through git ls-tree and git show, with line endings ignored', async () => {
+  const runner = gitRunner((call) => {
+    if (call.args.includes('ls-tree')) return { stdout: 'backend/App.Persistence/Migrations/20260101000000_A.cs\nbackend/App.Persistence/Migrations/20260101000000_A.Designer.cs\nbackend/Program.cs\n' }
+    if (call.args.includes('origin/main:backend/App.Persistence/Migrations/20260101000000_A.cs')) return { stdout: 'one\r\ntwo' }
+    return {}
+  })
+  const main = await readMainMigrations(runner, '/repo')
+  assert.deepEqual(main, fingerprints([{ path: 'x/20260101000000_A.cs', text: 'one\ntwo' }]))
+  assert.ok(!runner.calls.some((call) => call.args.includes('fetch')))
+  await assert.rejects(readMainMigrations(gitRunner(() => ({ code: 128, stderr: 'bad' })), '/repo'), /git ls-tree origin\/main/)
 })
 
 test('fingerprints are written whole, beside uat.env', () => {
@@ -137,12 +220,12 @@ const source = new Map([['20260101000000_A', 'h1']])
 
 test('a first deploy has nothing to check', async () => {
   const { settings, runner } = uatWith({ applied: [], hasSchema: false })
-  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Set() }), { firstDeploy: true })
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map() }), { firstDeploy: true })
 })
 
 test('a changed applied migration is refused before anything is written', async () => {
   const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'], recorded: { '20260101000000_A': 'h0' } })
-  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Set() }), /20260101000000_A changed after uat applied it \(CLA-0010\)\. Fix forward/)
+  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), /20260101000000_A changed after uat applied it \(CLA-0010\)\. Fix forward/)
   assert.ok(runner.calls.every((call) => !call.line.includes('pg_dump') && !call.line.includes('pg_restore')))
 })
 
@@ -155,7 +238,7 @@ test('migrations the commit lacks are refused with the owner\'s restore command 
       ['20261003T000000Z-ccccccc', '2026-10-03T00:00:00Z', ['app/20260101000000_A', 'app/20260104000000_X']],
     ],
   })
-  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Set() }), (error) => {
+  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), (error) => {
     assert.match(error.message, /uat has applied app\/20260104000000_X, which this commit lacks .*Nothing was changed\./)
     assert.match(error.message, /restore\.mjs --environment uat --backup 20261001T000000Z-aaaaaaa --owner-approved --no-start --confirm 'restore uat 20261001T000000Z-aaaaaaa'/, 'the newer backup still holds the abandoned Y, so it is skipped')
     return true
@@ -165,12 +248,12 @@ test('migrations the commit lacks are refused with the owner\'s restore command 
 
 test('migrations the commit lacks with no backup before them leave the decision to the owner', async () => {
   const { settings, runner } = uatWith({ applied: ['app/20260101000000_A', 'app/20260104000000_X'] })
-  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Set() }), /No backup without them exists; the owner decides/)
+  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), /No backup without them exists; the owner decides/)
 })
 
 test('matching migrations pass, and recording keeps the fingerprints of what uat has applied', async () => {
   const { settings, runner, stateDir } = uatWith({ applied: ['app/20260101000000_A'], recorded: { '20260101000000_A': 'h1' } })
-  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Set() }), { firstDeploy: false })
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map() }), { firstDeploy: false })
   await recordUatFingerprints(runner, settings, new Map([['20260101000000_A', 'h1'], ['20260102000000_B', 'h2']]))
   assert.deepEqual(readFingerprints(stateDir), { '20260101000000_A': 'h1' }, 'only applied migrations are recorded')
 })
@@ -182,9 +265,11 @@ function gitRunner(respond) {
 test('approved edits are read from origin/main, never from the working tree', async () => {
   const root = join(scratch, 'approvals')
   mkdirSync(root, { recursive: true })
-  writeFileSync(join(root, 'approved-migration-edits.txt'), 'app/20260101000000_Branch why\n')
-  const runner = gitRunner(() => ({ stdout: 'app/20260101000000_A why\n' }))
-  assert.deepEqual([...(await readApprovedEdits(runner, root))], ['app/20260101000000_A'])
+  writeFileSync(join(root, 'approved-migration-edits.txt'), `app/20260101000000_Branch ${hashB} why. #1
+`)
+  const runner = gitRunner(() => ({ stdout: `app/20260101000000_A ${hashA} why. #2
+` }))
+  assert.deepEqual([...(await readApprovedEdits(runner, root))], [['20260101000000_A', new Set([hashA])]])
   assert.deepEqual(runner.calls[0].args, ['-C', root, 'show', 'origin/main:approved-migration-edits.txt'])
 })
 
@@ -199,21 +284,28 @@ test('a file missing on origin/main approves nothing, and any other git failure 
 
 test('uat with applied migrations and no source migrations is refused, naming where it looked', async () => {
   const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'] })
-  await assert.rejects(checkUatMigrations(runner, settings, { source: new Map(), approved: new Set() }), /backend\/\*\*\/Migrations.*Nothing was changed\./)
+  await assert.rejects(checkUatMigrations(runner, settings, { source: new Map(), approved: new Map() }), /backend\/\*\*\/Migrations.*Nothing was changed\./)
 })
 
-test('applied migrations with no recorded fingerprint are listed in one warning and do not refuse', async () => {
-  const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'] })
-  const warnings = []
-  const warn = console.warn
-  console.warn = (message) => warnings.push(message)
-  try {
-    assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Set() }), { firstDeploy: false })
-  } finally {
-    console.warn = warn
-  }
-  assert.equal(warnings.length, 1)
-  assert.match(warnings[0], /20260101000000_A/)
+test('applied migrations with no recorded fingerprint and not on main are refused unless adopted, and then recorded', async () => {
+  const { settings, runner, stateDir } = uatWith({ applied: ['app/20260101000000_A'] })
+  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), /20260101000000_A.*no recorded fingerprint.*--adopt-unrecorded-migrations.*Nothing was changed/s)
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map(), adoptUnrecorded: true }), { firstDeploy: false })
+  await recordUatFingerprints(runner, settings, source)
+  assert.deepEqual(readFingerprints(stateDir), { '20260101000000_A': 'h1' })
+})
+
+test('an unrecorded migration that matches main passes and is recorded; one that differs is refused unless approved', async () => {
+  const { settings, runner, stateDir } = uatWith({ applied: ['app/20260101000000_A'] })
+  const main = new Map([['20260101000000_A', 'h1']])
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map(), main }), { firstDeploy: false })
+  await recordUatFingerprints(runner, settings, source)
+  assert.deepEqual(readFingerprints(stateDir), { '20260101000000_A': 'h1' })
+  const older = new Map([['20260101000000_A', 'h0']])
+  const fresh = uatWith({ applied: ['app/20260101000000_A'] })
+  await assert.rejects(checkUatMigrations(fresh.runner, fresh.settings, { source, approved: new Map(), main: older }), /20260101000000_A changed after uat applied it.*approved-migration-edits\.txt/s)
+  const approved = new Map([['20260101000000_A', new Set(['h1'])]])
+  assert.deepEqual(await checkUatMigrations(fresh.runner, fresh.settings, { source, approved, main: older }), { firstDeploy: false })
 })
 
 test('several databases are checked together, and a first deploy needs none of them to have a schema', async () => {
@@ -228,7 +320,7 @@ test('several databases are checked together, and a first deploy needs none of t
     if (sql.includes('gexec')) return { stdout: schemas[database].join('\n') }
     return {}
   })
-  assert.deepEqual(await checkUatMigrations(make({}), settings, { source, approved: new Set() }), { firstDeploy: true })
+  assert.deepEqual(await checkUatMigrations(make({}), settings, { source, approved: new Map() }), { firstDeploy: true })
   const runner = make({ a: ['app/20260101000000_A'], b: ['identity/20260101000000_A'] })
-  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Set() }), { firstDeploy: false })
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map(), main: new Map([['20260101000000_A', 'h1']]) }), { firstDeploy: false })
 })

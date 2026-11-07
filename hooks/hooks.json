@@ -27,6 +27,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/ci-poll-guard.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/migration-guard.mjs\""
+          }
+        ]
       }
     ],
     "SessionStart": [

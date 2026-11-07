@@ -37,6 +37,8 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 | 11 | Changing a runner group's access | ask | CLA-0033 | hook speed bump |
 | 12 | A dangerous script's path (in a `scripts` directory, or relative with `./` or `../`) anywhere in a PowerShell command | ask | CLA-0083 | hook speed bump |
 | 13 | `proxy.mjs recreate`, which stops every app's URLs for a moment | ask | CLA-0033 | hook speed bump |
+| 14 | `dotnet ef migrations remove`, also as `dotnet-ef` and `dotnet tool run dotnet-ef` | ask | CLA-0010 | hook speed bump |
+| 15 | A `deploy.mjs` command with `--adopt-unrecorded-migrations` | ask | CLA-0010 | hook speed bump |
 
   - In rule 6, the hook checks CI. That dev was verified and that the review was done stay with the workflow, as prompt only.
   - In rule 3, the uat volume is external, so Compose cannot remove it, which is the structural part.

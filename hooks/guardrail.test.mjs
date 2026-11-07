@@ -59,7 +59,7 @@ const allow = (commands, options) => expectAll('allow', commands, options);
 const deny = (commands, options) => expectAll('deny', commands, options);
 const ask = (commands, options) => expectAll('ask', commands, options);
 
-test('the rule table lists the thirteen rules with their decision and enforcement', () => {
+test('the rule table lists the fifteen rules with their decision and enforcement', () => {
   assert.deepEqual(
     RULES.map(({ id, decision, adr, enforcedBy }) => ({ id, decision, adr, enforcedBy })),
     [
@@ -76,6 +76,8 @@ test('the rule table lists the thirteen rules with their decision and enforcemen
       { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: ['hook speed bump'] },
       { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: ['hook speed bump'] },
       { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: ['hook speed bump'] },
+      { id: 14, decision: 'ask', adr: 'CLA-0010', enforcedBy: ['hook speed bump'] },
+      { id: 15, decision: 'ask', adr: 'CLA-0010', enforcedBy: ['hook speed bump'] },
     ],
   );
   for (const rule of RULES) assert.ok(rule.summary.length > 10, `rule ${rule.id} has a summary`);
@@ -676,6 +678,37 @@ allow([
   'node /p/tools/proxy.mjs up --port 8080',
   'node /p/tools/other.mjs recreate',
   'echo recreate',
+]);
+
+ask([
+  'dotnet ef migrations remove',
+  'dotnet ef migrations remove --project backend/Shop.Persistence --force',
+  'dotnet ef --project backend/Shop.Persistence migrations remove',
+  'dotnet-ef migrations remove',
+  'dotnet tool run dotnet-ef migrations remove',
+  'dotnet tool run dotnet-ef migrations remove --project backend/Shop.Persistence',
+  'cd backend && dotnet ef migrations remove',
+  'bash -c "dotnet ef migrations remove"',
+]);
+
+allow([
+  'dotnet ef migrations add AddOrders --project backend/Shop.Persistence',
+  'dotnet ef migrations list',
+  'dotnet test --filter remove',
+  'echo dotnet ef migrations remove',
+]);
+
+ask([
+  'node scripts/deploy.mjs --environment uat --adopt-unrecorded-migrations',
+  'node scripts/deploy.mjs --adopt-unrecorded-migrations --environment uat',
+  'node ./scripts/deploy.mjs --environment=uat --adopt-unrecorded-migrations',
+  'bash -c "node scripts/deploy.mjs --environment uat --adopt-unrecorded-migrations"',
+]);
+
+allow([
+  'node scripts/deploy.mjs --environment dev',
+  'echo --adopt-unrecorded-migrations',
+  'git commit -m "add --adopt-unrecorded-migrations"',
 ]);
 
 test('PowerShell asks before proxy.mjs recreate', () => {
