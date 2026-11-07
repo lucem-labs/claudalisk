@@ -89,12 +89,14 @@ export async function runnersLine(config, deps, cwd) {
   const { gh, docker } = deps;
   const group = `orgs/${stack.target}/actions/runner-groups/${stack.groupId}`;
   const org = stack.scope === 'organization';
+  const groupRead = org ? json(() => gh(['api', group], cwd)) : null;
+  const membersRead = org ? groupRead.then((g) => (g && g.visibility === 'selected' ? json(() => gh(['api', `${group}/repositories?per_page=100`], cwd)) : null)) : null;
   const [containers, runners, repoInfo, groupInfo, members] = await Promise.all([
     docker ? json(async () => JSON.stringify(await containerState(stack.composeProject, docker))) : null,
     json(() => gh(['api', `${org ? 'orgs' : 'repos'}/${stack.target}/actions/runners?per_page=100`], cwd)),
     json(() => gh(['api', `repos/${repo}`], cwd)),
-    org ? json(() => gh(['api', group], cwd)) : null,
-    org ? json(() => gh(['api', `${group}/repositories?per_page=100`], cwd)) : null,
+    groupRead,
+    membersRead,
   ]);
   const prefix = deps.prefix ? deps.prefix(stack) : '';
   const head = containers ? `${containers.state} (supervisor ${containers.supervisor})` : 'unknown (supervisor unknown)';
@@ -105,8 +107,9 @@ export async function runnersLine(config, deps, cwd) {
   }
   let where;
   if (!org) where = repoInfo ? `${repo} is ${repoInfo.private === true ? 'private' : 'PUBLIC'}` : `whether ${repo} is private is unknown`;
+  else if (repoInfo && repoInfo.private !== true) where = `${repo} is public, so these runners never serve it`;
+  else if (repoInfo && groupInfo && groupInfo.visibility !== 'selected' && repoInfo.private === true) where = `runner group ${label(groupInfo.name)} serves all ${groupInfo.visibility === 'private' ? 'private ' : ''}repositories, including ${repo}`;
   else if (!repoInfo || !groupInfo || !members || !Array.isArray(members.repositories)) where = `whether ${repo} is in its runner group is unknown`;
-  else if (repoInfo.private !== true) where = `${repo} is public, so these runners never serve it`;
   else if (members.repositories.some((r) => r.id === repoInfo.id)) where = `${repo} is in runner group ${label(groupInfo.name)}`;
   else if (members.total_count > members.repositories.length) where = `whether ${repo} is in its runner group is unknown`;
   else where = `${repo} is NOT in runner group ${label(groupInfo.name)}, so its CI jobs queue until GitHub cancels them (/claudalisk:runners enroll)`;

@@ -30,7 +30,8 @@ const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]*)$/;
 const REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 const DIGEST = /@sha256:[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
-const CODE = /^[A-Za-z0-9_-]+$/;
+const SAFE_VALUE = /^[A-Za-z0-9._,-]+$/;
+const CODE =/^[A-Za-z0-9_-]+$/;
 const SLUG = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
 const firstLine = (text) => String(text ?? '').trim().split(/\r?\n/)[0];
@@ -165,7 +166,7 @@ function projectContainers(docker, project) {
 
 function targets(flags, deps, { several = false } = {}) {
   const registry = readRegistry({ home: deps.home });
-  const stacks = registry.runners ?? [];
+  const stacks = (registry.runners ?? []).filter((s) => s.configDir);
   const open = (dir, registered) => {
     const folder = inspectFolder(dir, deps);
     return { dir, folder, stack: folder.stack ?? registered ?? null };
@@ -239,7 +240,7 @@ function showStatus(item, deps) {
       write(`  runner group ${group.name} (id ${s.groupId}): visibility ${group.visibility}, public repositories ${group.allows_public_repositories ? 'allowed' : 'not allowed'}`);
       if (group.visibility === 'selected') {
         for (const r of getAll(gh, `${groupPath(s)}/repositories`, 'repositories')) write(`  group repository ${r.full_name}: ${r.visibility ?? (r.private ? 'private' : 'public')}`);
-      }
+      } else write(`  runner group ${group.name} serves all ${group.visibility === 'private' ? 'private ' : ''}repositories`);
     });
   } else {
     attempt(write, 'repository', () => {
@@ -289,6 +290,11 @@ function init(args, deps) {
   const owner = target.split('/')[0];
   const project = flags.project ?? `${(org ? target : target.split('/')[1]).toLowerCase().replace(/[^a-z0-9_-]/g, '-')}-runners`;
   if (!PROJECT.test(project)) refuse(`${project} is not a valid Compose project name`);
+  for (const name of ['project', 'prefix', 'labels', 'memory']) {
+    if (flags[name] !== undefined && !SAFE_VALUE.test(flags[name])) refuse(`--${name} may hold only letters, digits, dots, commas, dashes and underscores`);
+  }
+  if (!SAFE_VALUE.test(flags.image.replace(/[/:@]/g, ''))) refuse('--image holds characters that cannot go into runners.env');
+  if (flags.dir !== undefined && (/[\u0000-\u001f]/.test(flags.dir) || flags.dir.trim() === '')) refuse('--dir must be a plain folder path');
   const dir = resolve(flags.dir ?? join(deps.home, '.claudalisk', 'runners', project));
   const localApp = deps.platform === 'win32' ? deps.env.LOCALAPPDATA : undefined;
   if (localApp && isInside(dir, localApp, deps.platform)) refuse(`${dir} is under %LOCALAPPDATA%, which the packaged desktop app redirects and Docker Desktop cannot see`);
@@ -337,31 +343,36 @@ function waitForCode({ makeServer, state, timeoutMs, page, announce }) {
     let html = '';
     let timer = null;
     let server = null;
-    const settle = (fn, value) => {
-      clearTimeout(timer);
+    const shutDown = () => {
       server.close();
       server.closeAllConnections?.();
+    };
+    const settle = (fn, value) => {
+      clearTimeout(timer);
+      shutDown();
       fn(value);
     };
     server = makeServer((req, res) => {
+      const reply = (status, type, text, after) => {
+        res.writeHead(status, { 'content-type': type });
+        res.end(text, after);
+      };
+      if (req.headers?.host !== `127.0.0.1:${server.address().port}`) {
+        reply(400, 'text/plain', 'bad host');
+        return;
+      }
       const url = new URL(req.url, 'http://127.0.0.1');
-      if (url.pathname === '/') {
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        res.end(html);
-      } else if (url.pathname === '/callback') {
+      if (url.pathname === '/') reply(200, 'text/html; charset=utf-8', html);
+      else if (url.pathname === '/callback') {
         const code = url.searchParams.get('code') ?? '';
         if (url.searchParams.get('state') !== state || !CODE.test(code)) {
-          res.writeHead(400, { 'content-type': 'text/plain' });
-          res.end('state mismatch');
+          reply(400, 'text/plain', 'state mismatch');
           return;
         }
-        res.writeHead(200, { 'content-type': 'text/plain' });
-        res.end('The GitHub App was created. You can close this tab.');
-        settle(resolveCode, code);
-      } else {
-        res.writeHead(404, { 'content-type': 'text/plain' });
-        res.end('not found');
-      }
+        clearTimeout(timer);
+        reply(200, 'text/plain', 'The GitHub App was created. You can close this tab.', shutDown);
+        resolveCode(code);
+      } else reply(404, 'text/plain', 'not found');
     });
     server.on?.('error', (e) => settle(rejectCode, e));
     server.listen(0, '127.0.0.1', () => {
@@ -457,9 +468,9 @@ function groupCommand(args, deps) {
     deps.write('run again with --apply to set visibility to selected and turn public repositories off');
     return;
   }
-  if (group.visibility === 'all') {
+  if (group.visibility !== 'selected') {
     const selected = getAll(deps.gh, `${path}/repositories`, 'repositories');
-    if (selected.length === 0) refuse(`the group's visibility is all and no repositories are selected; switching to selected would cut off every repository of ${stack.target}. Add the repositories with "enroll" first, or select them in the group's settings`);
+    if (selected.length === 0) refuse(`the group's visibility is ${group.visibility} and no repositories are selected; switching to selected would cut off every repository of ${stack.target}. Add the repositories with "enroll" first, or select them in the group's settings`);
     deps.write(`switching to selected cuts off every repository not yet selected; selected now: ${selected.map((r) => r.full_name).join(', ')}`);
   }
   deps.gh(['api', '--method', 'PATCH', path, '-f', 'visibility=selected', '-F', 'allows_public_repositories=false']);
@@ -474,7 +485,7 @@ function enroll(args, deps) {
   if (!config) refuse(`${join(root, '.claude', 'claudalisk.json')} is missing`);
   const repo = config.repo;
   const owner = repo.split('/')[0].toLowerCase();
-  const serving = (readRegistry({ home: deps.home }).runners ?? []).filter((s) => (s.scope === 'organization' ? s.target.toLowerCase() === owner : s.target.toLowerCase() === repo.toLowerCase()));
+  const serving = (readRegistry({ home: deps.home }).runners ?? []).filter((s) => typeof s.target === 'string').filter((s) => (s.scope === 'organization' ? s.target.toLowerCase() === owner : s.target.toLowerCase() === repo.toLowerCase()));
   if (serving.length === 0) refuse(`no registered runner stack serves ${repo}. Run "init" or "adopt" for it first`);
   if (serving.length > 1) refuse(`more than one runner stack serves ${repo}: ${serving.map((s) => s.composeProject).join(', ')}`);
   const stack = serving[0];
@@ -533,6 +544,7 @@ function up(args, deps) {
   const files = [join(kit, 'compose.yaml'), ...overlaysOf(item.dir)];
   deps.docker([
     'compose',
+    '-p', stack.composeProject,
     ...files.flatMap((f) => ['--file', f]),
     '--env-file', join(item.dir, 'runners.env'),
     '--env-file', join(item.dir, 'runners.local.env'),

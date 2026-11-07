@@ -15,6 +15,7 @@ const isListenPort = (value) => Number.isInteger(value) && value >= 1 && value <
 function stackProblems(stack, where) {
   if (!isObject(stack)) return [`${where} must be an object`];
   const problems = [];
+  if (Object.keys(stack).length === 1 && isText(stack.composeProject)) return problems;
   for (const key of ['composeProject', 'configDir', 'target']) if (!isText(stack[key])) problems.push(`${where} needs ${key}`);
   if (!['organization', 'repository'].includes(stack.scope)) problems.push(`${where}.scope must be organization or repository`);
   else if (stack.scope === 'organization' && !Number.isInteger(stack.groupId)) problems.push(`${where}.groupId is required for an organization stack`);
@@ -52,6 +53,7 @@ export function readRegistry({ home = homedir() } = {}) {
   } catch (e) {
     throw new Error(`${path} is not valid JSON: ${e.message}`);
   }
+  if (isObject(registry) && isObject(registry.runners) && isText(registry.runners.composeProject)) registry.runners = [{ composeProject: registry.runners.composeProject }];
   const problems = problemsOf(registry);
   if (problems.length) throw new Error(`${path} has the wrong shape: ${problems.join('; ')}`);
   return registry;

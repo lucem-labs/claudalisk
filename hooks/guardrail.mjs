@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, normalize as normalizePath, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { command, normalize, segments, substitutions } from './shell.mjs';
 
@@ -24,7 +24,7 @@ export const RULES = [
   { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before node proxy.mjs recreate, which stops the URLs of every app while the shared proxy is rebuilt.' },
   { id: 14, decision: 'ask', adr: 'CLA-0010', enforcedBy: [HOOK], summary: 'Ask before dotnet ef migrations remove, which deletes a migration that may have run on uat or be tracked on origin/main.' },
   { id: 15, decision: 'ask', adr: 'CLA-0010', enforcedBy: [HOOK], summary: 'Ask before a deploy.mjs command that carries --adopt-unrecorded-migrations, which records fingerprints the owner has to vouch for.' },
-  { id: 16, decision: 'ask', adr: 'CLA-0033, CLA-0086', enforcedBy: [HOOK], summary: 'Ask before runners.mjs init, up, enroll, app create or group --apply, which create, start or open up the shared runners.' },
+  { id: 16, decision: 'ask', adr: 'CLA-0033, CLA-0086', enforcedBy: [HOOK], summary: 'Ask before runners.mjs init, up, enroll, app create or group --apply, and before a shell write into a registered runners config folder.' },
 ];
 
 export function hostPath(path, platform) {
@@ -127,7 +127,7 @@ export async function realDeps() {
         error.config = config;
         throw error;
       }
-      return { names: protectedNames(registry, config), config, configDirs: (registry.runners ?? []).map((stack) => stack.configDir) };
+      return { names: protectedNames(registry, config), config, configDirs: (registry.runners ?? []).map((stack) => stack.configDir).filter(Boolean) };
     },
   };
 }
@@ -249,17 +249,33 @@ const slashes = (text, platform) => {
   return platform === 'win32' ? forward.toLowerCase() : forward;
 };
 
+const BARE_PATH = /^[A-Za-z]:[\\/]/;
+
+function pathForms(text, ctx) {
+  const pieces = new Set([text]);
+  for (const base of /^-[A-Za-z]/.test(text) ? [text, text.slice(2)] : [text]) for (const part of base.split(/[=,]/)) for (const sub of part.split(/(?<=[^:]{2}):(?=[\\/])/)) pieces.add(sub);
+  const forms = [];
+  for (const piece of pieces) {
+    const hosted = ctx.host(piece).replace(/^[\\/]{2}[?.][\\/]/, '');
+    forms.push({ piece, hosted, absolute: isAbsolute(hosted) || BARE_PATH.test(hosted) || hosted.startsWith('/') });
+  }
+  return forms;
+}
+
 export function configDirHit(texts, dirs, ctx) {
   for (const dir of dirs) {
-    const wanted = slashes(dir, ctx.platform);
+    const wanted = slashes(normalizePath(dir), ctx.platform);
     if (wanted === '') continue;
-    const absolute = new RegExp(`(?<![A-Za-z0-9_.~/\\\\-])${escapeRegExp(wanted)}(?![A-Za-z0-9_.-])`);
+    const inside = new RegExp(`(?<![A-Za-z0-9_.~/\\-])${escapeRegExp(wanted)}(?![A-Za-z0-9_.-])`);
     for (const text of texts) {
-      const hosted = slashes(ctx.host(text), ctx.platform);
-      if (absolute.test(hosted)) return { text, dir };
-      if (ctx.cwd === null || /^-/.test(text) || /[\s$`]/.test(text) || isAbsolute(ctx.host(text))) continue;
-      const resolved = slashes(resolve(ctx.cwd, ctx.host(text)), ctx.platform);
-      if (absolute.test(resolved)) return { text, dir };
+      for (const { hosted, absolute } of pathForms(text, ctx)) {
+        if (absolute) {
+          if (inside.test(slashes(normalizePath(hosted), ctx.platform))) return { text, dir };
+        } else if (inside.test(slashes(hosted, ctx.platform))) return { text, dir };
+        else if (ctx.cwd !== null && !/^-/.test(hosted) && !/[\s$`]/.test(hosted) && hosted !== '') {
+          if (inside.test(slashes(resolve(ctx.cwd, hosted), ctx.platform))) return { text, dir };
+        }
+      }
     }
   }
   return null;
@@ -353,7 +369,7 @@ function parseApi(args) {
 
 function ghApi(args, ctx) {
   const { positionals, method, fields } = parseApi(args);
-  const path = positionals[0] ?? '';
+  const path = (positionals[0] ?? '').replace(/^https:\/\/api\.github\.com\//i, '').replace(/^\/+/, '');
   const bare = path.split('?')[0];
   if (positionals.some((p) => MERGE_PATH.test(p)) || /\/merges$/.test(bare)) {
     flag(ctx, 'deny', 5, `${path} merges through the API. The owner merges pull requests (CLA-0024); report that the pull request is ready instead.`);
@@ -364,7 +380,7 @@ function ghApi(args, ctx) {
   if (/orgs\/[^/]+\/actions\/runner-groups/.test(path) && ((method && method.toUpperCase() !== 'GET') || fields)) {
     flag(ctx, 'ask', 11, `${path} changes who can use the shared runners (CLA-0033). Ask the owner before running it.`);
   }
-  if (/^repos\/[^/]+\/[^/]+\/actions\/runners(\/|$)/.test(path) && ((method && method.toUpperCase() !== 'GET') || fields)) {
+  if (/^(repos\/[^/]+\/[^/]+|orgs\/[^/]+)\/actions\/runners(\/|$)/.test(bare) && ((method && method.toUpperCase() !== 'GET') || fields)) {
     flag(ctx, 'ask', 11, `${path} registers or removes a self-hosted runner (CLA-0033). Ask the owner before running it.`);
   }
 }
@@ -516,6 +532,13 @@ function envWrites(name, args, redirects, local, ctx) {
   else if (DEST_WRITERS.has(name)) {
     const at = args.findIndex((a) => /^-dest/i.test(a));
     targets.push(at >= 0 ? args[at + 1] ?? '' : positionals.at(-1) ?? '');
+  }
+  const inPlace = (name === 'sed' || name === 'perl' || name === 'gsed') && args.some((a) => /^-[A-Za-z]*i/.test(a));
+  if (inPlace) targets.push(...positionals);
+  if (targets.length) {
+    const dirs = protection(ctx).configDirs ?? [];
+    const hit = dirs.length ? configDirHit(targets.map((t) => expand(ctx, local, t)), dirs, ctx) : null;
+    if (hit) flag(ctx, 'ask', 16, `this command writes "${hit.text}" inside ${hit.dir}, the config folder of a registered runners stack (CLA-0086). Ask the owner before changing its pins or App settings.`);
   }
   for (const raw of targets) {
     const target = expand(ctx, local, raw);

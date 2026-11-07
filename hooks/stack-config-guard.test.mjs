@@ -62,3 +62,16 @@ test('the hook asks through the real registry and stays silent on bad input', ()
     rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('a legacy runners entry without a config folder is ignored by the real hook', () => {
+  const home = mkdtempSync(join(tmpdir(), 'stack-guard-legacy-'));
+  try {
+    mkdirSync(join(home, '.claudalisk'));
+    writeFileSync(join(home, '.claudalisk', 'apps.json'), JSON.stringify({ apps: [], runners: { composeProject: 'old' } }));
+    const run = spawnSync(process.execPath, [SCRIPT], { input: JSON.stringify(edit('Write', join(stack, 'runners.env'))), encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home } });
+    assert.equal(run.status, 0);
+    assert.equal(run.stdout, '');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});

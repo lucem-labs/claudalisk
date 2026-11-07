@@ -51,7 +51,7 @@ test('a corrupt registry throws with its path instead of reading as empty', () =
 test('a registry of the wrong shape throws with its path', () => {
   const home = tempHome();
   mkdirSync(join(home, '.claudalisk'));
-  for (const body of ['[]', '{}', '{"apps":[{"name":"x"}]}', '{"apps":[],"proxy":{}}', '{"apps":[],"runners":1}', '{"apps":[],"runners":{"composeProject":"r"}}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"organization","target":"acme"}]}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"team","target":"acme"}]}']) {
+  for (const body of ['[]', '{}', '{"apps":[{"name":"x"}]}', '{"apps":[],"proxy":{}}', '{"apps":[],"runners":1}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"organization","target":"acme"}]}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"team","target":"acme"}]}']) {
     writeFileSync(registryPath({ home }), body);
     assert.throws(() => readRegistry({ home }), (e) => e.message.includes(registryPath({ home })), body);
   }
@@ -287,4 +287,21 @@ test('the proxy port is recorded and validated', () => {
   for (const port of [0, 70000, 80.5, '80', null]) {
     assert.throws(() => registerProxy({ composeProject: 'traefik', network: 'traefik', port }, { home }), /proxy.port/);
   }
+});
+
+test('a legacy runners object becomes a one-entry list, stays protected and can be replaced', () => {
+  const home = tempHome();
+  mkdirSync(join(home, '.claudalisk'));
+  writeFileSync(registryPath({ home }), JSON.stringify({ apps: [], runners: { composeProject: 'old-runners' } }));
+  assert.deepEqual(readRegistry({ home }).runners, [{ composeProject: 'old-runners' }]);
+  assert.throws(() => registerApp(config('shop', { uat: { composeProject: 'old-runners', volume: 'v' } }), { home }), /shared stack/);
+  registerRunners(stack('old-runners'), { home });
+  assert.deepEqual(readRegistry({ home }).runners, [stack('old-runners')]);
+});
+
+test('a runners entry with only some of the stack fields is the wrong shape', () => {
+  const home = tempHome();
+  mkdirSync(join(home, '.claudalisk'));
+  writeFileSync(registryPath({ home }), JSON.stringify({ apps: [], runners: [{ composeProject: 'r', configDir: '/c' }] }));
+  assert.throws(() => readRegistry({ home }), /wrong shape/);
 });

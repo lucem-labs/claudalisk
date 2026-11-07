@@ -38,7 +38,7 @@ async function main() {
   try {
     const input = JSON.parse(readFileSync(0, 'utf8'));
     const { readRegistry } = await import('../tools/app-registry.mjs');
-    const result = decide(input, { configDirs: () => (readRegistry({ home: homedir() }).runners ?? []).map((stack) => stack.configDir) });
+    const result = decide(input, { configDirs: () => (readRegistry({ home: homedir() }).runners ?? []).map((stack) => stack.configDir).filter(Boolean) });
     if (result) process.stdout.write(JSON.stringify(result));
   } catch {
     process.exit(0);

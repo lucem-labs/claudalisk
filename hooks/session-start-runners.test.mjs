@@ -43,7 +43,7 @@ const ROUTES = {
     ],
   },
   'repos/acme/example-app': { id: 99, private: true },
-  'orgs/Acme/actions/runner-groups/7': { name: 'Default' },
+  'orgs/Acme/actions/runner-groups/7': { name: 'Default', visibility: 'selected' },
   'orgs/Acme/actions/runner-groups/7/repositories': { repositories: [{ id: 99 }] },
 };
 
@@ -129,4 +129,15 @@ test('a truncated member page reads unknown instead of NOT in the group', async 
   const routes = { ...ROUTES, 'orgs/Acme/actions/runner-groups/7/repositories': { total_count: 150, repositories: [{ id: 1 }] } };
   const [line] = await linesOf(deps({ ghRoutes: routes }));
   assert.match(line, /whether acme.example-app is in its runner group is unknown.$/);
+});
+
+test('a group that is not selected says it serves all repositories and never lists them', async () => {
+  for (const [visibility, words] of [['all', 'all repositories'], ['private', 'all private repositories']]) {
+    const d = deps({ ghRoutes: { ...ROUTES, 'orgs/Acme/actions/runner-groups/7': { name: 'Default', visibility } } });
+    const [line] = await linesOf(d);
+    assert.match(line, new RegExp(`runner group Default serves ${words}, including acme.example-app\.$`));
+    assert.ok(!d.calls.some((args) => args[1].includes('/repositories')));
+  }
+  const pub = deps({ ghRoutes: { ...ROUTES, 'repos/acme/example-app': { id: 99, private: false }, 'orgs/Acme/actions/runner-groups/7': { name: 'Default', visibility: 'all' } } });
+  assert.match((await linesOf(pub))[0], /is public, so these runners never serve it\.$/);
 });

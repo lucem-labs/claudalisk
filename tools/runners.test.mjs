@@ -108,14 +108,15 @@ function fakeServer() {
       },
     };
   };
-  const hit = (url) => {
+  const hit = (url, host = `127.0.0.1:${state.port}`) => {
     const response = { status: null, body: '' };
-    state.handler({ url, method: 'GET' }, {
+    state.handler({ url, method: 'GET', headers: { host } }, {
       writeHead(status) {
         response.status = status;
       },
-      end(body) {
+      end(body, after) {
         response.body = body;
+        after?.();
       },
     });
     return response;
@@ -613,6 +614,7 @@ test('group --apply patches the group with the exact fields', async () => {
   let patched = false;
   const t = setup({ routes: {
     [GROUP_PATH]: () => (patched ? GROUP_OK : { name: 'Default', visibility: 'private', allows_public_repositories: true }),
+    'GET orgs/acme/actions/runner-groups/7/repositories': { repositories: [{ full_name: 'acme/shop' }] },
     'PATCH orgs/acme/actions/runner-groups/7': () => { patched = true; return {}; },
   } });
   await t.run(['group', '--config', dir, '--apply']);
@@ -737,6 +739,7 @@ test('up fetches the kit, runs compose with the overlays in order, registers and
   ]);
   assert.deepEqual(composeCalls(t.docker.calls).map((c) => c.args), [[
     'compose',
+    '-p', 'acme-runners',
     '--file', join(kit, 'compose.yaml'),
     '--file', join(dir, 'compose.a.yaml'),
     '--file', join(dir, 'compose.slots.yaml'),
@@ -821,4 +824,63 @@ test('logs accepts --config for a folder that is not registered', async () => {
   const t = setup();
   await t.run(['logs', '--config', dir]);
   assert.deepEqual(t.docker.calls[0].args, ['logs', '--tail', '100', 'acme-runners-supervisor-1']);
+});
+
+test('app create rejects a request whose Host header is not the loopback address and port', async () => {
+  const { dir } = makeFolder();
+  const t = setup({ routes: { [CONVERT]: CONVERSION } });
+  const done = t.run(['app', 'create', '--config', dir]);
+  await untilListening(t);
+  for (const host of ['evil.example', '127.0.0.1:9999', 'localhost:4321', null]) {
+    assert.equal(t.server.hit(CALLBACK, host).status, 400, String(host));
+    assert.equal(t.server.hit('/', host).status, 400, String(host));
+  }
+  assert.equal(t.server.state.closed, false);
+  assert.deepEqual(writes(t.gh.calls), []);
+  t.server.hit(CALLBACK);
+  await done;
+});
+
+test('app create closes the server only after the callback response has finished', async () => {
+  const { dir } = makeFolder();
+  const t = setup({ routes: { [CONVERT]: CONVERSION } });
+  const done = t.run(['app', 'create', '--config', dir]);
+  await untilListening(t);
+  let finish = null;
+  t.server.state.handler({ url: CALLBACK, method: 'GET', headers: { host: '127.0.0.1:4321' } }, { writeHead() {}, end(body, after) { finish = after; } });
+  await done;
+  assert.equal(t.server.state.closed, false);
+  finish();
+  assert.equal(t.server.state.closed, true);
+});
+
+test('init refuses values that could add lines or odd characters to runners.env', async () => {
+  const t = setup({ routes: ORG_ROUTES });
+  const nl = String.fromCharCode(10);
+  const cases = [
+    ['--prefix', 'a' + nl + 'RUNNER_IMAGE=evil'],
+    ['--labels', 'ci' + nl + 'X=1'],
+    ['--memory', '4g' + nl + 'X=1'],
+    ['--project', 'ok' + nl + 'X=1'],
+    ['--prefix', 'has space'],
+    ['--labels', 'a=b'],
+    ['--dir', '/tmp/x' + nl + 'y'],
+  ];
+  for (const [flag, value] of cases) await assert.rejects(t.run([...INIT_ARGS, flag, value]), /Nothing was changed/, flag);
+  await assert.rejects(t.run(['init', '--org', 'acme', '--kit-commit', COMMIT, '--image', IMAGE + nl + 'X=1']), /Nothing was changed/);
+  assert.deepEqual(t.gh.calls, []);
+});
+
+test('group --apply refuses a private group with no selected repository, and status says it serves all private repositories', async () => {
+  const { dir } = makeFolder();
+  const t = setup({ routes: {
+    [GROUP_PATH]: { name: 'Default', visibility: 'private', allows_public_repositories: false },
+    'GET orgs/acme/actions/runner-groups/7/repositories': { repositories: [] },
+    'GET orgs/acme/actions/runners': { runners: [] },
+  } });
+  await assert.rejects(t.run(['group', '--config', dir, '--apply']), /visibility is private and no repositories are selected.*Nothing was changed/);
+  assert.deepEqual(writes(t.gh.calls), []);
+  await t.run(['status', '--config', dir]);
+  assert.match(t.out.join(' '), /runner group Default serves all private repositories/);
+  assert.equal(t.gh.calls.filter((a) => a[1].includes('/repositories')).length, 1);
 });

@@ -54,6 +54,7 @@ The guardrail asks before `init`, `up`, `enroll`, `app create` and `group --appl
 - The pool is shared, so one app's CI queues behind another's. Workflows set `cancel-in-progress`.
 - The Docker socket is mounted into the supervisor only. Runner containers never get it.
 - Packaged desktop app trap on Windows: files created under `%LOCALAPPDATA%` go to a redirected private copy that Docker Desktop cannot see. The tool refuses a config folder or key there.
+- On Windows the 0600 mode of the key file has no effect, so keep the key under the user profile (the default is `~/.config/claudalisk-runners`), never in a shared folder.
 - The key stays outside any git work tree. The tool checks that the file exists and never opens it.
 
 ## Stopping
