@@ -166,17 +166,18 @@ test('readFacts gathers the issue, worktree, pull request and deployment with re
   assert.ok(!calls.some((c) => c.includes('--method') || c.includes('-X')));
 });
 
-test('readFacts with no branch makes no pull request call', () => {
+test('readFacts with no branch and no pull request leads to step 2', () => {
   const { run, calls } = fakeRun({
     'gh issue view 16': { ...issueView, comments: [] },
     'git worktree list --porcelain': 'worktree C:/git/claudalisk\nHEAD 1\nbranch refs/heads/main\n',
     'git for-each-ref': '',
+    'gh pr list --state all --limit 200': [{ ...prList[0], headRefName: 'issue-160-x' }],
   });
   const f = readFacts(16, run);
   assert.equal(f.branch, null);
   assert.equal(f.pr, null);
   assert.equal(f.handoff, null);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   assert.equal(lifecycleStep(f).step, 2);
 });
 
@@ -207,4 +208,56 @@ test('readFacts reads a StatusContext rollup and a missing review section', () =
   assert.equal(f.pr.hasReview, false);
   assert.equal(f.pr.green, false);
   assert.equal(lifecycleStep(f).step, 4);
+});
+
+const mergedPr = { ...prList[0], number: 152, state: 'MERGED', headRefName: 'issue-7-migration-fingerprints', mergedAt: '2026-02-01T00:00:00Z' };
+const noWorktrees = 'worktree C:/git/claudalisk\nHEAD 1\nbranch refs/heads/main\n';
+
+test('a closed issue with a merged pull request and no worktree is step 9 with nothing to remove', () => {
+  const { run } = fakeRun({
+    'gh issue view 7': { ...issueView, state: 'CLOSED', comments: [], closedByPullRequestsReferences: [{ number: 152 }] },
+    'git worktree list --porcelain': noWorktrees,
+    'git for-each-ref': '',
+    'gh pr list --state all --limit 200': [{ ...prList[0], number: 3, headRefName: 'other' }, mergedPr],
+  });
+  const f = readFacts(7, run);
+  assert.equal(f.branch, 'issue-7-migration-fingerprints');
+  assert.equal(f.worktree, null);
+  const r = lifecycleStep(f);
+  assert.equal(r.step, 9);
+  assert.match(r.next, /Nothing to remove/);
+});
+
+test('the closing pull request is found even when its branch has another name', () => {
+  const { run } = fakeRun({
+    'gh issue view 7': { ...issueView, state: 'CLOSED', comments: [], closedByPullRequestsReferences: [{ number: 152 }] },
+    'git worktree list --porcelain': noWorktrees,
+    'git for-each-ref': '',
+    'gh pr list --state all --limit 200': [{ ...mergedPr, headRefName: 'renamed' }],
+  });
+  assert.equal(readFacts(7, run).pr.number, 152);
+});
+
+test('a local worktree still wins for the path of a merged pull request', () => {
+  const { run } = fakeRun({
+    'gh issue view 16': { ...issueView, state: 'CLOSED' },
+    'git worktree list --porcelain': worktreeList,
+    'git for-each-ref': '',
+    'gh pr list --head issue-16-work-issue': [{ ...mergedPr, headRefName: 'issue-16-work-issue' }],
+  });
+  const f = readFacts(16, run);
+  assert.equal(lifecycleStep(f).next, 'git worktree remove C:/git/claudalisk-16');
+});
+
+test('a closed issue with no pull request stops and never offers a branch', () => {
+  const { run } = fakeRun({
+    'gh issue view 9': { ...issueView, state: 'CLOSED', comments: [] },
+    'git worktree list --porcelain': noWorktrees,
+    'git for-each-ref': '',
+    'gh pr list --state all --limit 200': [],
+  });
+  const r = lifecycleStep(readFacts(9, run));
+  assert.equal(r.blocked, true);
+  assert.match(r.next, /closed/);
+  assert.doesNotMatch(r.next, /worktree add/);
 });

@@ -52,7 +52,7 @@ const pickPr = (prs) => prs.find((p) => p.state === 'OPEN') ?? prs.find((p) => p
 const json = (text) => JSON.parse(text);
 
 export function readFacts(issue, run) {
-  const view = json(run('gh', ['issue', 'view', String(issue), '--json', 'state,labels,title,comments']));
+  const view = json(run('gh', ['issue', 'view', String(issue), '--json', 'state,labels,title,comments,closedByPullRequestsReferences']));
   const handoff = latestHandoff(view.comments);
   const worktrees = parseWorktrees(run('git', ['worktree', 'list', '--porcelain']));
   const prefix = `issue-${issue}-`;
@@ -60,16 +60,20 @@ export function readFacts(issue, run) {
   const branches = run('git', ['for-each-ref', '--format=%(refname:short)', `refs/heads/${prefix}*`]).split('\n').map((b) => b.trim()).filter(Boolean);
   const branch = worktree?.branch ?? branches[0] ?? null;
 
-  let pr = null;
+  const fields = 'number,url,state,isDraft,headRefOid,headRefName,body,mergedAt,statusCheckRollup';
+  const closing = (view.closedByPullRequestsReferences ?? []).map((r) => r.number);
+  let prs;
+  if (branch) prs = json(run('gh', ['pr', 'list', '--head', branch, '--state', 'all', '--json', fields]));
+  else {
+    const all = json(run('gh', ['pr', 'list', '--state', 'all', '--limit', '200', '--json', fields]));
+    prs = all.filter((p) => p.headRefName?.startsWith(prefix) || closing.includes(p.number));
+  }
+  const pr = pickPr(prs);
   let deployment = null;
-  if (branch) {
-    const prs = json(run('gh', ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number,url,state,isDraft,headRefOid,body,mergedAt,statusCheckRollup']));
-    pr = pickPr(prs);
-    if (pr) {
-      const deployments = json(run('gh', ['api', `repos/{owner}/{repo}/deployments?environment=uat&sha=${pr.headRefOid}`]));
-      const latest = deployments.reduce((a, b) => (!a || Date.parse(b.created_at) > Date.parse(a.created_at) ? b : a), null);
-      deployment = latest ? { sha: latest.sha, createdAt: latest.created_at } : null;
-    }
+  if (pr?.state === 'OPEN') {
+    const deployments = json(run('gh', ['api', `repos/{owner}/{repo}/deployments?environment=uat&sha=${pr.headRefOid}`]));
+    const latest = deployments.reduce((a, b) => (!a || Date.parse(b.created_at) > Date.parse(a.created_at) ? b : a), null);
+    deployment = latest ? { sha: latest.sha, createdAt: latest.created_at } : null;
   }
 
   return {
@@ -77,7 +81,7 @@ export function readFacts(issue, run) {
     handoff: handoff ? { createdAt: handoff.createdAt, body: handoff.body } : null,
     repo: basename(worktrees[0]?.path ?? ''),
     worktree: worktree?.path ?? null,
-    branch,
+    branch: branch ?? pr?.headRefName ?? null,
     pr: pr && { number: pr.number, url: pr.url, state: pr.state, isDraft: pr.isDraft, headRefOid: pr.headRefOid, hasReview: REVIEW_SECTION.test(pr.body ?? ''), mergedAt: pr.mergedAt, green: isGreen(pr.statusCheckRollup) },
     deployment,
   };
@@ -86,7 +90,10 @@ export function readFacts(issue, run) {
 export function lifecycleStep(facts) {
   const { issue, pr } = facts;
   const n = issue.number;
-  if (issue.labels.includes('needs-design-review')) {
+  if (issue.state === 'CLOSED' && !pr) {
+    return { step: 1, title: 'Check the issue', next: `Stop: #${n} is closed and has no pull request. Ask the owner before doing anything.`, adrs: ['CLA-0073'], blocked: true };
+  }
+  if (issue.labels.includes('needs-design-review') && issue.state !== 'CLOSED') {
     return { step: 1, title: 'Check the issue', next: `Refuse: #${n} is labelled needs-design-review. Ask the owner to settle the design first.`, adrs: ['CLA-0073', 'CLA-0022'], blocked: true };
   }
   if (!facts.branch) {
