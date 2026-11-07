@@ -1,0 +1,255 @@
+name: ci
+
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  MSBUILDDISABLENODEREUSE: "1"
+
+jobs:
+  base:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Up to date with main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/base-status.mjs
+
+  backend:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Migrations on main are unchanged
+        run: node scripts/check-migrations.mjs
+
+      - name: Build
+        run: dotnet build backend/<Root>.slnx -nodeReuse:false
+
+      - name: Tests
+        run: dotnet test backend/<Root>.slnx --no-build --logger trx --results-directory "$RUNNER_TEMP/trx"
+
+      - name: Failing tests
+        if: failure()
+        run: node scripts/trx-annotations.mjs "$RUNNER_TEMP/trx"
+
+  frontend:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install the frontend
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint:ci
+
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Tests
+        if: ${{ !cancelled() }}
+        working-directory: frontend
+        run: npm test
+
+      - name: Build
+        if: ${{ !cancelled() }}
+        working-directory: frontend
+        run: npm run build
+
+  e2e:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install the frontend
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install the browser
+        if: runner.environment == 'github-hosted'
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Free ports
+        run: node scripts/free-ports.mjs E2E_API_PORT E2E_WEB_PORT
+
+      - name: End-to-end tests
+        working-directory: frontend
+        run: npm run e2e
+
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+
+  scripts:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Script tests
+        run: node --test scripts/*.test.mjs
+
+      - name: No comments
+        if: ${{ !cancelled() }}
+        run: node scripts/no-comments.mjs
+
+  security:
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
+    timeout-minutes: 30
+    env:
+      SEMGREP_VERSION: "1.182.0"
+      UV_EXCLUDE_NEWER: "2026-11-01T00:00:00Z"
+      UV_PYTHON_PREFERENCE: only-managed
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        if: runner.environment == 'github-hosted'
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the scripts package
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: npm signatures
+        if: ${{ !cancelled() }}
+        run: npm audit signatures
+
+      - name: Install scanners
+        id: tools
+        run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
+
+      - name: Forbidden files
+        if: ${{ !cancelled() }}
+        run: node scripts/check-forbidden-files.mjs
+
+      - name: Source hygiene
+        if: ${{ !cancelled() }}
+        run: node scripts/check-source-hygiene.mjs
+
+      - name: Suppressions
+        if: ${{ !cancelled() }}
+        run: node scripts/check-suppressions.mjs
+
+      - name: Secrets (gitleaks)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: gitleaks git --redact --exit-code 1 .
+
+      - name: NuGet packages
+        if: ${{ !cancelled() }}
+        uses: lucem-labs/nuget-audit-action@cf1e4925eb904fe8ba518eefe18f45c33501af5d
+        env:
+          NuGetAudit: "false"
+        with:
+          path: backend/<Root>.slnx
+
+      - name: npm packages (OSV-Scanner)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile frontend/package-lock.json
+
+      - name: Code (Semgrep)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        env:
+          UV_CACHE_DIR: ${{ runner.temp }}/uv-cache
+          UV_TOOL_DIR: ${{ runner.temp }}/uv-tools
+          UV_PYTHON_INSTALL_DIR: ${{ runner.temp }}/uv-python
+        run: uv tool run --python 3.13 --from "semgrep==$SEMGREP_VERSION" semgrep scan --config p/csharp --config p/typescript --metrics=off --error --quiet
+
+      - name: Workflows (zizmor)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zizmor --config .github/zizmor.yml .github/workflows
+
+      - name: Dockerfiles (Trivy)
+        if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+        run: trivy config --exit-code 1 --ignorefile .trivyignore.yaml .
