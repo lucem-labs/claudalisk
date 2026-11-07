@@ -1,11 +1,12 @@
 import { parseOptions } from '../cli.mjs'
-import { checkAgainstMain, readApprovedEdits, readMainMigrations, sourceMigrations } from '../migration-checks.mjs'
+import { checkAgainstMain, readApprovedEdits, readMainMigrations, readMergeBaseMigrations, sourceMigrations } from '../migration-checks.mjs'
 
 export async function checkMigrationsAgainstMain({ appRoot, argv, runner }) {
   parseOptions({}, argv)
   const main = await readMainMigrations(runner, appRoot)
+  const base = (await readMergeBaseMigrations(runner, appRoot)) ?? main
   const approved = await readApprovedEdits(runner, appRoot)
-  const { changed, missing } = checkAgainstMain({ main, source: sourceMigrations(appRoot), approved })
+  const { changed, missing } = checkAgainstMain({ main, base, source: sourceMigrations(appRoot), approved })
   if (changed.length === 0 && missing.length === 0) {
     console.log(`All ${main.size} migrations on origin/main are unchanged.`)
     return { changed, missing }

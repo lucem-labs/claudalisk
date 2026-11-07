@@ -80,12 +80,14 @@ export function checkMigrations({ applied, source, recorded, approved = new Map(
   return { changed: changed.sort(), missing: unmergedMigrations(applied, new Set(source.keys())), unrecorded: unrecorded.sort() }
 }
 
-export function checkAgainstMain({ main, source, approved = new Map() }) {
+export function checkAgainstMain({ main, source, approved = new Map(), base = main }) {
   const changed = []
   const missing = []
-  for (const [id, hash] of main) {
-    if (!source.has(id)) missing.push(id)
-    else if (source.get(id) !== hash && !isApproved(approved, id, source.get(id))) changed.push(id)
+  for (const id of new Set([...main.keys(), ...base.keys()])) {
+    const mine = source.get(id)
+    if (mine === base.get(id)) continue
+    if (mine === undefined) missing.push(id)
+    else if (mine !== main.get(id) && !isApproved(approved, id, mine)) changed.push(id)
   }
   return { changed: changed.sort(), missing: missing.sort() }
 }
@@ -131,15 +133,25 @@ export async function readApprovedEdits(runner, root) {
   throw new Error(`Reading approved-migration-edits.txt from origin/main failed (${result.stderr.trim()}).`)
 }
 
-export async function readMainMigrations(runner, root) {
-  await runner('git', ['-C', root, 'fetch', '--quiet', 'origin', 'main'])
-  const listed = await runChecked(runner, 'git', ['-C', root, 'ls-tree', '-r', '--name-only', 'origin/main', '--', 'backend'], { what: 'git ls-tree origin/main' })
+async function readMigrationsAt(runner, root, ref) {
+  const listed = await runChecked(runner, 'git', ['-C', root, 'ls-tree', '-r', '--name-only', ref, '--', 'backend'], { what: `git ls-tree ${ref}` })
   const files = []
   for (const path of listed.stdout.split(/\r?\n/).filter(isMigrationFile)) {
-    const text = (await runChecked(runner, 'git', ['-C', root, 'show', `origin/main:${path}`], { what: `git show origin/main:${path}` })).stdout
+    const text = (await runChecked(runner, 'git', ['-C', root, 'show', `${ref}:${path}`], { what: `git show ${ref}:${path}` })).stdout
     files.push({ path, text })
   }
   return fingerprints(files)
+}
+
+export async function readMainMigrations(runner, root) {
+  await runner('git', ['-C', root, 'fetch', '--quiet', 'origin', 'main'])
+  return readMigrationsAt(runner, root, 'origin/main')
+}
+
+export async function readMergeBaseMigrations(runner, root) {
+  const found = await runner('git', ['-C', root, 'merge-base', 'origin/main', 'HEAD'])
+  const base = found.code === 0 ? found.stdout.trim() : ''
+  return base ? readMigrationsAt(runner, root, base) : null
 }
 
 export async function checkUatMigrations(runner, settings, { source, approved, main = new Map(), adoptUnrecorded = false }) {
