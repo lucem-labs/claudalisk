@@ -14,14 +14,14 @@ export async function runMain(main, { argv = process.argv, env = process.env, ru
   const appRoot = resolve(dirname(argv[1]), '..')
   try {
     const result = await main({ appRoot, argv: argv.slice(2), env, runner })
-    if (Number.isInteger(result) && result !== 0) {
+    if (Number.isInteger(result) && result > 0) {
       exit(result)
       return result
     }
     return 0
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
-    const code = Number.isInteger(error?.exitCode) ? error.exitCode : 1
+    const code = Number.isInteger(error?.exitCode) && error.exitCode > 0 ? error.exitCode : 1
     exit(code)
     return code
   }

@@ -308,7 +308,6 @@ export function main(argv, { list, read, out, err, env }) {
   return 1;
 }
 
-
 export function noComments({ argv, env = process.env }) {
   return main(argv, {
     list: (root) => trackedFiles(resolve(root)),

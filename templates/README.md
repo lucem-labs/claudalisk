@@ -43,7 +43,7 @@ The deploy, backup, restore, prune, refresh, init, migrate and check-migrations 
 To add the package to an app:
 
 1. Copy the fourteen entries into the app's `scripts/` folder.
-2. Pin an exact version, and commit the lockfile so a deploy is reproducible from its commit: `npm install --save-dev --save-exact @claudalisk/scripts`. CI installs it with `npm ci`, and the owner runs the same commands by hand.
+2. Pin an exact version, and commit the lockfile so a deploy is reproducible from its commit. Run `npm install --save-dev --save-exact @claudalisk/scripts` at the app root, not in `frontend/`, and commit the root `package.json` and `package-lock.json`. Every workflow step that runs a `scripts/*.mjs` entry needs `npm ci --ignore-scripts --no-audit --no-fund` at the root first, and the owner runs the same commands by hand.
 3. Fill in `.claude/claudalisk.json` (see App config). The package reads the databases, ports, uat project and volume, repository and backup count from it, and stops with a message naming any missing field.
 4. Keep the conventions the package expects: `compose.base.yml` plus `compose.<env>.yml` with the services `api` and `db` and the profile `migrate`, `.env.<env>.example` files with `CHANGE_ME` as the password, and an API image that sets `DEPLOYED_SHA` and `DEPLOYED_REF`. The package README lists them all.
 
@@ -91,6 +91,8 @@ When a file type the app uses isn't in the table, add it to the checker in claud
 - For the .NET tests, write TRX and annotate it when the tests fail:
 
   ```yaml
+  - name: Install the scripts package
+    run: npm ci --ignore-scripts --no-audit --no-fund
   - name: Tests
     run: dotnet test backend --no-build --logger trx --results-directory "${{ runner.temp }}/trx"
   - name: Failing tests
@@ -99,7 +101,7 @@ When a file type the app uses isn't in the table, add it to the checker in claud
   ```
 
 - Run `node --test scripts/*.test.mjs` in a job of its own, when the app has tests of its own there. The CI-run scripts' tests live in the package.
-- Run `node scripts/no-comments.mjs` as a step of its own, with a `--skip` for each generated or vendored path.
+- Run `node scripts/no-comments.mjs` as a step of its own, after `npm ci --ignore-scripts --no-audit --no-fund` at the root, with a `--skip` for each generated or vendored path.
 - Keep every step's `run` to one line ([CLA-0027](../adr/0027-scripts-in-node.md)). Anything longer goes into a tested script under `scripts/`.
 
 ## Security jobs
@@ -137,6 +139,8 @@ security:
       if: runner.environment == 'github-hosted'
       with:
         dotnet-version: 10.0.x
+    - name: Install the scripts package
+      run: npm ci --ignore-scripts --no-audit --no-fund
     - name: Install scanners
       id: tools
       run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
@@ -152,7 +156,7 @@ security:
         path: backend/<Root>.slnx
     - name: npm packages (OSV-Scanner)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
-      run: osv-scanner scan --config osv-scanner.toml --lockfile frontend/package-lock.json
+      run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile frontend/package-lock.json
     - name: Code (Semgrep)
       if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
       env:

@@ -31,7 +31,7 @@ Every model request sends the whole conversation again (CLA-0073). Checking a ch
   - A failed job without annotations falls back to its failed step's log: the lines that look like failures (`not ok`, `✖`, `error …:`), then the last lines.
 - **The full logs go to the env-state folder** (CLA-0066). `verify.mjs` saves the log of each failed job to `~/.claudalisk/apps/<app>/verify/<worktree>/<job>.log`, and each run replaces them. The summary ends with the folder, so the agent can grep a log when the summary is not enough. Nothing is written to the checkout.
 - **The agent runs it once per verify cycle,** as one call, and reads the summary. The `claudalisk:implementer` agent (CLA-0074) commits and pushes only through it.
-- An app without the scripts copies `${CLAUDE_PLUGIN_ROOT}/templates/app/scripts/` into its `scripts/` and wires its CI jobs as `templates/README.md` shows. An app that cannot use CI for this lists the deviation in its `AGENTS.md` (CLA-0028).
+- An app without the scripts copies `${CLAUDE_PLUGIN_ROOT}/templates/app/scripts/` into its `scripts/`, installs `@claudalisk/scripts` (CLA-0084) for the thin entries, and wires its CI jobs as `templates/README.md` shows. An app that cannot use CI for this lists the deviation in its `AGENTS.md` (CLA-0028).
 
 ## Consequences
 

@@ -66,7 +66,6 @@ export function report(dir, { workspace = process.env.GITHUB_WORKSPACE, write = 
   appendSummary?.(summary(failures, passed));
 }
 
-
 export function trxAnnotations({ argv, env = process.env }) {
   const dir = argv[0];
   if (!dir) {

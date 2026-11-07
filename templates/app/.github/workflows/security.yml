@@ -49,7 +49,7 @@ jobs:
 
       - name: npm packages (OSV-Scanner)
         if: ${{ !cancelled() && steps.tools.outcome == 'success' }}
-        run: osv-scanner scan --config osv-scanner.toml --lockfile frontend/package-lock.json
+        run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile frontend/package-lock.json
 
   images:
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
