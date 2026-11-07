@@ -31,7 +31,7 @@ These jobs run in CI on every push, in parallel with the tests (CLA-0034). Each 
 - Trivy has no Compose scanner. Compose files are left to review.
 - The source-hygiene check skips test fixtures, which may hold such characters on purpose.
 - Scanner binaries that a job downloads, such as gitleaks, OSV-Scanner and Trivy, are pinned to a version and checked against a SHA-256 before they run, like the actions.
-- Third-party actions are pinned to a full commit SHA. zizmor's config allows the `lucem-labs/*` actions to be pinned to a major tag, such as `nuget-audit-action@v1`.
+- Every action, the `lucem-labs/*` ones included, is pinned to a full commit SHA, never to a tag, and Dependabot updates the pins. zizmor's config enforces a hash pin for every action.
 
 ### Level 2: weekly, on `main`
 

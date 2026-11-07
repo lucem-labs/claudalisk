@@ -16,7 +16,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/frontend/.oxlintrc.json` | The frontend's oxlint configuration ([CLA-0065](../adr/0065-frontend-tooling.md)). It keeps `fetch` inside `src/shared/api` ([CLA-0014](../adr/0014-frontend-stack-and-api-module.md)) and turns `react/only-export-components` off in `src/shared/ui`, where shadcn's components export their variants beside them, so the warning stays meaningful everywhere else |
 | `app/.github/workflows/security.yml` | The weekly `security` workflow: the dependency rescans, the image scans and the ZAP baseline |
 | `app/.zap/rules.tsv` | The ZAP rules file, with the three informational rules every single-page app trips set to `INFO` |
-| `app/.github/zizmor.yml` | zizmor's config: `lucem-labs/*` actions may be pinned to a tag, every other action to a commit SHA |
+| `app/.github/zizmor.yml` | zizmor's config: every action is pinned to a commit SHA |
 | `app/osv-scanner.toml`, `app/.trivyignore.yaml` | The OSV-Scanner and Trivy suppression files, empty |
 | `app/backend/Root.Api/Dockerfile`, `app/backend/.dockerignore` | The API image, at `backend/<Root>.Api/Dockerfile` in the app |
 | `app/frontend/Dockerfile`, `app/frontend/.dockerignore`, `app/frontend/nginx.conf` | The frontend image and its server |
@@ -144,7 +144,7 @@ security:
       run: gitleaks git --redact --exit-code 1 .
     - name: NuGet packages
       if: ${{ !cancelled() }}
-      uses: lucem-labs/nuget-audit-action@v1
+      uses: lucem-labs/nuget-audit-action@cf1e4925eb904fe8ba518eefe18f45c33501af5d
       env:
         NuGetAudit: "false"
       with:
