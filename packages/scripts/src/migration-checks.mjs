@@ -119,9 +119,11 @@ async function readMigrationsAt(runner, root, ref) {
   return fingerprints(files)
 }
 
-export async function fetchMain(runner, root) {
+export async function fetchMain(runner, root, { strict = false } = {}) {
   const result = await runner('git', ['-C', root, 'fetch', '--quiet', 'origin', 'main'])
-  if (result.code !== 0) console.warn(`Warning: git fetch origin main failed (${(result.stderr ?? '').trim()}), so origin/main may be stale.`)
+  if (result.code === 0) return
+  if (strict) throw new Error(`Refusing to deploy uat: git fetch origin main failed (${(result.stderr ?? '').trim()}), so origin/main may be stale and the migrations cannot be judged against it. Nothing was changed.`)
+  console.warn(`Warning: git fetch origin main failed (${(result.stderr ?? '').trim()}), so origin/main may be stale.`)
 }
 
 export async function readMainMigrations(runner, root) {

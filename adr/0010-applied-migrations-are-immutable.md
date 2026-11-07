@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** the migration-guard hook (denies Edit, Write and MultiEdit of a migration tracked on origin/main); the guardrail hook (asks before dotnet ef migrations remove); the uat deploy script (refuses a changed or unbaselined applied migration); the check-migrations command (fails a branch that changes or drops a migration on origin/main; CI wiring in #18)
+- **Enforced by:** the migration-guard hook (denies Edit, Write and MultiEdit of a migration tracked on origin/main); the guardrail hook (asks before dotnet ef migrations remove and before a deploy with --adopt-unrecorded-migrations); the uat deploy script (refuses a changed or unbaselined applied migration); the check-migrations command (fails a branch that changes or drops a migration on origin/main; CI wiring in #18)
 - **Issue:** #7
 
 ## Decision
@@ -24,6 +24,10 @@ A migration can rename a table but keep the old primary-key index name. The envi
 - The migration-guard hook is a speed bump on Edit and Write only. A shell write or a stale local `origin/main` gets past it, and the check-migrations command and the uat deploy are the backstop.
 - A baseline taken from main for an unrecorded migration assumes that main's file is what uat applied.
 
+- The guardrail rule for `--adopt-unrecorded-migrations` matches only a command or argument named `deploy` or `deploy.mjs`.
+- The uat deploy refuses when `git fetch origin main` fails, so it never judges against a stale main.
+
 ## Consequences
 
 - `dotnet ef migrations remove` asks the owner first, and an applied migration is never removed.
+- A deploy with `--adopt-unrecorded-migrations` asks the owner first; the agent never adopts unrecorded migrations itself.
