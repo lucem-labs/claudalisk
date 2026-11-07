@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { annotations, failedTests, location, report, summary } from './trx-annotations.mjs';
+import { annotations, failedTests, location, report, summary, trxAnnotations } from './trx-annotations.mjs';
 
 const TRX = `<?xml version="1.0" encoding="utf-8"?>
 <TestRun>
@@ -78,4 +78,30 @@ test('report leaves a notice when there is no TRX folder', () => {
   const out = [];
   report(join(tmpdir(), 'no-such-trx-folder'), { write: (l) => out.push(l) });
   assert.match(out[0], /^::notice title=No TRX reports::/);
+});
+
+test('the command needs a results folder and returns 2 without one', () => {
+  const original = console.error;
+  const messages = [];
+  console.error = (line) => messages.push(line);
+  try {
+    assert.equal(trxAnnotations({ argv: [], env: {} }), 2);
+  } finally {
+    console.error = original;
+  }
+  assert.match(messages[0], /^Usage: node scripts\/trx-annotations\.mjs/);
+});
+
+test('the command writes the job summary to GITHUB_STEP_SUMMARY', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'trx-'));
+  writeFileSync(join(dir, 'a.trx'), TRX);
+  const summaryFile = join(dir, 'summary.md');
+  const original = console.log;
+  console.log = () => {};
+  try {
+    assert.equal(trxAnnotations({ argv: [dir], env: { GITHUB_STEP_SUMMARY: summaryFile, GITHUB_WORKSPACE: WORKSPACE } }), 0);
+  } finally {
+    console.log = original;
+  }
+  assert.match(readFileSync(summaryFile, 'utf8'), /1 passed, 1 failed/);
 });

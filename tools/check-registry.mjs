@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { addDesignSystem } from './add-design-system.mjs';
-import { findCommentLines } from '../templates/app/scripts/no-comments.mjs';
+import { findCommentLines } from '../packages/scripts/src/commands/no-comments.mjs';
 import {
   accessibilityTest,
   builtRegistry,

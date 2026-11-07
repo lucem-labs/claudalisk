@@ -1,19 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { check, findViolations, format, sourceFiles } from './check-e2e-locators.mjs';
+import { join, relative } from 'node:path';
+import { check, checkE2eLocators, findViolations, format, sourceFiles } from './check-e2e-locators.mjs';
 
-const SCRIPT = fileURLToPath(new URL('./check-e2e-locators.mjs', import.meta.url));
+const captured = (action) => {
+  const lines = [];
+  const original = console.log;
+  console.log = (line) => lines.push(line);
+  try {
+    return { code: action(), lines };
+  } finally {
+    console.log = original;
+  }
+};
 
 const ALLOWED = `import { test, expect } from '@playwright/test';
 
 test('cancels an order', async ({ page }) => {
   await page.goto('/orders');
   await page.getByRole('button', { name: 'Cancel order', exact: true }).click();
+");
   await page.getByLabel('Reason', { exact: true }).fill('Changed my mind');
   await page.getByTestId('order-row').filter({ hasText: 'Open' }).getByRole('link', { name: 'Open', exact: true }).hover();
   await page.keyboard.type('x');
@@ -73,16 +81,13 @@ test('format writes a GitHub annotation in Actions and a file:line:col message e
   assert.equal(format(v, true), '::error file=frontend/e2e/a%2Cb%3Ac.spec.ts,line=4,col=7,title=E2E locator::Use `getByRole`, then 100%25');
 });
 
-test('without a folder the command checks frontend/e2e beside its scripts folder, run from frontend', () => {
+test('without a folder the command checks frontend/e2e under the app root', () => {
   const repo = mkdtempSync(join(tmpdir(), 'e2e-locators-'));
-  mkdirSync(join(repo, 'scripts'));
   mkdirSync(join(repo, 'frontend', 'e2e'), { recursive: true });
-  copyFileSync(SCRIPT, join(repo, 'scripts', 'check-e2e-locators.mjs'));
   writeFileSync(join(repo, 'frontend', 'e2e', 'bad.spec.ts'), "await page.locator('.x').click();\n");
-  assert.throws(
-    () => execFileSync(process.execPath, ['../scripts/check-e2e-locators.mjs'], { cwd: join(repo, 'frontend'), env: { ...process.env, GITHUB_ACTIONS: '' }, stdio: 'pipe' }),
-    (e) => e.status === 1 && e.stdout.toString().startsWith('frontend/e2e/bad.spec.ts:1:11: '),
-  );
+  const { code, lines } = captured(() => checkE2eLocators({ appRoot: repo, argv: [], env: {} }));
+  assert.equal(code, 1);
+  assert.ok(lines[0].startsWith('frontend/e2e/bad.spec.ts:1:11: '));
 });
 
 test('check reports each violation relative to the root and skips node_modules', () => {
@@ -114,8 +119,14 @@ test('check passes a clean folder and returns 2 for a missing folder or a file',
 test('the command checks a folder given relative to the current directory', () => {
   const root = mkdtempSync(join(tmpdir(), 'e2e-locators-'));
   writeFileSync(join(root, 'bad.spec.ts'), "await page.locator('.x').click();\n");
-  assert.throws(
-    () => execFileSync(process.execPath, [SCRIPT, '.'], { cwd: root, env: { ...process.env, GITHUB_ACTIONS: '' }, stdio: 'pipe' }),
-    (e) => e.status === 1 && /bad\.spec\.ts:1:11/.test(e.stdout.toString()),
-  );
+  const { code, lines } = captured(() => checkE2eLocators({ appRoot: root, argv: [relative(process.cwd(), root)], env: {} }));
+  assert.equal(code, 1);
+  assert.match(lines[0], /bad\.spec\.ts:1:11/);
+});
+
+test('the command annotates in GitHub Actions', () => {
+  const root = mkdtempSync(join(tmpdir(), 'e2e-locators-'));
+  writeFileSync(join(root, 'bad.spec.ts'), "await page.locator('.x').click();\n");
+  const { lines } = captured(() => checkE2eLocators({ appRoot: root, argv: [root], env: { GITHUB_ACTIONS: 'true' } }));
+  assert.match(lines[0], /^::error file=bad\.spec\.ts,line=1,col=11,title=E2E locator::/);
 });

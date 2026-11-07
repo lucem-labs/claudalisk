@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findCommentLines, findComments, main, parseArgs, syntaxOf, trackedFiles } from './no-comments.mjs';
+import { findCommentLines, findComments, main, parseArgs, syntaxOf, trackedFiles, noComments } from './no-comments.mjs';
 
 test('covers every file type CLA-0035 lists', () => {
   const covered = {
@@ -272,4 +272,14 @@ test('a dollar inside a SQL identifier is not a dollar quote', () => {
 
 test('parseArgs drops a leading ./ from --skip', () => {
   assert.deepEqual(parseArgs(['--skip', './design']).skip, ['design']);
+});
+
+test('the command reports a usage error as exit code 2', () => {
+  const original = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(noComments({ argv: ['--nope'], env: {} }), 2);
+  } finally {
+    console.error = original;
+  }
 });

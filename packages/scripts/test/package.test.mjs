@@ -18,6 +18,13 @@ const commands = {
   'refresh-dev': 'refreshDev',
   init: 'init',
   migrate: 'migrate',
+  'check-migrations': 'checkMigrationsAgainstMain',
+  'no-comments': 'noComments',
+  'check-e2e-locators': 'checkE2eLocators',
+  'install-security-tools': 'installSecurityTools',
+  'scan-images': 'scanImages',
+  'zap-baseline': 'zapBaseline',
+  'trx-annotations': 'trxAnnotations',
 }
 
 test('the release workflow finds the package and its name', () => {

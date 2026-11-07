@@ -1,7 +1,7 @@
 {
   "name": "@claudalisk/scripts",
   "version": "0.1.0",
-  "description": "The guarded environment scripts of a claudalisk app: deploy, backup, restore, prune-backups, refresh-dev, init, migrate and check-migrations.",
+  "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, prune-backups, refresh-dev, init, migrate, check-migrations) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations).",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -31,6 +31,12 @@
     "./init": "./src/commands/init.mjs",
     "./migrate": "./src/commands/migrate.mjs",
     "./check-migrations": "./src/commands/check-migrations.mjs",
+    "./no-comments": "./src/commands/no-comments.mjs",
+    "./check-e2e-locators": "./src/commands/check-e2e-locators.mjs",
+    "./install-security-tools": "./src/commands/install-security-tools.mjs",
+    "./scan-images": "./src/commands/scan-images.mjs",
+    "./zap-baseline": "./src/commands/zap-baseline.mjs",
+    "./trx-annotations": "./src/commands/trx-annotations.mjs",
     "./fake-runner": "./src/fake-runner.mjs",
     "./package.json": "./package.json"
   }
