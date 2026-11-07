@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const GREEN_CONCLUSIONS = ['SUCCESS', 'NEUTRAL', 'SKIPPED'];
 const HANDOFF = /^## Handoff/;
 const REVIEW_SECTION = /^## Review\s*$/m;
-const REVIEWED_HEAD = /^Reviewed head: ([0-9a-f]{40})\s*$/im;
+const REVIEWED_HEAD = /^\**Reviewed head:\**\s*[`*]*([0-9a-f]{40})[`*]*\s*$/im;
 const BRANCH_REF = /^refs\/heads\//;
 
 export const slugify = (title) =>
@@ -54,7 +54,10 @@ export function reviewedHead(body) {
   const text = (body ?? '').replace(/\r\n/g, '\n');
   const at = text.search(REVIEW_SECTION);
   if (at < 0) return { hasReview: false, reviewedHead: null };
-  const sha = text.slice(at).match(REVIEWED_HEAD)?.[1].toLowerCase() ?? null;
+  const tail = text.slice(at + 1);
+  const next = tail.search(/^## /m);
+  const section = next < 0 ? tail : tail.slice(0, next);
+  const sha = section.match(REVIEWED_HEAD)?.[1].toLowerCase() ?? null;
   return { hasReview: true, reviewedHead: sha };
 }
 
@@ -72,8 +75,9 @@ export function readFacts(issue, run) {
   const fields = 'number,url,state,isDraft,headRefOid,headRefName,body,mergedAt,statusCheckRollup';
   const closing = (view.closedByPullRequestsReferences ?? []).map((r) => r.number);
   let candidates;
-  if (worktree) candidates = json(run('gh', ['pr', 'list', '--head', worktree.branch, '--state', 'all', '--json', light]));
-  else {
+  const heads = worktree ? [worktree.branch] : branches;
+  candidates = heads.flatMap((b) => json(run('gh', ['pr', 'list', '--head', b, '--state', 'all', '--json', light])));
+  if (!candidates.length && !worktree) {
     const all = json(run('gh', ['pr', 'list', '--state', 'all', '--limit', '200', '--json', light]));
     candidates = all.filter((p) => p.headRefName?.startsWith(prefix) || closing.includes(p.number));
   }

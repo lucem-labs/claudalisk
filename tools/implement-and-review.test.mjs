@@ -87,7 +87,8 @@ test('the implementer gets the issue, the worktree and the brief', async () => {
   const { f } = await run(goodArgs);
   const first = f.calls[0];
   assert.equal(first.options.agentType, 'claudalisk:implementer');
-  for (const part of ['#16', 'C:/git/app-16', 'C:/tmp/brief.md', 'dev', 'devVerified']) assert.ok(first.prompt.includes(part), part);
+  for (const part of ['#16', 'C:/git/app-16', 'C:/tmp/brief.md']) assert.ok(first.prompt.includes(part), part);
+  assert.match(first.prompt, /Verify the change on dev as the brief says, and set devVerified to true only when you did\./);
   assert.deepEqual(f.phases, ['Implement', 'Plan review', 'Review']);
 });
 

@@ -103,6 +103,15 @@ test('reviewedHead reads the line inside the Review section', () => {
   assert.deepEqual(reviewedHead(null), { hasReview: false, reviewedHead: null });
 });
 
+test('reviewedHead tolerates backticks and bold, rejects a short sha, and stops at the next heading', () => {
+  assert.equal(reviewedHead(`## Review\n\nReviewed head: \`${SHA}\`\n`).reviewedHead, SHA);
+  assert.equal(reviewedHead(`## Review\n\n**Reviewed head:** \`${SHA}\`\n`).reviewedHead, SHA);
+  assert.equal(reviewedHead(`## Review\n\nReviewed head: **${SHA}**\n`).reviewedHead, SHA);
+  assert.equal(reviewedHead('## Review\n\nReviewed head: `abcdef0`\n').reviewedHead, null);
+  assert.equal(reviewedHead(`## Review\n\nnone\n\n## Notes\n\nReviewed head: ${SHA}\n`).reviewedHead, null);
+  assert.equal(reviewedHead(`## Review\n\n### Detail\nReviewed head: ${SHA}\n\n## Notes\n`).reviewedHead, SHA);
+});
+
 test('a title with no ASCII letters falls back to work', () => {
   assert.equal(slugify('日本語 ???'), 'work');
   assert.match(lifecycleStep(facts({ branch: null, worktree: null, pr: null, issue: { number: 3, state: 'OPEN', title: '???', labels: [] } })).next, /-b issue-3-work /);
@@ -217,7 +226,7 @@ test('readFacts finds a branch without a worktree and a pull request without a d
     'gh issue view 16': issueView,
     'git worktree list --porcelain': 'worktree C:/git/claudalisk\nHEAD 1\nbranch refs/heads/main\n',
     'git for-each-ref': 'issue-16-other\n',
-    'gh pr list --state all --limit 200': [{ number: 9, state: 'MERGED', headRefName: 'issue-16-other' }, { number: 8, state: 'CLOSED', headRefName: 'issue-16-other' }],
+    'gh pr list --head issue-16-other': [{ number: 9, state: 'MERGED', headRefName: 'issue-16-other' }, { number: 8, state: 'CLOSED', headRefName: 'issue-16-other' }],
     'gh pr view 9': { ...prList[0], state: 'MERGED' },
   });
   const f = readFacts(16, run);
@@ -302,6 +311,7 @@ test('with several local branches and no worktree, the one with a pull request w
     'gh issue view 16': issueView,
     'git worktree list --porcelain': 'worktree C:/git/claudalisk\nHEAD 1\nbranch refs/heads/main\n',
     'git for-each-ref': 'issue-16-a\nissue-16-b\n',
+    'gh pr list --head': [],
     'gh pr list --state all --limit 200': [{ number: 9, state: 'OPEN', headRefName: 'issue-16-b' }],
     'gh pr view 9': prList[0],
     'gh api': [],
@@ -310,4 +320,19 @@ test('with several local branches and no worktree, the one with a pull request w
   assert.equal(f.branch, 'issue-16-b');
   const list = calls.find((c) => c[1] === 'pr' && c[2] === 'list');
   assert.equal(list[list.indexOf('--json') + 1], 'number,state,headRefName');
+});
+
+test('with no worktree each local branch is asked for its pull request before the global list', () => {
+  const { run, calls } = fakeRun({
+    'gh issue view 16': issueView,
+    'git worktree list --porcelain': 'worktree C:/git/claudalisk\nHEAD 1\nbranch refs/heads/main\n',
+    'git for-each-ref': 'issue-16-a\nissue-16-b\n',
+    'gh pr list --head issue-16-a': [],
+    'gh pr list --head issue-16-b': [{ number: 9, state: 'MERGED', headRefName: 'issue-16-b' }],
+    'gh pr view 9': { ...prList[0], state: 'MERGED' },
+  });
+  const f = readFacts(16, run);
+  assert.equal(f.branch, 'issue-16-b');
+  assert.equal(f.pr.number, 9);
+  assert.ok(!calls.some((c) => c.includes('--limit')));
 });

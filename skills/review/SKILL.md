@@ -45,7 +45,7 @@ When `agents` is empty, because no changed file is in a knowledge skill's area, 
 
 ## 5. Fix or answer
 
-Fix each counted finding, or answer it with why not. A fix goes through the same loop: CI green and dev verified on the new head (CLA-0023, CLA-0076). Then plan again with `--since <the head you reviewed>` and run only the agents that plan names. A fix that makes the change high-risk gets the quorum.
+Fix each counted finding, or answer it with why not. A fix goes through the same loop: CI green and dev verified on the new head (CLA-0023, CLA-0076). Then update `Reviewed head` in the pull request description to the head of this round, so it equals the pull request head once the review is done, and plan again with `--since <the head you reviewed>` and run only the agents that plan names. A fix that makes the change high-risk gets the quorum.
 
 ## 6. Report
 
@@ -54,7 +54,7 @@ Put the review into the pull request description:
 ```
 ## Review
 
-Reviewed head: <40-hex sha of the head the review covered>
+Reviewed head: <full 40-hex sha of the head of the latest review round>
 
 Domains and models: adr-conformance (sonnet); uat-data (opus, sonnet, haiku); /code-review (high).
 

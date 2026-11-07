@@ -45,7 +45,7 @@ When the Workflow tool is available, steps 3 to 5 run as one saved workflow. Wri
 {"issue": <number>, "worktree": "<absolute worktree path>", "brief": "<absolute path of the brief>", "pluginRoot": "${CLAUDE_PLUGIN_ROOT}", "since": "<reviewed head, for a fix round only>"}
 ```
 
-- It returns `{stage: 'implement', implement}` when the implementer is blocked or failed. Answer its `questions` yourself or ask the owner, then run it again. Never guess a design question.
+- It returns `{stage: 'implement', implement}` when the implementer is blocked or failed. Answer its `questions` yourself or ask the owner, then run it again. Never guess a design question. The same stage comes back when the implementer is green but `devVerified` is false: verify on dev, then run the workflow again or continue by hand.
 - It returns `{stage: 'reviewed', implement, plan, reviews, codeReviewEffort}` when the reviewers ran. It does not run `/code-review`. Run that yourself at `codeReviewEffort`, count the findings of `reviews` and `/code-review` as the review skill says, fix or answer them, and write the `## Review` section.
 
 Without the Workflow tool, do the same with the Agent tool: the implementer with the brief, then the review skill's own steps.
