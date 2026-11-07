@@ -12,6 +12,16 @@ const isText = (value) => typeof value === 'string' && value !== '';
 const isPort = (value) => Number.isInteger(value) && value >= 1024 && value <= 65535;
 const isListenPort = (value) => Number.isInteger(value) && value >= 1 && value <= 65535;
 
+function stackProblems(stack, where) {
+  if (!isObject(stack)) return [`${where} must be an object`];
+  const problems = [];
+  if (Object.keys(stack).length === 1 && isText(stack.composeProject)) return problems;
+  for (const key of ['composeProject', 'configDir', 'target']) if (!isText(stack[key])) problems.push(`${where} needs ${key}`);
+  if (!['organization', 'repository'].includes(stack.scope)) problems.push(`${where}.scope must be organization or repository`);
+  else if (stack.scope === 'organization' && !Number.isInteger(stack.groupId)) problems.push(`${where}.groupId is required for an organization stack`);
+  return problems;
+}
+
 function problemsOf(registry) {
   if (!isObject(registry)) return ['the registry must be an object'];
   const problems = [];
@@ -26,9 +36,10 @@ function problemsOf(registry) {
   });
   if (registry.proxy !== undefined && (!isObject(registry.proxy) || !isText(registry.proxy.composeProject) || !isText(registry.proxy.network))) problems.push('"proxy" needs composeProject and network');
   else if (registry.proxy !== undefined && registry.proxy.port !== undefined && !isListenPort(registry.proxy.port)) problems.push('"proxy.port" must be an integer from 1 to 65535');
-  if (registry.runners !== undefined && (!isObject(registry.runners) || !isText(registry.runners.composeProject))) problems.push('"runners" needs composeProject');
+  if (registry.runners !== undefined && !Array.isArray(registry.runners)) problems.push('"runners" must be an array of stacks');
+  else (registry.runners ?? []).forEach((stack, i) => problems.push(...stackProblems(stack, `runners[${i}]`)));
   if (problems.length) return problems;
-  const stacks = [registry.proxy?.composeProject, registry.runners?.composeProject];
+  const stacks = [registry.proxy?.composeProject, ...(registry.runners ?? []).map((stack) => stack.composeProject)];
   for (const app of registry.apps) if (stacks.includes(app.uat.composeProject)) problems.push(`${app.name} uses the shared stack's Compose project ${app.uat.composeProject}`);
   return problems;
 }
@@ -42,6 +53,7 @@ export function readRegistry({ home = homedir() } = {}) {
   } catch (e) {
     throw new Error(`${path} is not valid JSON: ${e.message}`);
   }
+  if (isObject(registry) && isObject(registry.runners) && isText(registry.runners.composeProject)) registry.runners = [{ composeProject: registry.runners.composeProject }];
   const problems = problemsOf(registry);
   if (problems.length) throw new Error(`${path} has the wrong shape: ${problems.join('; ')}`);
   return registry;
@@ -116,8 +128,13 @@ export function registerProxy({ composeProject, network, port }, { home = homedi
   writeRegistry({ ...readRegistry({ home }), proxy }, { home });
 }
 
-export function registerRunners({ composeProject }, { home = homedir() } = {}) {
-  writeRegistry({ ...readRegistry({ home }), runners: { composeProject } }, { home });
+export function registerRunners(stack, { home = homedir() } = {}) {
+  const registry = readRegistry({ home });
+  const entry = { composeProject: stack.composeProject, configDir: stack.configDir, scope: stack.scope, target: stack.target };
+  if (stack.groupId !== undefined) entry.groupId = stack.groupId;
+  const runners = [...(registry.runners ?? []).filter((s) => s.composeProject !== entry.composeProject), entry].sort((a, b) => a.composeProject.localeCompare(b.composeProject));
+  writeRegistry({ ...registry, runners }, { home });
+  return entry;
 }
 
 export function allocatePorts(registry, { devDbBase = 5433, apiLocalBase = 5100 } = {}) {

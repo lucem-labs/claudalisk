@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected resources from the machine-wide registry of CLA-0082, CLA-0083; an ask before `tools/proxy.mjs recreate`), tests (`tools/proxy.test.mjs`, which checks the pin and fixed names of `proxy/compose.yml`)
+- **Enforced by:** guardrail hook (protected resources from the machine-wide registry of CLA-0082, CLA-0083; an ask before `tools/proxy.mjs recreate` and before the commands of `tools/runners.mjs` that create or open up the runners, CLA-0086), tests (`tools/proxy.test.mjs`, which checks the pin and fixed names of `proxy/compose.yml`)
 - **Issue:** #8, #19, #20
 
 ## Decision

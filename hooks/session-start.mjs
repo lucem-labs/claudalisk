@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { homedir } from 'node:os';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findConfig } from './guardrail.mjs';
 
@@ -47,6 +47,7 @@ function run(file, args, cwd) {
 
 export const realGit = (args, cwd) => run('git', args, cwd);
 export const realGh = (args, cwd) => run('gh', args, cwd);
+export const realDocker = (args) => run('docker', args);
 
 async function json(call) {
   try {
@@ -54,6 +55,72 @@ async function json(call) {
     return text === null || text === undefined ? null : JSON.parse(text);
   } catch {
     return null;
+  }
+}
+
+const label = (value) => (typeof value === 'string' ? value.replace(/[^\w ./+-]/g, '').slice(0, 60) : '');
+
+async function containerState(project, docker) {
+  const text = await docker(['ps', '--all', '--filter', `label=com.docker.compose.project=${project}`, '--format', '{{json .}}']);
+  if (text === null || text === undefined) return null;
+  const rows = [];
+  for (const line of text.split(/\r?\n/).filter((l) => l.trim() !== '')) {
+    const row = JSON.parse(line);
+    rows.push({ state: row.State, supervisor: /(?:^|,)com\.docker\.compose\.service=supervisor(?:,|$)/.test(String(row.Labels ?? '')) });
+  }
+  const running = rows.filter((r) => r.state === 'running').length;
+  const state = rows.length === 0 || running === 0 ? 'down' : running === rows.length ? 'up' : 'partly up';
+  return { state, supervisor: rows.some((r) => r.supervisor && r.state === 'running') ? 'running' : 'stopped' };
+}
+
+export async function runnersLine(config, deps, cwd) {
+  if (!deps.readRegistry) return null;
+  let registry;
+  try {
+    registry = deps.readRegistry();
+  } catch {
+    return null;
+  }
+  const repo = config.repo;
+  const stacks = registry.runners ?? [];
+  const owner = repo.split('/')[0].toLowerCase();
+  const stack = stacks.find((s) => s.scope === 'organization' && String(s.target).toLowerCase() === owner) ?? stacks.find((s) => s.scope === 'repository' && String(s.target).toLowerCase() === repo.toLowerCase());
+  if (!stack) return `Runners: no runner stack serves ${repo} on this machine; self-hosted CI jobs will queue (/claudalisk:runners).`;
+  const { gh, docker } = deps;
+  const group = `orgs/${stack.target}/actions/runner-groups/${stack.groupId}`;
+  const org = stack.scope === 'organization';
+  const groupRead = org ? json(() => gh(['api', group], cwd)) : null;
+  const membersRead = org ? groupRead.then((g) => (g && g.visibility === 'selected' ? json(() => gh(['api', `${group}/repositories?per_page=100`], cwd)) : null)) : null;
+  const [containers, runners, repoInfo, groupInfo, members] = await Promise.all([
+    docker ? json(async () => JSON.stringify(await containerState(stack.composeProject, docker))) : null,
+    json(() => gh(['api', `${org ? 'orgs' : 'repos'}/${stack.target}/actions/runners?per_page=100`], cwd)),
+    json(() => gh(['api', `repos/${repo}`], cwd)),
+    groupRead,
+    membersRead,
+  ]);
+  const prefix = deps.prefix ? deps.prefix(stack) : '';
+  const head = containers ? `${containers.state} (supervisor ${containers.supervisor})` : 'unknown (supervisor unknown)';
+  let counts = 'runners unknown';
+  if (runners && Array.isArray(runners.runners)) {
+    const mine = runners.runners.filter((r) => String(r.name).startsWith(prefix));
+    counts = `${mine.filter((r) => r.status === 'online').length} of ${mine.length} runners online (${mine.filter((r) => r.busy).length} busy)`;
+  }
+  let where;
+  if (!org) where = repoInfo ? `${repo} is ${repoInfo.private === true ? 'private' : 'PUBLIC'}` : `whether ${repo} is private is unknown`;
+  else if (repoInfo && repoInfo.private !== true) where = `${repo} is public, so these runners never serve it`;
+  else if (repoInfo && groupInfo && groupInfo.visibility !== 'selected' && repoInfo.private === true) where = `runner group ${label(groupInfo.name)} serves all ${groupInfo.visibility === 'private' ? 'private ' : ''}repositories, including ${repo}`;
+  else if (!repoInfo || !groupInfo || !members || !Array.isArray(members.repositories)) where = `whether ${repo} is in its runner group is unknown`;
+  else if (members.repositories.some((r) => r.id === repoInfo.id)) where = `${repo} is in runner group ${label(groupInfo.name)}`;
+  else if (members.total_count > members.repositories.length) where = `whether ${repo} is in its runner group is unknown`;
+  else where = `${repo} is NOT in runner group ${label(groupInfo.name)}, so its CI jobs queue until GitHub cancels them (/claudalisk:runners enroll)`;
+  return `Runners ${clean(stack.composeProject)}: ${head}, ${counts}; ${where}.`;
+}
+
+export function runnerPrefix(stack, read = readFileSync) {
+  try {
+    return /^RUNNERS_NAME_PREFIX=(.*)$/m.exec(String(read(join(stack.configDir, 'runners.env'), 'utf8')))?.[1].trim() ?? '';
+  } catch {
+    return '';
   }
 }
 
@@ -72,6 +139,7 @@ export async function build(input, deps = {}) {
   const { probe, gh, git } = deps;
   const repo = ['-R', config.repo];
 
+  const runnersTask = runnersLine(config, deps, cwd).catch(() => null);
   const [dev, uat, branchText] = await Promise.all([
     probe(`${config.hostPrefix}.dev.localhost`),
     probe(`${config.hostPrefix}.uat.localhost`),
@@ -113,12 +181,14 @@ export async function build(input, deps = {}) {
     tasks.push(openPr(branch).then((n) => { branchPr = n; }));
   }
   await Promise.all(tasks);
+  const runners = await runnersTask;
 
   const health = [devEnv.line, fallback ? `uat is down; its last recorded deployment (not a live reading) is ${fallback}` : uatEnv.line];
   lines.push(`${health.join('; ')}.`);
   if (branch === 'HEAD') lines.push('The checkout is on a detached HEAD.');
   else if (branch) lines.push(`Current branch: ${branch}${branchPr ? `, open pull request #${branchPr}` : ''}.`);
   if (uatPr) lines.push(fallback ? `uat last showed pull request #${uatPr}.` : `uat shows pull request #${uatPr}, which awaits the owner's review.`);
+  if (runners) lines.push(runners);
   return lines.join('\n');
 }
 
@@ -146,9 +216,11 @@ async function main() {
     const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
     const appConfig = await import('../tools/app-config.mjs');
     let port = DEFAULT_PORT;
+    let readRegistry = null;
     try {
       const registry = await import('../tools/app-registry.mjs');
-      port = registeredPort(() => registry.readRegistry({ home: homedir() }));
+      readRegistry = () => registry.readRegistry({ home: homedir() });
+      port = registeredPort(readRegistry);
     } catch {
     }
     const result = await Promise.race([decide(input, {
@@ -156,6 +228,9 @@ async function main() {
       probe: (host) => probeHealth(host, { port }),
       gh: realGh,
       git: realGit,
+      docker: realDocker,
+      readRegistry,
+      prefix: runnerPrefix,
     }), new Promise((done) => setTimeout(() => done(null), 4500).unref())]);
     if (result) process.stdout.write(JSON.stringify(result));
   } catch {

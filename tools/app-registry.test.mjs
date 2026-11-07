@@ -51,7 +51,7 @@ test('a corrupt registry throws with its path instead of reading as empty', () =
 test('a registry of the wrong shape throws with its path', () => {
   const home = tempHome();
   mkdirSync(join(home, '.claudalisk'));
-  for (const body of ['[]', '{}', '{"apps":[{"name":"x"}]}', '{"apps":[],"proxy":{}}', '{"apps":[],"runners":1}']) {
+  for (const body of ['[]', '{}', '{"apps":[{"name":"x"}]}', '{"apps":[],"proxy":{}}', '{"apps":[],"runners":1}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"organization","target":"acme"}]}', '{"apps":[],"runners":[{"composeProject":"r","configDir":"/c","scope":"team","target":"acme"}]}']) {
     writeFileSync(registryPath({ home }), body);
     assert.throws(() => readRegistry({ home }), (e) => e.message.includes(registryPath({ home })), body);
   }
@@ -104,11 +104,25 @@ test('repositories that differ only by case clash', () => {
   assert.throws(() => registerApp(other, { home }), /blog clashes with shop: repo ACME\/shop/);
 });
 
+const stack = (composeProject, extra = {}) => ({ composeProject, configDir: `/stacks/${composeProject}`, scope: 'organization', target: 'acme', groupId: 1, ...extra });
+
+test('registering runners upserts by Compose project and keeps the others', () => {
+  const home = tempHome();
+  registerRunners(stack('b-runners'), { home });
+  registerRunners(stack('a-runners', { scope: 'repository', target: 'acme/shop', groupId: undefined }), { home });
+  registerRunners(stack('b-runners', { groupId: 9 }), { home });
+  const { runners } = readRegistry({ home });
+  assert.deepEqual(runners.map((r) => r.composeProject), ['a-runners', 'b-runners']);
+  assert.equal(runners[1].groupId, 9);
+  assert.equal('groupId' in runners[0], false);
+});
+
 test('a uat project that is the proxy or the runners stack is refused', () => {
   const home = tempHome();
   registerProxy({ composeProject: 'proxy', network: 'proxy-net' }, { home });
-  registerRunners({ composeProject: 'runners' }, { home });
-  for (const composeProject of ['proxy', 'runners']) {
+  registerRunners(stack('runners'), { home });
+  registerRunners(stack('second-runners', { target: 'beta', groupId: 3 }), { home });
+  for (const composeProject of ['proxy', 'runners', 'second-runners']) {
     assert.throws(() => registerApp(config('shop', { uat: { composeProject, volume: 'v' } }), { home }), /shared stack/);
   }
   registerApp(config('shop'), { home });
@@ -181,6 +195,7 @@ test('a write that would make the registry unreadable is refused and leaves the 
   const before = text(home);
   assert.throws(() => registerProxy({ composeProject: 'proxy' }, { home }), /refusing to write/);
   assert.throws(() => registerRunners({}, { home }), /refusing to write/);
+  assert.throws(() => registerRunners(stack('r', { groupId: undefined }), { home }), /groupId is required/);
   assert.equal(text(home), before);
   assert.doesNotThrow(() => readRegistry({ home }));
 });
@@ -188,12 +203,12 @@ test('a write that would make the registry unreadable is refused and leaves the 
 test('proxy and runners survive registering an app', () => {
   const home = tempHome();
   registerProxy({ composeProject: 'proxy', network: 'edge' }, { home });
-  registerRunners({ composeProject: 'runners' }, { home });
+  registerRunners(stack('runners'), { home });
   registerApp(config('shop'), { home });
   registerApp(config('blog', { hostPrefix: 'blog', repo: 'acme/blog', ports: { devDb: 5434, apiLocal: 5101 }, uat: { composeProject: 'b', volume: 'b' } }), { home });
   const registry = readRegistry({ home });
   assert.deepEqual(registry.proxy, { composeProject: 'proxy', network: 'edge' });
-  assert.deepEqual(registry.runners, { composeProject: 'runners' });
+  assert.deepEqual(registry.runners, [stack('runners')]);
   assert.deepEqual(registry.apps.map((a) => a.name), ['blog', 'shop']);
 });
 
@@ -272,4 +287,21 @@ test('the proxy port is recorded and validated', () => {
   for (const port of [0, 70000, 80.5, '80', null]) {
     assert.throws(() => registerProxy({ composeProject: 'traefik', network: 'traefik', port }, { home }), /proxy.port/);
   }
+});
+
+test('a legacy runners object becomes a one-entry list, stays protected and can be replaced', () => {
+  const home = tempHome();
+  mkdirSync(join(home, '.claudalisk'));
+  writeFileSync(registryPath({ home }), JSON.stringify({ apps: [], runners: { composeProject: 'old-runners' } }));
+  assert.deepEqual(readRegistry({ home }).runners, [{ composeProject: 'old-runners' }]);
+  assert.throws(() => registerApp(config('shop', { uat: { composeProject: 'old-runners', volume: 'v' } }), { home }), /shared stack/);
+  registerRunners(stack('old-runners'), { home });
+  assert.deepEqual(readRegistry({ home }).runners, [stack('old-runners')]);
+});
+
+test('a runners entry with only some of the stack fields is the wrong shape', () => {
+  const home = tempHome();
+  mkdirSync(join(home, '.claudalisk'));
+  writeFileSync(registryPath({ home }), JSON.stringify({ apps: [], runners: [{ composeProject: 'r', configDir: '/c' }] }));
+  assert.throws(() => readRegistry({ home }), /wrong shape/);
 });

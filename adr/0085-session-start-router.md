@@ -24,6 +24,7 @@ A session starts without knowing which commit dev and uat run, which pull reques
 - **When uat gives no answer, the hook falls back to the latest GitHub `uat` deployment** (CLA-0030), read through `gh api`. A deployment's `ref` is its commit sha, so the branch and pull request come from the commit's pull requests. The line says it is the last recorded deployment and not a live reading, and a pull request found this way reads as the one uat last showed.
 - **Text from the health body and GitHub is reduced to the characters a ref or state uses, with a length limit,** because it goes into the session's context. A `-dirty` sha keeps its marker.
 - **`gh` runs asynchronously with a timeout of about 2 seconds,** and the hook as a whole answers within 4.5 seconds, inside the 5 second limit it is registered with. Any failure drops that one line.
+- **One more line reports the shared runners** (CLA-0086): the state of the stack that serves the app's repository, its supervisor, the runners online and busy, and whether the repository is in the runner group. It reads the registry, `docker ps` and read-only `gh api` calls in parallel with the other probes, says `unknown` for a part whose call failed, and says that no stack serves the repository when the registry has none. A registry that cannot be read leaves the line out.
 - **It never blocks a session.** An unreadable input, a broken config or any other error prints nothing and exits 0.
 
 ## Consequences

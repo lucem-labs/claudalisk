@@ -22,11 +22,14 @@ const checkout = dir();
 mkdirSync(join(checkout, '.git'));
 const home = dir();
 const plain = dir();
+const STACK = dir('stack');
+const STACK_SLASHED = STACK.split(String.fromCharCode(92)).join('/');
 
 const UAT = 'example-app-uat';
 const OTHER = 'other-app-uat';
 const FIXTURE = {
   names: [UAT, `${UAT}-data`, 'example_app_uat', 'example-app.uat.localhost', OTHER, `${OTHER}-data`, 'other_app_uat', 'claudalisk-proxy', 'claudalisk-proxy-net', 'claudalisk-runners'],
+  configDirs: [STACK],
   config: { ownerOnlyCommands: ['node scripts/restore.mjs', 'docker.exe context rm'], askCommands: ['dotnet ef database update'] },
 };
 
@@ -59,7 +62,7 @@ const allow = (commands, options) => expectAll('allow', commands, options);
 const deny = (commands, options) => expectAll('deny', commands, options);
 const ask = (commands, options) => expectAll('ask', commands, options);
 
-test('the rule table lists the fifteen rules with their decision and enforcement', () => {
+test('the rule table lists the sixteen rules with their decision and enforcement', () => {
   assert.deepEqual(
     RULES.map(({ id, decision, adr, enforcedBy }) => ({ id, decision, adr, enforcedBy })),
     [
@@ -78,6 +81,7 @@ test('the rule table lists the fifteen rules with their decision and enforcement
       { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: ['hook speed bump'] },
       { id: 14, decision: 'ask', adr: 'CLA-0010', enforcedBy: ['hook speed bump'] },
       { id: 15, decision: 'ask', adr: 'CLA-0010', enforcedBy: ['hook speed bump'] },
+      { id: 16, decision: 'ask', adr: 'CLA-0033, CLA-0086', enforcedBy: ['hook speed bump'] },
     ],
   );
   for (const rule of RULES) assert.ok(rule.summary.length > 10, `rule ${rule.id} has a summary`);
@@ -87,11 +91,11 @@ test('protected names come from the registry, the config and the derived names',
   const registry = {
     apps: [{ name: 'a', repo: 'o/a', hostPrefix: 'a-host', uat: { composeProject: 'a-uat', volume: 'a-uat-data', protectedVolumes: ['a-uat-extra'] }, ports: { devDb: 5433, apiLocal: 5100 } }],
     proxy: { composeProject: 'px', network: 'px-net' },
-    runners: { composeProject: 'rn' },
+    runners: [{ composeProject: 'rn', configDir: '/cfg/rn', scope: 'organization', target: 'o', groupId: 1 }, { composeProject: 'rn2', configDir: '/cfg/rn2', scope: 'repository', target: 'o/r' }],
   };
   const config = { hostPrefix: 'b-host', uat: { composeProject: 'b-uat', volume: 'b-vol', protectedVolumes: ['b-extra'] } };
   const names = protectedNames(registry, config);
-  for (const name of ['a-uat', 'a-uat-data', 'a-uat-extra', 'a_uat', 'a-host.uat.localhost', 'px', 'px-net', 'rn', 'b-uat', 'b_uat', 'b-vol', 'b-extra', 'b-host.uat.localhost']) {
+  for (const name of ['a-uat', 'a-uat-data', 'a-uat-extra', 'a_uat', 'a-host.uat.localhost', 'px', 'px-net', 'rn', 'rn2', 'b-uat', 'b_uat', 'b-vol', 'b-extra', 'b-host.uat.localhost']) {
     assert.ok(names.includes(name), name);
   }
   assert.deepEqual(protectedNames({ apps: [] }, null), []);
@@ -649,6 +653,9 @@ ask([
   'gh api orgs/o/actions/runner-groups/2 --raw-field visibility=all',
   'gh api orgs/o/actions/runner-groups/2 --input body.json',
   'gh api -X POST orgs/o/actions/runner-groups -f name=x',
+  'gh api -X POST repos/o/r/actions/runners/registration-token',
+  'gh api --method DELETE repos/o/r/actions/runners/5',
+  'gh api repos/o/r/actions/runners -f name=x',
 ]);
 
 allow([
@@ -658,6 +665,35 @@ allow([
   'gh api --method GET orgs/o/actions/runner-groups/2/repositories',
   'gh api -X PATCH repos/o/r/issues/2 -f title=x',
   'gh api -X PATCH orgs/o/actions/secrets/x',
+  'gh api repos/o/r/actions/runners',
+  'gh api -X GET repos/o/r/actions/runners',
+  'gh api -X POST repos/o/r/actions/variables -f name=x',
+]);
+
+ask([
+  'node /p/tools/runners.mjs init --org acme --kit-commit abc --image x',
+  'node /p/tools/runners.mjs up',
+  'node "$CLAUDE_PLUGIN_ROOT/tools/runners.mjs" up --config /x',
+  'node /p/tools/runners.mjs enroll .',
+  'node /p/tools/runners.mjs app create --config /x',
+  'node /p/tools/runners.mjs group --apply',
+  'node /p/tools/runners.mjs group --project p --apply',
+  'node "C:\\plugins\\claudalisk\\tools\\runners.mjs" up',
+  'bash -c "node /p/tools/runners.mjs up"',
+  'cd /p && node tools/runners.mjs enroll /app',
+  './tools/runners.mjs up',
+]);
+
+allow([
+  'node /p/tools/runners.mjs status',
+  'node /p/tools/runners.mjs status --config /x',
+  'node /p/tools/runners.mjs adopt /x',
+  'node /p/tools/runners.mjs logs --project p',
+  'node /p/tools/runners.mjs group',
+  'node /p/tools/runners.mjs group --project p',
+  'node /p/tools/runners.mjs app',
+  'node /p/tools/other.mjs up',
+  'echo runners.mjs up',
 ]);
 
 ask([
@@ -913,7 +949,7 @@ function registryHome(content) {
 const REGISTRY = {
   apps: [{ name: 'example-app', repo: 'o/example-app', hostPrefix: 'example-app', uat: { composeProject: UAT, volume: `${UAT}-data` }, ports: { devDb: 5433, apiLocal: 5100 } }],
   proxy: { composeProject: 'claudalisk-proxy', network: 'claudalisk-proxy-net' },
-  runners: { composeProject: 'claudalisk-runners' },
+  runners: [{ composeProject: 'claudalisk-runners', configDir: '/cfg/claudalisk-runners', scope: 'organization', target: 'o', groupId: 1 }],
 };
 
 const CONFIG = (project) => ({
@@ -1461,4 +1497,45 @@ test('the uat script comparison ignores case on win32 only', () => {
   const text = 'node Scripts/Deploy.mjs --environment uat';
   assert.equal(verdict(call(text, { deps: { platform: 'win32' } })), 'allow');
   assert.equal(verdict(call(text, { deps: { platform: 'linux' } })), 'deny');
+});
+
+deny([
+  `docker compose -f ${STACK_SLASHED}/compose.a.yaml ps`,
+  `docker compose --env-file ${STACK_SLASHED}/runners.env config`,
+  `docker compose --env-file=${STACK_SLASHED}/runners.env config`,
+  `docker run -v ${STACK_SLASHED}:/stack alpine ls`,
+  `docker run --mount type=bind,source=${STACK_SLASHED}/.kit,target=/k alpine ls`,
+  `docker-compose --file ${STACK_SLASHED}/compose.yaml up -d`,
+  `bash -c "docker compose -f ${STACK_SLASHED}/compose.a.yaml ps"`,
+]);
+
+allow([
+  `docker compose -f ${STACK_SLASHED}2/compose.yaml ps`,
+  `docker compose -f /elsewhere${STACK_SLASHED}/compose.yaml ps`,
+  `echo ${STACK_SLASHED}/runners.env`,
+  `cat ${STACK_SLASHED}/runners.env`,
+]);
+
+test('a relative path that resolves into a runners config folder is denied', () => {
+  const result = call('docker compose -f compose.a.yaml ps', { cwd: STACK });
+  assert.equal(verdict(result), 'deny');
+  assert.match(reason(result), /Rule 3/);
+  assert.match(reason(result), /config folder of a registered runners stack/);
+  assert.equal(verdict(call('docker compose -f ../stack/compose.a.yaml ps', { cwd: dir() })), 'allow');
+  assert.equal(verdict(call(`docker compose -f ../${basename(STACK)}/compose.a.yaml ps`, { cwd: dir('sub') })), 'allow');
+});
+
+test('a config folder is compared case-insensitively on win32 only', () => {
+  const upper = `docker compose -f ${STACK_SLASHED.toUpperCase()}/compose.a.yaml ps`;
+  assert.equal(verdict(call(upper, { deps: { platform: 'win32' } })), 'deny');
+  assert.equal(verdict(call(upper, { deps: { platform: 'linux' } })), 'allow');
+});
+
+test('a config folder is not checked for commands that are not container tools', () => {
+  assert.equal(verdict(call(`ls ${STACK_SLASHED}`)), 'allow');
+});
+
+test('a registry without config folders protects none', () => {
+  const result = call(`docker compose -f ${STACK_SLASHED}/compose.yaml ps`, { deps: { protect: () => ({ names: [], config: null }) } });
+  assert.equal(verdict(result), 'allow');
 });
