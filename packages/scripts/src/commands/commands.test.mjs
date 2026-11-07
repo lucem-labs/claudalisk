@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { backup } from './backup.mjs'
+import { checkMigrationsAgainstMain } from './check-migrations.mjs'
 import { currentVersion, deploy } from './deploy.mjs'
 import { init } from './init.mjs'
 import { findApiProject, migrate } from './migrate.mjs'
@@ -127,12 +129,25 @@ test('a uat deploy stops at the guard before it touches Docker', async () => {
   assert.ok(runner.calls.every((call) => call.command === 'git'))
 })
 
-function uatSetup({ hasSchema = true, applied = ['app/20260101000000_A'], failOn = [] } = {}) {
+const mainPath = 'backend/Shop.Persistence/Migrations/20260101000000_A.cs'
+
+function mainHas(files) {
+  return (call) => {
+    if (call.command !== 'git') return undefined
+    const text = call.args.join(' ')
+    if (text.includes('ls-tree')) return { stdout: Object.keys(files).join('\n') }
+    const shown = /show origin\/main:(.+)$/.exec(text)?.[1]
+    if (shown && shown in files) return { stdout: files[shown] }
+    return undefined
+  }
+}
+
+function uatSetup({ hasSchema = true, applied = ['app/20260101000000_A'], failOn = [], main = { [mainPath]: 'migration' } } = {}) {
   const fixture = makeApp()
   writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=false\n')
   mkdirSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations'), { recursive: true })
   writeFileSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations', '20260101000000_A.cs'), 'migration')
-  const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], hasSchema, applied, failOn })
+  const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], hasSchema, applied, failOn, extra: mainHas(main) })
   return { ...fixture, runner }
 }
 
@@ -168,6 +183,34 @@ test('a uat deploy reads the approved edits from origin/main through git', async
   const { root, env, runner } = uatSetup()
   await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
   assert.equal(callsMatching(runner, /show origin\/main:approved-migration-edits\.txt$/).length, 1)
+})
+
+const uatDeploy = (setup, argv = []) => deploy({ appRoot: setup.root, argv: ['--environment', 'uat', ...argv], env: setup.env, runner: setup.runner, health: healthy, guard: approvedGuard, now: when })
+
+test('a uat deploy refuses an applied migration that is neither recorded nor on origin/main, and --adopt-unrecorded-migrations records it', async () => {
+  const refused = uatSetup({ main: {} })
+  await assert.rejects(uatDeploy(refused), /20260101000000_A.*--adopt-unrecorded-migrations/)
+  assert.equal(callsMatching(refused.runner, / build$/).length, 0)
+  assert.ok(!existsSync(join(refused.state, 'uat-migrations.json')))
+
+  const adopted = uatSetup({ main: {} })
+  await uatDeploy(adopted, ['--adopt-unrecorded-migrations'])
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(adopted.state, 'uat-migrations.json'), 'utf8'))), ['20260101000000_A'])
+})
+
+test('a uat deploy takes main as the baseline for an unrecorded migration, and refuses a commit that differs from it', async () => {
+  const same = uatSetup()
+  await uatDeploy(same)
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(same.state, 'uat-migrations.json'), 'utf8'))), ['20260101000000_A'])
+
+  const differs = uatSetup({ main: { [mainPath]: 'migration as merged' } })
+  await assert.rejects(uatDeploy(differs), /20260101000000_A changed after uat applied it/)
+  assert.equal(callsMatching(differs.runner, / build$/).length, 0)
+})
+
+test('--adopt-unrecorded-migrations is only for uat', async () => {
+  const { root, state, env } = makeApp()
+  await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'dev', '--adopt-unrecorded-migrations'], env, runner: docker({ state }), health: healthy }), /only for uat/)
 })
 
 test('a uat deploy passes the app repository to the guard', async () => {
@@ -230,7 +273,7 @@ test('a uat deploy prunes backups after it when the env file asks for it', async
   const { root, state, env, runner } = uatSetup()
   writeEnvFile(state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=true\n')
   await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
-  assert.equal(callsMatching(runner, /ls-tree -r --name-only origin\/main/).length, 1)
+  assert.equal(callsMatching(runner, /ls-tree -r --name-only origin\/main/).length, 2)
 })
 
 test('a backup command names the reason in the manifest', async () => {
@@ -405,4 +448,53 @@ test('the API project is the one backend folder ending in .Api with its csproj',
   rmSync(join(root, 'backend', 'Other.Api', 'Other.Api.csproj'))
   mkdirSync(join(root, 'backend', 'Empty.Api'))
   assert.equal(findApiProject(root), join('backend', 'Shop.Api', 'Shop.Api.csproj'))
+})
+
+function checkSetup({ branch, main, approvals }) {
+  const { root } = makeApp()
+  const folder = join(root, 'backend', 'Shop.Persistence', 'Migrations')
+  mkdirSync(folder, { recursive: true })
+  for (const [name, text] of Object.entries(branch)) writeFileSync(join(folder, name), text)
+  const files = Object.fromEntries(Object.entries(main).map(([name, text]) => [`backend/Shop.Persistence/Migrations/${name}`, text]))
+  const runner = fakeRunner((call) => {
+    if (call.args.join(' ').includes('approved-migration-edits.txt')) {
+      return approvals === undefined ? { code: 128, stderr: "fatal: path 'approved-migration-edits.txt' does not exist in 'origin/main'" } : { stdout: approvals }
+    }
+    return mainHas(files)(call)
+  })
+  return { root, runner }
+}
+
+const checkRun = ({ root, runner }) => checkMigrationsAgainstMain({ appRoot: root, argv: [], env: {}, runner })
+
+test('check-migrations passes when every migration on main is unchanged, new ones are allowed, and it runs in CI', async () => {
+  const setup = checkSetup({
+    branch: { '20260101000000_A.cs': 'a\r\n', '20260102000000_New.cs': 'new' },
+    main: { '20260101000000_A.cs': 'a\n' },
+  })
+  const result = await checkMigrationsAgainstMain({ appRoot: setup.root, argv: [], env: { CI: 'true' }, runner: setup.runner })
+  assert.deepEqual(result, { changed: [], missing: [] })
+})
+
+test('check-migrations names a changed and a missing migration with the fix-forward and approval path', async () => {
+  const setup = checkSetup({
+    branch: { '20260101000000_A.cs': 'edited' },
+    main: { '20260101000000_A.cs': 'a', '20260102000000_B.cs': 'b' },
+  })
+  await assert.rejects(checkRun(setup), (error) => {
+    assert.match(error.message, /Changed after reaching origin\/main: 20260101000000_A\./)
+    assert.match(error.message, /missing here: 20260102000000_B\./)
+    assert.match(error.message, /CLA-0010.*fix forward.*approved-migration-edits\.txt/s)
+    return true
+  })
+})
+
+test('check-migrations accepts a changed migration only when main approves exactly its new content', async () => {
+  const hash = (text) => createHash('sha256').update(text).digest('hex')
+  const branch = { '20260101000000_A.cs': 'edited' }
+  const main = { '20260101000000_A.cs': 'a' }
+  const entry = (text) => `shop/20260101000000_A ${hash(text)} Kept the old index name. #42\n`
+  await checkRun(checkSetup({ branch, main, approvals: entry('edited') }))
+  await assert.rejects(checkRun(checkSetup({ branch, main, approvals: entry('edited again') })), /Changed after reaching/)
+  await assert.rejects(checkRun(checkSetup({ branch, main, approvals: 'shop/20260101000000_A not-a-hash Kept the old index name. #42\n' })), /Changed after reaching/)
 })

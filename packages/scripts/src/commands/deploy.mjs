@@ -12,7 +12,7 @@ import {
 import { assertUatDeployable } from '../guards.mjs'
 import { waitForHealth } from '../http.mjs'
 import { ensureInitialised } from '../init.mjs'
-import { checkUatMigrations, readApprovedEdits, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
+import { checkUatMigrations, readApprovedEdits, readMainMigrations, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
 import { migrate, takeBackup } from '../operations.mjs'
 import { runChecked } from '../process.mjs'
 import { pruneBackups } from './prune-backups.mjs'
@@ -54,6 +54,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const options = parseOptions({
     environment: { type: 'string' },
     confirm: { type: 'string' },
+    'adopt-unrecorded-migrations': { type: 'boolean', default: false },
   }, argv)
   const environment = options.environment
   assertEnvironment(environment)
@@ -65,6 +66,8 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
     guarded = await guard(runner, { root: appRoot, repo: app.repo, confirm: options.confirm })
   } else if (options.confirm) {
     throw new Error('--confirm is only for uat.')
+  } else if (options['adopt-unrecorded-migrations']) {
+    throw new Error('--adopt-unrecorded-migrations is only for uat.')
   }
   await requireProxyRunning(runner, expectedProxyPort(env))
   await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env) })
@@ -86,7 +89,12 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
     await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
-    const { firstDeploy } = await checkUatMigrations(runner, settings, { source, approved: await readApprovedEdits(runner, appRoot) })
+    const { firstDeploy } = await checkUatMigrations(runner, settings, {
+      source,
+      approved: await readApprovedEdits(runner, appRoot),
+      main: await readMainMigrations(runner, appRoot),
+      adoptUnrecorded: options['adopt-unrecorded-migrations'],
+    })
     await build()
     if (firstDeploy) {
       console.log('First uat deploy: the uat database has no schema yet, so there is nothing to back up. Skipping the pre-deploy backup.')

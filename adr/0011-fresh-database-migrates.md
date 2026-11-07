@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** generated test, run by the add-migration skill
+- **Enforced by:** generated test (with #17), run by the add-migration skill
 - **Issue:** #7
 
 ## Context
@@ -13,6 +13,7 @@ Throwaway test stacks and CI start from an empty database. A migration that work
 ## Decision
 
 - A test migrates a fresh, empty PostgreSQL database to every module's latest migration DbContext, then down and up again.
+- The test is named `FreshDatabaseMigrates`: it starts a fresh, empty PostgreSQL database, migrates up end to end, then down, then up again. It is generated for the app with #17, and the add-migration skill runs it with `dotnet test --filter "FullyQualifiedName~FreshDatabaseMigrates"` for every new migration.
 - Test fixtures never patch the schema to work around a migration.
 
 ## Consequences

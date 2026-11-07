@@ -22,6 +22,7 @@ export const RULES = [
   { id: 11, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before changing a runner group\'s access.' },
   { id: 12, decision: 'ask', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Ask when a dangerous script\'s path, in a scripts directory or relative with ./ or ../, appears anywhere in a PowerShell command.' },
   { id: 13, decision: 'ask', adr: 'CLA-0033', enforcedBy: [HOOK], summary: 'Ask before node proxy.mjs recreate, which stops the URLs of every app while the shared proxy is rebuilt.' },
+  { id: 14, decision: 'ask', adr: 'CLA-0010', enforcedBy: [HOOK], summary: 'Ask before dotnet ef migrations remove, which deletes a migration that may have run on uat or be tracked on origin/main.' },
 ];
 
 export function hostPath(path, platform) {
@@ -515,6 +516,15 @@ function proxyRecreate(name, args, ctx) {
   flag(ctx, 'ask', 13, 'proxy.mjs recreate rebuilds the shared proxy and stops the URLs of every app for a moment (CLA-0033). Ask the owner before running it.');
 }
 
+function migrationsRemove(name, args, ctx) {
+  const tool = name === 'dotnet' ? args.indexOf('ef') : name === 'dotnet-ef' ? -1 : null
+  if (tool === null || (name === 'dotnet' && tool < 0)) return
+  const rest = args.slice(tool + 1)
+  const at = rest.indexOf('migrations')
+  if (at < 0 || !rest.slice(at + 1).includes('remove')) return
+  flag(ctx, 'ask', 14, 'dotnet ef migrations remove deletes a migration, and an applied one is never removed (CLA-0010). Fix forward with a new migration, or ask the owner when the migration ran only on dev.')
+}
+
 function dangerousPaths(text, ctx) {
   for (const token of text.split(SCRIPT_SEPARATORS)) {
     const cut = Math.max(token.lastIndexOf('/'), token.lastIndexOf('\\'));
@@ -651,6 +661,7 @@ function segment(whole, shell, ctx, depth) {
   configCommands(name, args, ctx);
   guardedScripts(name, args, ctx);
   proxyRecreate(name, args, ctx);
+  migrationsRemove(name, args, ctx);
   if (CONTAINER.has(name)) container(name, args, local, ctx);
   else if (DATABASE.has(name)) database(args, local, ctx);
   else if (name === 'gh') gh(args, ctx, ctx.cwd);
