@@ -129,8 +129,8 @@ Pin `@playwright/test` in `frontend/package.json` to the exact version of the br
 
 Repository settings the new app sets once:
 
-- Allow **Update branch** (Settings, General, Pull Requests). It pushes a merge of `main` into the branch, and CI runs on the combined code.
-- Add the repository to the organisation's runner group. Until it is added, jobs on the self-hosted runners queue silently and GitHub cancels them after 24 hours (lucem-labs/claudalisk#20).
+- Allow **Update branch** (Settings, General, Pull Requests); `/claudalisk:runners enroll` does it. It pushes a merge of `main` into the branch, and CI runs on the combined code.
+- Add the repository to the organisation's runner group with `/claudalisk:runners enroll`. Until it is added, jobs on the self-hosted runners queue silently and GitHub cancels them after 24 hours.
 - Set `CI_RUNS_ON` only to fall back to GitHub-hosted runners, for example `["ubuntu-latest"]`.
 
 ## Security jobs
