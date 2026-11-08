@@ -194,7 +194,7 @@ jobs:
 
       - name: No comments
         if: ${{ !cancelled() }}
-        run: node scripts/no-comments.mjs
+        run: node scripts/no-comments.mjs --skip frontend/.claude/skills/shadcn
 
   security:
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","linux","ci"]') }}
