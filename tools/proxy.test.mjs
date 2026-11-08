@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { composeFile, main } from './proxy.mjs';
+import { composeFile, main, proxyProblem } from './proxy.mjs';
 import { readRegistry, registerApp } from './app-registry.mjs';
 
 const home = () => mkdtempSync(join(tmpdir(), 'proxy-home-'));
@@ -153,4 +153,24 @@ test('the compose file pins Traefik by tag and digest and keeps the fixed names'
   assert.match(text, /Host\(`traefik\.localhost`\)/);
   assert.doesNotMatch(text, /\r/);
   assert.doesNotMatch(text, /^\s*#/m);
+});
+
+const psRow = (labels, networks) => JSON.stringify({ Names: 'proxy', Image: 'traefik', Ports: '', Labels: labels, Networks: networks });
+const dockerWith = (...rows) => () => rows.join('\n');
+const PROJECT_LABEL = 'com.docker.compose.project=traefik';
+
+test('proxyProblem finds nothing wrong with a proxy on its network', () => {
+  assert.equal(proxyProblem({ docker: dockerWith(psRow(PROJECT_LABEL, 'traefik')) }), null);
+});
+
+test('proxyProblem says when no proxy runs', () => {
+  assert.match(proxyProblem({ docker: dockerWith(psRow('com.docker.compose.project=other', 'traefik')) }), /No shared proxy/);
+});
+
+test('proxyProblem says when the proxy is off its network', () => {
+  assert.match(proxyProblem({ docker: dockerWith(psRow(PROJECT_LABEL, 'other')) }), /not on the traefik network/);
+});
+
+test('proxyProblem reports a Docker failure instead of throwing', () => {
+  assert.match(proxyProblem({ docker: () => { throw new Error('no daemon'); } }), /was not checked/);
 });

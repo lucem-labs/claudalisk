@@ -183,49 +183,65 @@ describe('finish', () => {
     const appRoot = await appWithConfig()
     const ran = []
     const lines = []
-    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line), home: homeWithStacks('acme') })
+    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line), home: homeWithStacks('acme'), checkProxy: () => null })
     assert.deepEqual(ran, [])
-    assert.equal(lines.length, steps.length)
+    assert.equal(lines.length, steps.length + 1)
   })
 
   it('runs every step in order otherwise, and stops at the first failure', async () => {
     const appRoot = await appWithConfig()
     const ran = []
     const home = homeWithStacks('acme')
-    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home })
+    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home, checkProxy: () => null })
     assert.equal(ran.length, 5)
     let count = 0
-    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {}, home }), /no/)
+    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {}, home, checkProxy: () => null }), /no/)
     assert.equal(count, 1)
+  })
+
+  it('reports a running proxy first', async () => {
+    const appRoot = await appWithConfig()
+    const lines = []
+    await finishApp({ appRoot, dryRun: true }, { log: (line) => lines.push(line), home: homeWithStacks('acme'), checkProxy: () => null })
+    assert.equal(lines[0], 'The shared proxy is running.')
+  })
+
+  it('warns about a proxy problem and still runs every step', async () => {
+    const appRoot = await appWithConfig()
+    const ran = []
+    const lines = []
+    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: (line) => lines.push(line), home: homeWithStacks('acme'), checkProxy: () => 'it is down' })
+    assert.equal(lines[0], 'Warning: it is down')
+    assert.equal(ran.length, 5)
   })
 
   it('changes nothing when no runner stack is registered, and says how to register one', async () => {
     const appRoot = await appWithConfig()
     const ran = []
-    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('someone-else') }), /adopt.*Nothing was changed/)
+    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('someone-else'), checkProxy: () => null }), /adopt.*Nothing was changed/)
     assert.deepEqual(ran, [])
   })
 
   it('changes nothing when two runner stacks serve the repository', async () => {
     const appRoot = await appWithConfig()
     const ran = []
-    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('acme', 'ACME') }), /2 registered runner stacks/)
+    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('acme', 'ACME'), checkProxy: () => null }), /2 registered runner stacks/)
     assert.deepEqual(ran, [])
   })
 
   it('only warns about a missing runner stack on a dry run', async () => {
     const appRoot = await appWithConfig()
     const lines = []
-    const steps = await finishApp({ appRoot, dryRun: true }, { log: (line) => lines.push(line), home: homeWithStacks() })
-    assert.match(lines[0], /^Warning: No registered runner stack/)
-    assert.equal(lines.length, steps.length + 1)
+    const steps = await finishApp({ appRoot, dryRun: true }, { log: (line) => lines.push(line), home: homeWithStacks(), checkProxy: () => null })
+    assert.match(lines[1], /^Warning: No registered runner stack/)
+    assert.equal(lines.length, steps.length + 2)
   })
 
   it('leaves out the enrolment with no-enrol, needs no runner stack for it, and says how to enrol later', async () => {
     const appRoot = await appWithConfig()
     const ran = []
     const lines = []
-    await finishApp({ appRoot, enrol: false }, { run: async (_, args) => ran.push(args), log: (line) => lines.push(line), home: homeWithStacks() })
+    await finishApp({ appRoot, enrol: false }, { run: async (_, args) => ran.push(args), log: (line) => lines.push(line), home: homeWithStacks(), checkProxy: () => null })
     assert.equal(ran.length, 4)
     assert.ok(ran.every((args) => !args.includes('enroll')))
     assert.match(lines.at(-1), /enroll/)

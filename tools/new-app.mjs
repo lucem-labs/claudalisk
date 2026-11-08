@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { addDesignSystem, runCommand } from './add-design-system.mjs'
 import { readAppConfig, validateAppConfig } from './app-config.mjs'
 import { allocatePorts, readRegistry } from './app-registry.mjs'
+import { proxyProblem } from './proxy.mjs'
 import { stacksServing } from './runners.mjs'
 import { generateBackend } from './scaffold.mjs'
 
@@ -186,9 +187,11 @@ export function enrolmentProblem(repo, { home = homedir() } = {}) {
   return `No registered runner stack serves ${repo}. If its stack is already running, register it with: node "${RUNNERS_TOOL}" adopt <its config folder>. Otherwise set one up with the runners skill, or add --no-enrol to publish without enrolling.`
 }
 
-export async function finishApp({ appRoot, dryRun, enrol = true }, { run = runCommand, log = console.log, home = homedir() } = {}) {
+export async function finishApp({ appRoot, dryRun, enrol = true }, { run = runCommand, log = console.log, home = homedir(), checkProxy = proxyProblem } = {}) {
   const config = readAppConfig(appRoot)
   if (!config) throw new Error(`${join(appRoot, '.claude', 'claudalisk.json')} is missing.`)
+  const proxy = checkProxy()
+  log(proxy ? `Warning: ${proxy}` : 'The shared proxy is running.')
   const problem = enrol ? enrolmentProblem(config.repo, { home }) : null
   if (problem && !dryRun) throw new Error(`${problem} Nothing was changed.`)
   if (problem) log(`Warning: ${problem}`)

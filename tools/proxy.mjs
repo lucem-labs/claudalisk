@@ -22,7 +22,7 @@ function containers(docker) {
   return lines(docker(['ps', '--format', '{{json .}}'])).map((line) => {
     const row = JSON.parse(line);
     const labels = String(row.Labels ?? '');
-    return { name: row.Names, image: row.Image, ports: String(row.Ports ?? ''), inProject: labels.split(',').includes(`com.docker.compose.project=${PROJECT}`) };
+    return { name: row.Names, image: row.Image, ports: String(row.Ports ?? ''), networks: String(row.Networks ?? '').split(','), inProject: labels.split(',').includes(`com.docker.compose.project=${PROJECT}`) };
   });
 }
 
@@ -54,6 +54,18 @@ function parseFlags(args) {
     i += 1;
   }
   return { port };
+}
+
+export function proxyProblem({ docker = dockerRunner } = {}) {
+  let running;
+  try {
+    running = containers(docker).filter((c) => c.inProject);
+  } catch {
+    return 'Docker did not answer, so the shared proxy was not checked.';
+  }
+  if (running.length === 0) return 'No shared proxy is running, so the app will not be reachable and its deploy will refuse. Use the proxy skill.';
+  if (!running.some((c) => c.networks.includes(NETWORK))) return `The shared proxy is not on the ${NETWORK} network, so the app will not be reachable. Use the proxy skill.`;
+  return null;
 }
 
 export function status({ docker = dockerRunner, home = homedir(), write = console.log } = {}) {
