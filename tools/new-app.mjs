@@ -9,6 +9,7 @@ import { addDesignSystem, runCommand } from './add-design-system.mjs'
 import { readAppConfig, validateAppConfig } from './app-config.mjs'
 import { allocatePorts, readRegistry } from './app-registry.mjs'
 import { proxyProblem } from './proxy.mjs'
+import { stacksServing } from './runners.mjs'
 import { generateBackend } from './scaffold.mjs'
 
 const PLUGIN_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -163,7 +164,9 @@ export async function generateApp(
   return config
 }
 
-export function finishSteps(appRoot, config, node = process.execPath) {
+const RUNNERS_TOOL = join(PLUGIN_ROOT, 'tools', 'runners.mjs')
+
+export function finishSteps(appRoot, config, { node = process.execPath, enrol = true } = {}) {
   const labels = LABELS.map(({ name, color, description }) => ({
     title: `Create the label ${name}`,
     command: 'gh',
@@ -173,27 +176,38 @@ export function finishSteps(appRoot, config, node = process.execPath) {
     { title: `Create the private repository ${config.repo} and push main`, command: 'gh', args: ['repo', 'create', config.repo, '--private', '--source', appRoot, '--remote', 'origin', '--push'] },
     ...labels,
     { title: 'Register the app in the machine-wide registry', command: node, args: [join(PLUGIN_ROOT, 'tools', 'app-registry.mjs'), 'register', appRoot] },
-    { title: 'Enrol the repository with the CI runners', command: node, args: [join(PLUGIN_ROOT, 'tools', 'runners.mjs'), 'enroll', appRoot] },
+    ...(enrol ? [{ title: 'Enrol the repository with the CI runners', command: node, args: [RUNNERS_TOOL, 'enroll', appRoot] }] : []),
   ]
 }
 
-export async function finishApp({ appRoot, dryRun }, { run = runCommand, log = console.log, checkProxy = proxyProblem } = {}) {
+export function enrolmentProblem(repo, { home = homedir() } = {}) {
+  const count = stacksServing(readRegistry({ home }).runners, repo).length
+  if (count === 1) return null
+  if (count > 1) return `${count} registered runner stacks serve ${repo}, so enrolment cannot choose one. Remove the extra one from the registry, or add --no-enrol to publish without enrolling.`
+  return `No registered runner stack serves ${repo}. If its stack is already running, register it with: node "${RUNNERS_TOOL}" adopt <its config folder>. Otherwise set one up with the runners skill, or add --no-enrol to publish without enrolling.`
+}
+
+export async function finishApp({ appRoot, dryRun, enrol = true }, { run = runCommand, log = console.log, home = homedir(), checkProxy = proxyProblem } = {}) {
   const config = readAppConfig(appRoot)
   if (!config) throw new Error(`${join(appRoot, '.claude', 'claudalisk.json')} is missing.`)
-  const problem = checkProxy()
-  log(problem ? `Warning: ${problem}` : 'The shared proxy is running.')
-  const steps = finishSteps(appRoot, config)
+  const proxy = checkProxy()
+  log(proxy ? `Warning: ${proxy}` : 'The shared proxy is running.')
+  const problem = enrol ? enrolmentProblem(config.repo, { home }) : null
+  if (problem && !dryRun) throw new Error(`${problem} Nothing was changed.`)
+  if (problem) log(`Warning: ${problem}`)
+  const steps = finishSteps(appRoot, config, { enrol })
   for (const [index, step] of steps.entries()) {
     log(`${index + 1}/${steps.length} ${step.title}: ${[step.command, ...step.args].join(' ')}`)
     if (!dryRun) await run(step.command, step.args, appRoot)
   }
+  if (!enrol) log(`Not enrolled with the CI runners, so CI jobs queue without running. Enrol it with: node "${RUNNERS_TOOL}" enroll ${appRoot}`)
   return steps
 }
 
 export function parseArguments(argv) {
   const positional = []
   const options = {}
-  const flags = new Set(['dry-run', 'no-skill'])
+  const flags = new Set(['dry-run', 'no-skill', 'no-enrol'])
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
     if (!argument.startsWith('--')) positional.push(argument)
@@ -207,7 +221,7 @@ export function parseArguments(argv) {
 }
 
 const USAGE = `Usage: new-app.mjs generate <folder> --root <Root> --name <name> --repo <owner/name> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]] [--registry <url with {name}>] [--no-skill] [--git-name <name> --git-email <email>]
-       new-app.mjs finish <folder> [--dry-run]`
+       new-app.mjs finish <folder> [--dry-run] [--no-enrol]`
 
 export async function main(argv) {
   const { positional: [command, path], options } = parseArguments(argv)
@@ -228,7 +242,7 @@ export async function main(argv) {
     return
   }
   if (command === 'finish' && path) {
-    await finishApp({ appRoot: resolve(path), dryRun: Boolean(options['dry-run']) })
+    await finishApp({ appRoot: resolve(path), dryRun: Boolean(options['dry-run']), enrol: !options['no-enrol'] })
     return
   }
   throw new Error(USAGE)
