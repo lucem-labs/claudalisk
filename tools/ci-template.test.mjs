@@ -186,7 +186,7 @@ test('the frontend job runs lint with GitHub annotations, typecheck, tests and t
 test('the scripts job runs the app tests and the comment check', () => {
   const runs = ci.jobs.scripts.steps.map((step) => step.run);
   assert.ok(runs.includes('node --test scripts/*.test.mjs'));
-  assert.ok(runs.includes('node scripts/no-comments.mjs'));
+  assert.ok(runs.includes('node scripts/no-comments.mjs --skip frontend/.claude/skills/shadcn'));
 });
 
 test('the security job runs the checks of CLA-0026 and CLA-0071, each even when another failed', () => {
