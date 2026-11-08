@@ -142,6 +142,23 @@ test('download with a token fetches the release asset through the API by id', as
   assert.ok(calls.every(({ headers }) => headers.authorization === 'Bearer test-token'));
 });
 
+test('download repeats the API requests without credentials when GitHub refuses the token', async () => {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push({ url, authorization: options.headers.authorization });
+    if (options.headers.authorization) return new Response('{"message":"IP allow list"}', { status: 403 });
+    if (url.endsWith('/releases/tags/v1.2.3')) return new Response(JSON.stringify({ assets: [{ id: 77, name: 'scanner.tar.gz' }] }));
+    return new Response('asset bytes');
+  };
+  const content = await download(RELEASE_URL, { token: 'test-token', request });
+  assert.equal(content.toString(), 'asset bytes');
+  assert.deepEqual(calls, [
+    { url: 'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3', authorization: 'Bearer test-token' },
+    { url: 'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3', authorization: undefined },
+    { url: 'https://api.github.com/repos/acme/scanner/releases/assets/77', authorization: undefined },
+  ]);
+});
+
 test('download without a token uses the public release URL and sends no credentials', async () => {
   const { calls, request } = fakeGitHub();
   await download(RELEASE_URL, { request });
