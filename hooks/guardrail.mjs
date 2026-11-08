@@ -253,7 +253,8 @@ const BARE_PATH = /^[A-Za-z]:[\\/]/;
 
 function pathForms(text, ctx) {
   const pieces = new Set([text]);
-  for (const base of /^-[A-Za-z]/.test(text) ? [text, text.slice(2)] : [text]) for (const part of base.split(/[=,]/)) for (const sub of part.split(/(?<=[^:]{2}):(?=[\\/])/)) pieces.add(sub);
+  const bases = /^-[A-Za-z]/.test(text) ? [text, text.slice(2)] : [text];
+  for (const base of bases) for (const part of base.split(/[=,]/)) for (const sub of part.split(/(?<=[^:]{2}):(?=[\\/])/)) pieces.add(sub);
   const forms = [];
   for (const piece of pieces) {
     const hosted = ctx.host(piece).replace(/^[\\/]{2}[?.][\\/]/, '');
