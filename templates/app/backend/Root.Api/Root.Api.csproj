@@ -2,6 +2,8 @@
   <ItemGroup>
     <PackageReference Include="Claudalisk.AspNetCore" />
     <PackageReference Include="Claudalisk.Dispatching" />
+    <PackageReference Include="Claudalisk.Jobs" />
+    <PackageReference Include="Claudalisk.Jobs.PostgreSql" />
     <PackageReference Include="Claudalisk.Modules" />
     <PackageReference Include="Claudalisk.Persistence" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
