@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { registerHooks } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import openapiTS, { astToString } from 'openapi-typescript'
-import ts from 'typescript'
+import ts from '@typescript/typescript6'
 import { apiEnvironment, startApi } from '../e2e/harness/api.mjs'
 import { freePorts } from '../e2e/harness/ports.mjs'
 import { startPostgres } from '../e2e/harness/postgres.mjs'
 import { runToEnd } from '../e2e/harness/processes.mjs'
+
+registerHooks({
+  resolve: (specifier, context, nextResolve) =>
+    specifier === 'typescript' && context.parentURL?.includes('/openapi-typescript/')
+      ? nextResolve('@typescript/typescript6', context)
+      : nextResolve(specifier, context),
+})
+
+const { default: openapiTS, astToString } = await import('openapi-typescript')
 
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const backend = join(frontend, '..', 'backend')
