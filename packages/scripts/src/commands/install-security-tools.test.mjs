@@ -177,8 +177,95 @@ test('download names the URL when the release lookup, the asset name or the asse
     [fakeGitHub({ assets: [{ id: 1, name: 'other' }] }), /no asset named scanner\.tar\.gz/],
     [fakeGitHub({ assetStatus: 504 }), /failed \(HTTP 504\)/],
   ]) {
-    await assert.rejects(download(RELEASE_URL, { token: 'test-token', request: github.request }), (error) => error.message.includes(RELEASE_URL) && expected.test(error.message));
+    await assert.rejects(download(RELEASE_URL, { token: 'test-token', request: github.request, ...withoutWaiting() }), (error) => error.message.includes(RELEASE_URL) && expected.test(error.message));
   }
+});
+
+function withoutWaiting() {
+  const delays = [];
+  const logs = [];
+  return { wait: async (delay) => { delays.push(delay); }, log: (line) => logs.push(line), delays, logs };
+}
+
+function respondingInTurn(...outcomes) {
+  const urls = [];
+  const request = async (url) => {
+    urls.push(url);
+    const outcome = outcomes.shift();
+    if (outcome instanceof Error) throw outcome;
+    return outcome();
+  };
+  return { urls, request };
+}
+
+const status = (code) => () => new Response('', { status: code });
+const bytes = () => new Response('asset bytes');
+const release = () => new Response(JSON.stringify({ assets: [{ id: 77, name: 'scanner.tar.gz' }] }));
+
+test('download succeeds after a transient 5xx, waiting longer before each attempt', async () => {
+  const { urls, request } = respondingInTurn(status(504), status(502), status(500), bytes);
+  const pause = withoutWaiting();
+  const content = await download(RELEASE_URL, { request, ...pause });
+  assert.equal(content.toString(), 'asset bytes');
+  assert.equal(urls.length, 4);
+  assert.equal(pause.delays.length, 3);
+  assert.ok(pause.delays[0] < pause.delays[1] && pause.delays[1] < pause.delays[2]);
+  assert.match(pause.logs[0], /HTTP 504.*Retrying in 5 seconds/);
+});
+
+test('download retries a network error', async () => {
+  const { urls, request } = respondingInTurn(new TypeError('fetch failed'), bytes);
+  const content = await download(RELEASE_URL, { request, ...withoutWaiting() });
+  assert.equal(content.toString(), 'asset bytes');
+  assert.equal(urls.length, 2);
+});
+
+test('download retries a body that breaks off', async () => {
+  const broken = () => ({ ok: true, status: 200, arrayBuffer: async () => { throw new TypeError('terminated'); } });
+  const { urls, request } = respondingInTurn(broken, bytes);
+  const content = await download(RELEASE_URL, { request, ...withoutWaiting() });
+  assert.equal(content.toString(), 'asset bytes');
+  assert.equal(urls.length, 2);
+});
+
+test('download starts again from the release lookup when either API request has a 5xx', async () => {
+  const { urls, request } = respondingInTurn(status(503), release, status(504), release, bytes);
+  const content = await download(RELEASE_URL, { token: 'test-token', request, ...withoutWaiting() });
+  assert.equal(content.toString(), 'asset bytes');
+  const lookup = 'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3';
+  const asset = 'https://api.github.com/repos/acme/scanner/releases/assets/77';
+  assert.deepEqual(urls, [lookup, lookup, asset, lookup, asset]);
+});
+
+test('download gives up on a lasting outage after a bounded number of attempts, within a few minutes of waiting', async () => {
+  const github = fakeGitHub({ assetStatus: 504 });
+  const pause = withoutWaiting();
+  await assert.rejects(download('https://example.invalid/scanner', { request: github.request, ...pause }), /failed \(HTTP 504\)/);
+  assert.equal(github.calls.length, pause.delays.length + 1);
+  const waited = pause.delays.reduce((sum, delay) => sum + delay, 0);
+  assert.ok(waited >= 120_000 && waited <= 300_000, `waited ${waited} ms`);
+});
+
+test('download does not retry a 404', async () => {
+  for (const options of [{}, { token: 'test-token' }]) {
+    const { urls, request } = respondingInTurn(status(404));
+    const pause = withoutWaiting();
+    await assert.rejects(download(RELEASE_URL, { ...options, request, ...pause }), /404/);
+    assert.equal(urls.length, 1);
+    assert.deepEqual(pause.delays, []);
+  }
+});
+
+test('a real download that retries still has its checksum checked, and a mismatch is not downloaded again', async (t) => {
+  const { urls, request } = respondingInTurn(status(504), () => new Response('tampered'));
+  const pause = withoutWaiting();
+  const tools = { scanner: { url: 'https://example.invalid/scanner', sha256: sha256('binary'), binary: 'scanner' } };
+  await assert.rejects(
+    installTool({ name: 'scanner', destination: join(folder(t), 'bin'), download: (url) => download(url, { request, ...pause }), tools }),
+    /Checksum mismatch for scanner/,
+  );
+  assert.equal(urls.length, 2);
+  assert.equal(pause.delays.length, 1);
 });
 
 test('main hands GITHUB_TOKEN, or GH_TOKEN without it, to the download', async (t) => {
@@ -189,6 +276,15 @@ test('main hands GITHUB_TOKEN, or GH_TOKEN without it, to the download', async (
     await main(['--tool', 'scanner', '--destination', folder(t)], { env, log: () => {}, io });
     assert.deepEqual(seen, [expected]);
   }
+});
+
+test('main hands its log to the download so retries show in the job output', async (t) => {
+  const content = Buffer.from('binary');
+  const logs = [];
+  const log = (line) => logs.push(line);
+  const io = { download: async (url, options) => { options.log('retrying'); return content; }, untar: () => {}, chmod: () => {}, tools: { scanner: { url: 'https://example.invalid/scanner', sha256: sha256(content), binary: 'scanner' } } };
+  await main(['--tool', 'scanner', '--destination', folder(t)], { env: {}, log, io });
+  assert.equal(logs[0], 'retrying');
 });
 
 test('the command refuses an unknown tool with a usage error that exits 2', async () => {
