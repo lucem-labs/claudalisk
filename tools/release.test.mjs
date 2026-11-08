@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkReleaseItems, main, registryItemNames, releaseItemUrls, releaseNotes, releaseTag, scriptsPackage } from './release.mjs';
@@ -99,6 +99,14 @@ test('the notes name the registry URL and items, and the npm approval only with 
   assert.doesNotMatch(plain, /npm/);
   const withPkg = releaseNotes('1.2.3', ['theme'], { name: '@claudalisk/scripts', version: '0.1.0' });
   assert.match(withPkg, /`@claudalisk\/scripts@0\.1\.0` is staged on npm .* awaits the owner's approval on npmjs\.com/);
+});
+
+test('the publish job stages the package, with an npm that has the stage command', () => {
+  const workflow = readFileSync(join(import.meta.dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8');
+  assert.match(workflow, /^ +npm stage publish --provenance --access public$/m);
+  assert.doesNotMatch(workflow, /^ +npm publish\b/m);
+  const [, major] = workflow.match(/npm install --global npm@(\d+)\./);
+  assert.ok(Number(major) >= 12, major);
 });
 
 test('the command line prints the tag, checks the items and writes the notes', async (t) => {
