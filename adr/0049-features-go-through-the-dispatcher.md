@@ -15,13 +15,16 @@ Claudalisk builds its own in-process dispatcher, a mediator-style package (CLA-0
 - Each feature defines one command or query for each operation. Each has exactly one handler in the same feature folder. "Request" means only the HTTP request DTO.
 - **Controllers send, never call.** A controller binds the HTTP request and maps it to the feature's command or query. It sends that through the dispatcher and maps the result to a response. It never calls a handler, a store or a service directly.
 - **Handlers do the work.** A command handler loads the aggregate through its store, calls the aggregate's command method, and saves it. A query handler for an aggregate or a collection page loads the aggregates through the store, or, for a collection page, reads through a read store when its `_actions` come from a pure function of the row (CLA-0047, CLA-0048). A query handler for a read model reads through a read store.
-- **Pipeline steps wrap every command and query in the same order:**
+- **Pipeline steps wrap every command and query in the same order.** Each step declares its position, so registration order does not decide it:
   1. logging
   2. validation, which runs the FluentValidation validators and turns invalid input into `400` Problem Details (CLA-0045, CLA-0057)
   3. the retry, for commands, which re-runs a command that lost a race in a new unit of work (CLA-0056)
   4. the unit of work, for commands (CLA-0007), except batch jobs, which the jobs library commits one batch at a time (CLA-0059)
 
   Queries run without a retry or a unit of work.
+- **The retry applies to a top-level send.** It wraps the unit of work and runs each attempt in a fresh child scope. A nested send joins the unit of work of the send around it and is not retried on its own.
+- **A top-level command is refused inside a hand-made transaction.** If a `DbContext` in the scope has a transaction it began itself, the send fails with a clear error, because the command would run on another connection, outside that transaction.
+- **The dispatcher exposes its outer steps,** logging and validation, so the jobs library runs them around its own delegate without the unit-of-work step (CLA-0059, CLA-0068).
 - **Calls between modules use the same dispatcher.** They use commands and queries that the Interfaces project of the target module declares (CLA-0002, CLA-0003). A handler never sends a command or query to another feature of its own module (CLA-0050).
 - The dispatcher follows the rules in CLA-0007: same DI scope, scoped or transient handlers, one handler at a time, and exceptions that propagate. Events are published as jobs, one per subscriber (CLA-0068).
 
