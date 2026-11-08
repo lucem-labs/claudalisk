@@ -90,6 +90,7 @@ async function main() {
       await runAsync('git', ['diff', '--exit-code', '--', 'src/shared/api/schema.d.ts'], frontend)
     })
     await step('Script tests and source checks', async () => {
+      await runAsync('git', ['update-ref', 'refs/remotes/origin/main', 'HEAD'], app)
       await runAsync('node', ['--test', 'scripts/*.test.mjs'], app)
       for (const script of ['no-comments', 'check-forbidden-files', 'check-source-hygiene', 'check-suppressions', 'check-e2e-locators']) {
         await runAsync('node', [`scripts/${script}.mjs`], app)
