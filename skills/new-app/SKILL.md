@@ -31,6 +31,8 @@ It copies `templates/app`, generates the backend, takes dev ports no registered 
 
 It stops before writing anything if `@claudalisk/scripts` at the template's version is not on npm. The owner approves the staged package on npmjs.com.
 
+It also stops before writing anything if git has no identity for the first commit. Ask the owner which name and email to commit with, and add `--git-name <name> --git-email <email>`. They are set only in the new repository.
+
 ## 3. Check it
 
 From the new app's root:

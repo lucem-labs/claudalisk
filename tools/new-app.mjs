@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { addDesignSystem, runCommand } from './add-design-system.mjs'
@@ -99,17 +99,30 @@ export function isPublished(version, spawn = execFileSync) {
   }
 }
 
+export function hasGitIdentity(spawn = execFileSync) {
+  try {
+    for (const role of ['GIT_AUTHOR_IDENT', 'GIT_COMMITTER_IDENT']) spawn('git', ['var', role], { cwd: tmpdir(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function generateApp(
-  { target, root, name, repo, module, aggregate, plural, registry, skill = true, scriptsPackage, now },
-  { run = runCommand, home = homedir(), log = console.log, isFree, design = addDesignSystem, published = isPublished } = {},
+  { target, root, name, repo, module, aggregate, plural, registry, skill = true, scriptsPackage, now, gitName, gitEmail },
+  { run = runCommand, home = homedir(), log = console.log, isFree, design = addDesignSystem, published = isPublished, identity = hasGitIdentity } = {},
 ) {
   validateNames({ name, repo })
+  if (Boolean(gitName) !== Boolean(gitEmail)) throw new Error('Pass --git-name and --git-email together.')
   if (existsSync(target) && readdirSync(target).length > 0) throw new Error(`${target} is not empty.`)
   const machine = readRegistry({ home })
   if (machine.apps.some((app) => app.name === name)) throw new Error(`An app named ${name} is already registered on this machine.`)
   const version = scriptsVersion()
   if (!scriptsPackage && !published(version)) {
     throw new Error(`@claudalisk/scripts ${version} is not on npm, so the app's root install would fail. Approve the staged package on npmjs.com, then generate the app again.`)
+  }
+  if (!gitName && !identity()) {
+    throw new Error('Git has no identity for the first commit on this machine. Pass --git-name and --git-email, which are set only in the new repository.')
   }
   const ports = await choosePorts(machine, isFree ? { isFree } : {})
 
@@ -139,6 +152,10 @@ export async function generateApp(
   await run('npm', ['install', '--ignore-scripts', '--package-lock-only', '--no-audit', '--no-fund'], target)
 
   await run('git', ['init', '--quiet', '--initial-branch=main'], target)
+  if (gitName) {
+    await run('git', ['config', 'user.name', gitName], target)
+    await run('git', ['config', 'user.email', gitEmail], target)
+  }
   await run('git', ['add', '--all'], target)
   await run('git', ['commit', '--quiet', '--message', `Generate ${name} from claudalisk`], target)
   log(`Generated ${name} in ${target}.`)
@@ -186,7 +203,7 @@ export function parseArguments(argv) {
   return { positional, options }
 }
 
-const USAGE = `Usage: new-app.mjs generate <folder> --root <Root> --name <name> --repo <owner/name> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]] [--registry <url with {name}>] [--no-skill]
+const USAGE = `Usage: new-app.mjs generate <folder> --root <Root> --name <name> --repo <owner/name> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]] [--registry <url with {name}>] [--no-skill] [--git-name <name> --git-email <email>]
        new-app.mjs finish <folder> [--dry-run]`
 
 export async function main(argv) {
@@ -202,6 +219,8 @@ export async function main(argv) {
       plural: options.plural,
       registry: options.registry,
       skill: !options['no-skill'],
+      gitName: options['git-name'],
+      gitEmail: options['git-email'],
     })
     return
   }
