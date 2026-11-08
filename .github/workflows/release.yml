@@ -80,7 +80,7 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - name: npm with trusted publishing
-        run: npm install --global npm@11.6.2 --no-audit --no-fund
+        run: npm install --global npm@12.2.2 --no-audit --no-fund
       - name: The tag is the plugin version
         run: test "$(node tools/release.mjs tag)" = "$GITHUB_REF_NAME"
       - name: Stage the scripts package on npm
@@ -91,5 +91,5 @@ jobs:
             echo "$spec is already on npm."
             exit 0
           fi
-          npm publish --provenance --access public
+          npm stage publish --provenance --access public
           echo "$spec is staged and awaits the owner's approval on npmjs.com."
