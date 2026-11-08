@@ -478,14 +478,18 @@ function groupCommand(args, deps) {
   deps.write(`runner group ${after.name}: visibility ${after.visibility}, public repositories ${after.allows_public_repositories ? 'allowed' : 'not allowed'}`);
 }
 
+export function stacksServing(stacks, repo) {
+  const owner = repo.split('/')[0].toLowerCase();
+  return (stacks ?? []).filter((s) => typeof s.target === 'string').filter((s) => (s.scope === 'organization' ? s.target.toLowerCase() === owner : s.target.toLowerCase() === repo.toLowerCase()));
+}
+
 function enroll(args, deps) {
   const { rest } = parseFlags(args, { positionals: 1 });
   const root = resolve(rest[0]);
   const config = readAppConfig(root);
   if (!config) refuse(`${join(root, '.claude', 'claudalisk.json')} is missing`);
   const repo = config.repo;
-  const owner = repo.split('/')[0].toLowerCase();
-  const serving = (readRegistry({ home: deps.home }).runners ?? []).filter((s) => typeof s.target === 'string').filter((s) => (s.scope === 'organization' ? s.target.toLowerCase() === owner : s.target.toLowerCase() === repo.toLowerCase()));
+  const serving = stacksServing(readRegistry({ home: deps.home }).runners, repo);
   if (serving.length === 0) refuse(`no registered runner stack serves ${repo}. Run "init" or "adopt" for it first`);
   if (serving.length > 1) refuse(`more than one runner stack serves ${repo}: ${serving.map((s) => s.composeProject).join(', ')}`);
   const stack = serving[0];
