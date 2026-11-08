@@ -9,7 +9,7 @@
       "title": "Theme",
       "description": "The claudalisk design tokens as CSS variables, light and dark, mapped to Tailwind utilities.",
       "dependencies": [
-        "shadcn@4.21.5",
+        "shadcn@4.23.0",
         "tw-animate-css@^1",
         "@fontsource-variable/geist@^5",
         "class-variance-authority@^0.7",
