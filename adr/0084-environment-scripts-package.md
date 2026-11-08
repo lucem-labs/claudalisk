@@ -14,7 +14,7 @@ The plugin cannot own the code outright:
 - CI has no plugin installed, yet the scripts' tests and the CI-run scripts run there.
 - The owner runs a uat restore by hand in a terminal, where `${CLAUDE_PLUGIN_ROOT}` does not exist and the plugin cache path changes with each version.
 - A uat deploy should be reproducible from its commit, and code run from the plugin cache depends on whichever version the machine has installed.
-- The deny list and `AGENTS.md` name stable paths such as `node scripts/restore.mjs --environment uat` (CLA-0083).
+- The guardrail hook's rules and `AGENTS.md` name stable paths such as `node scripts/restore.mjs --environment uat` (CLA-0083).
 
 ## Decision
 

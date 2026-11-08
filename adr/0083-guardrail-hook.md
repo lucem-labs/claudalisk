@@ -53,6 +53,6 @@ Apps protected uat with a hand-written `permissions.deny` list of command prefix
 - One parser and one rule table replace per-app deny lists. A rename changes the config, not the hook.
 - A new bypass is fixed in one place, with a test.
 - A broken registry stops container work until it is fixed, which is the intent.
-- No generated `permissions.deny` backstop exists yet, so the hook is the only matcher.
+- The hook is the only matcher. There is no generated `permissions.deny` backstop, so if the hook fails to start or a bug lets a command through, nothing else stops it.
 - Rule 12 asks for a command that only mentions a script path in PowerShell, because PowerShell would run it.
 - A line that ends in a backslash with no space before it, inside an unquoted heredoc or `$((`, asks even when it is harmless. A quoted delimiter such as `<<'EOF'` avoids that.
