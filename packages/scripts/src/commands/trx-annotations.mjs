@@ -12,11 +12,28 @@ const decodeXml = (text) => text
 
 const firstLines = (text, count = MESSAGE_LINES) => text.replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd()).filter(Boolean).slice(0, count).join('\n');
 
+const stackFrames = (stack) => stack.split('\n').flatMap((text) => {
+  const start = text.indexOf(' in ');
+  if (start < 0) return [];
+  const rest = text.slice(start + ' in '.length);
+  const end = /:line (\d+)/.exec(rest);
+  return end?.index ? [{ file: rest.slice(0, end.index), line: Number(end[1]) }] : [];
+});
+
+const elementText = (xml, name) => {
+  const open = `<${name}>`;
+  const start = xml.indexOf(open);
+  if (start < 0) return '';
+  const contentStart = start + open.length;
+  const end = xml.indexOf(`</${name}>`, contentStart);
+  return end < 0 ? '' : xml.slice(contentStart, end);
+};
+
 export function location(stack, workspace) {
   const root = workspace ? `${workspace.replace(/\\/g, '/').replace(/\/$/, '')}/` : '';
-  for (const [, file, line] of stack.matchAll(/ in (.+?):line (\d+)/g)) {
+  for (const { file, line } of stackFrames(stack)) {
     const path = file.replace(/\\/g, '/');
-    if (!root || path.startsWith(root)) return { file: root ? path.slice(root.length) : path, line: Number(line) };
+    if (!root || path.startsWith(root)) return { file: root ? path.slice(root.length) : path, line };
   }
   return null;
 }
@@ -29,8 +46,8 @@ export function failedTests(xml, workspace) {
     const outcome = attr(attrs, 'outcome');
     if (outcome === 'Passed') passed++;
     if (outcome !== 'Failed') continue;
-    const message = decodeXml(body.match(/<Message>([\s\S]*?)<\/Message>/)?.[1] ?? '');
-    const stack = decodeXml(body.match(/<StackTrace>([\s\S]*?)<\/StackTrace>/)?.[1] ?? '');
+    const message = decodeXml(elementText(body, 'Message'));
+    const stack = decodeXml(elementText(body, 'StackTrace'));
     failures.push({ name: decodeXml(attr(attrs, 'testName') ?? ''), message: firstLines(message) || firstLines(stack, 2), ...location(stack, workspace) });
   }
   return { passed, failures };
@@ -52,8 +69,10 @@ export function annotations(failures, limit = STEP_ERROR_LIMIT) {
   return lines;
 }
 
+const escapeCell = (text) => text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+
 export function summary(failures, passed) {
-  const rows = failures.map((f) => `| ${f.name.replace(/\|/g, '\\|')} | ${f.file ? `${f.file}:${f.line}` : ''} | ${f.message.split('\n')[0].replace(/\|/g, '\\|')} |`);
+  const rows = failures.map((f) => `| ${escapeCell(f.name)} | ${f.file ? `${f.file}:${f.line}` : ''} | ${escapeCell(f.message.split('\n')[0])} |`);
   return [`### .NET tests: ${passed} passed, ${failures.length} failed`, '', ...(failures.length ? ['| Test | Where | Message |', '|---|---|---|', ...rows, ''] : [])].join('\n');
 }
 

@@ -27,8 +27,9 @@ export function parseArgs(argv) {
 }
 
 export function parseImage(value) {
-  const match = /^([a-z0-9][a-z0-9._-]*)=((backend|frontend)\/[A-Za-z0-9._/-]*Dockerfile[A-Za-z0-9._-]*)$/.exec(String(value ?? ''));
-  if (!match || match[2].split('/').some((segment) => segment === '..' || segment === '.' || segment === '')) {
+  const match = /^([a-z0-9][a-z0-9._-]*)=((backend|frontend)\/[A-Za-z0-9._/-]+)$/.exec(String(value ?? ''));
+  const segments = match ? match[2].split('/') : [];
+  if (!match || !segments.at(-1).includes('Dockerfile') || segments.some((segment) => segment === '..' || segment === '.' || segment === '')) {
     throw new UsageError(`'${value}' is not <name>=<Dockerfile>, with the Dockerfile under backend/ or frontend/.`);
   }
   return { tag: `${match[1]}:security`, dockerfile: match[2], context: match[3] };

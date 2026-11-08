@@ -32,6 +32,11 @@ test('location takes the first stack frame inside the workspace, relative to it'
   assert.equal(location(' at A() in /_/src/Assert.cs:line 9', WORKSPACE), null);
 });
 
+test('summary escapes backslashes before pipes so a table cell cannot be broken out of', () => {
+  const text = summary([{ name: 'a\\|b', message: 'c:\\d|e' }], 0);
+  assert.ok(text.includes('| a\\\\\\|b |  | c:\\\\d\\|e |'));
+});
+
 test('failedTests counts passes and keeps each failure with its message and location', () => {
   const { passed, failures } = failedTests(TRX, WORKSPACE);
   assert.equal(passed, 1);
