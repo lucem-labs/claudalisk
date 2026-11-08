@@ -129,9 +129,14 @@ The frontend's `package.json` defines these scripts, and the jobs call them by n
 | `typecheck` | `tsc` over the app and the tests |
 | `test` | `vitest run` |
 | `build` | The production build |
-| `e2e` | `playwright test` |
+| `e2e` | `node e2e/harness/run.mjs`, the end-to-end harness |
 
-The end-to-end harness (#10) reads two ports from the environment: `E2E_API_PORT` for the API it starts and `E2E_WEB_PORT` for the frontend. The `e2e` job sets both with `free-ports.mjs`, so parallel runs on one runner don't collide (CLA-0019).
+The harness in `app/frontend/e2e/harness` builds the API, starts PostgreSQL through Testcontainers, applies the migrations, and starts the API, Vite and the third-party stubs of `e2e/stubs/index.mjs`. It then runs `playwright test --project=parallel` and, whatever that returned, `playwright test --project=serial`. The run fails if either call failed (CLA-0019).
+
+- **Ports.** `E2E_API_PORT`, `E2E_WEB_PORT`, `E2E_STUB_PORT` and `E2E_POSTGRES_PORT` override the ports. Any that is unset is free. The `e2e` job sets the first two with `free-ports.mjs`, so parallel runs on one runner don't collide.
+- **Startup.** The harness waits for the "Now listening on:" line of the API and the "ready in" line of Vite. It latches the line before it trims the log, so a noisy startup can't lose it. Nothing waits on a sleep.
+- **Background workers.** The API under test runs with `Jobs__WorkersEnabled=false` and `Scheduling__Enabled=false`. A spec that needs them imports `test` from `./harness/fixtures` and calls `startWorkers()`, which starts a second API with workers on against the same database until the test ends. Tag that spec `@serial`, because its workers drain every queued job.
+- **Serial specs.** Add `@serial` to the title of a spec that reads global state or writes to a singleton aggregate. The `serial` project runs those with one worker.
 
 Pin `@playwright/test` in `frontend/package.json` to the exact version of the browsers in the shared runner image, currently `1.63.0` (the Dockerfile of github-runner-dind). When the image moves, every app bumps the pin together. On GitHub-hosted runners the job installs the browser for the pinned version.
 

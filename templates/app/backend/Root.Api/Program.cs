@@ -1,5 +1,7 @@
 using Claudalisk.AspNetCore;
 using Claudalisk.Dispatching;
+using Claudalisk.Jobs;
+using Claudalisk.Jobs.PostgreSql;
 using Claudalisk.Modules;
 using Claudalisk.Persistence;
 using <Root>.Api;
@@ -17,6 +19,8 @@ builder.Services.AddClaudaliskWeb();
 builder.Services.AddClaudaliskPersistence(connectionString);
 builder.Services.AddClaudaliskModules(builder.Configuration, AppModules.All());
 builder.Services.AddClaudaliskDispatching();
+builder.Services.AddClaudaliskJobs(options => options.WorkersEnabled = builder.Configuration.GetValue("Jobs:WorkersEnabled", true));
+builder.Services.AddClaudaliskPostgreSqlJobs();
 builder.Services.AddSingleton<IDatabaseHealthProbe, DatabaseHealthProbe>();
 
 var app = builder.Build();

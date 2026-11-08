@@ -5,6 +5,7 @@
     <PackageVersion Include="Claudalisk.Dispatching.Abstractions" Version="0.1.0-alpha.1" />
     <PackageVersion Include="Claudalisk.Domain" Version="0.1.0-alpha.1" />
     <PackageVersion Include="Claudalisk.Jobs" Version="0.1.0-alpha.1" />
+    <PackageVersion Include="Claudalisk.Jobs.PostgreSql" Version="0.1.0-alpha.1" />
     <PackageVersion Include="Claudalisk.Modules" Version="0.1.0-alpha.1" />
     <PackageVersion Include="Claudalisk.Persistence" Version="0.1.0-alpha.1" />
     <PackageVersion Include="Claudalisk.Persistence.Abstractions" Version="0.1.0-alpha.1" />
