@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-25
 - **Area:** environments
-- **Enforced by:** guardrail hook (protected uat resources, CLA-0083); session-start hook (what each environment runs, CLA-0085); deny-list backstop; the environment scripts
+- **Enforced by:** guardrail hook (protected uat resources, CLA-0083); session-start hook (what each environment runs, CLA-0085); the environment scripts
 
 ## Context
 
