@@ -23,7 +23,7 @@ The Host should be only a list of modules. Each module stays responsible for its
   - the module interface, through which a module lists its dependencies and registers its services;
   - an empty, sealed marker class in each module's Interfaces project, such as `OrderingContract`, which needs no package (CLA-0003);
   - one public module class per implementation project, with everything it registers kept internal;
-  - a Host (`<Root>.Api`, CLA-0001) that lists module instances in one `AddModules(...)` call, and registers the app-wide concerns from the claudalisk packages, such as the Problem Details handler (CLA-0063).
+  - a Host (`<Root>.Api`, CLA-0001) that lists module instances in one `AddClaudaliskModules(...)` call, and registers the app-wide concerns from the claudalisk packages, such as the Problem Details handler (CLA-0063).
 - **The registration call:**
   - it orders the modules by their declared dependencies;
   - it validates the whole set first, and fails with a message that names the missing, ambiguous or circular dependency;
