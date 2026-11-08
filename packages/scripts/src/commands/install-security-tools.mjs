@@ -96,6 +96,24 @@ export async function installTool({ name, destination, download, untar, chmod = 
 
 const RELEASE_ASSET_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\/([^/]+)$/;
 
+const RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000, 90_000];
+
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+class TransientDownloadError extends Error {}
+
+function httpFailure(status, message) {
+  return status >= 500 ? new TransientDownloadError(message) : new Error(message);
+}
+
+async function overNetwork(url, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    throw new TransientDownloadError(`Downloading ${url} failed: ${error.message}`, { cause: error });
+  }
+}
+
 async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, request) {
   const repository = `https://api.github.com/repos/${owner}/${repo}`;
   const lookUpRelease = (credentials) => request(`${repository}/releases/tags/${tag}`, { headers: { ...credentials, accept: 'application/vnd.github+json' } });
@@ -105,18 +123,32 @@ async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, 
     credentials = {};
     release = await lookUpRelease(credentials);
   }
-  if (!release.ok) throw new Error(`Downloading ${url} failed: looking up the release returned HTTP ${release.status}: ${(await release.text()).slice(0, 300)}`);
-  const { assets } = await release.json();
+  if (!release.ok) throw httpFailure(release.status, `Downloading ${url} failed: looking up the release returned HTTP ${release.status}: ${(await overNetwork(url, () => release.text())).slice(0, 300)}`);
+  const { assets } = await overNetwork(url, () => release.json());
   const asset = assets.find(({ name }) => name === assetName);
   if (!asset) throw new Error(`Downloading ${url} failed: the release has no asset named ${assetName}.`);
   return request(`${repository}/releases/assets/${asset.id}`, { headers: { ...credentials, accept: 'application/octet-stream' } });
 }
 
-export async function download(url, { token, request = fetch } = {}) {
+async function downloadOnce(url, token, request) {
+  const send = (...args) => overNetwork(url, () => request(...args));
   const releaseAsset = token ? url.match(RELEASE_ASSET_URL) : null;
-  const response = releaseAsset ? await requestReleaseAsset(url, releaseAsset, token, request) : await request(url);
-  if (!response.ok) throw new Error(`Downloading ${url} failed (HTTP ${response.status}).`);
-  return Buffer.from(await response.arrayBuffer());
+  const response = releaseAsset ? await requestReleaseAsset(url, releaseAsset, token, send) : await send(url);
+  if (!response.ok) throw httpFailure(response.status, `Downloading ${url} failed (HTTP ${response.status}).`);
+  return Buffer.from(await overNetwork(url, () => response.arrayBuffer()));
+}
+
+export async function download(url, { token, request = fetch, wait = sleep, log = console.log } = {}) {
+  for (const delay of RETRY_DELAYS_MS) {
+    try {
+      return await downloadOnce(url, token, request);
+    } catch (error) {
+      if (!(error instanceof TransientDownloadError)) throw error;
+      log(`${error.message} Retrying in ${delay / 1000} seconds.`);
+      await wait(delay);
+    }
+  }
+  return downloadOnce(url, token, request);
 }
 
 function untar(archive, folder) {
@@ -128,7 +160,7 @@ export async function main(argv, { env = process.env, log = console.log, io = { 
   const options = parseArgs(argv);
   const destination = options.destination ?? mkdtempSync(join(env.RUNNER_TEMP || tmpdir(), 'security-tools-'));
   const token = env.GITHUB_TOKEN || env.GH_TOKEN;
-  const downloadWithToken = (url) => io.download(url, { token });
+  const downloadWithToken = (url) => io.download(url, { token, log });
   for (const name of options.tools) {
     log(`Installed ${name} at ${await installTool({ name, destination, ...io, download: downloadWithToken })}`);
   }
