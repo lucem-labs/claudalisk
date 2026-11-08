@@ -27,6 +27,19 @@ export const LABELS = [
 const readLf = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 const applyTokens = (text, tokens) => Object.entries(tokens).reduce((result, [token, value]) => result.replaceAll(`<${token}>`, value), text)
 const databaseName = (text) => text.replace(/-/g, '_')
+const SUPPRESSION_DAYS = 90
+const DAY_MILLISECONDS = 24 * 60 * 60 * 1000
+const UNPATCHED_ADVISORIES = [
+  { id: 'GHSA-gcqx-w48m-w2h4', lockfileEntry: 'node_modules/deepmerge', reason: 'deepmerge has no patched version, and only the shadcn command line tool uses it' },
+]
+
+export function osvSuppressions(lockfilePackages, now) {
+  const ignoreUntil = new Date(now.getTime() + SUPPRESSION_DAYS * DAY_MILLISECONDS).toISOString().slice(0, 10)
+  return UNPATCHED_ADVISORIES
+    .filter(({ lockfileEntry }) => Object.hasOwn(lockfilePackages, lockfileEntry))
+    .map(({ id, reason }) => `[[IgnoredVulns]]\nid = "${id}"\nignoreUntil = ${ignoreUntil}\nreason = "${reason}"\n`)
+    .join('\n')
+}
 
 export function appTokens({ root, name, repo }) {
   return { Root: root, AppName: name, AppRepo: repo, AppDatabase: databaseName(name) }
@@ -143,6 +156,8 @@ export async function generateApp(
   const frontend = join(target, 'frontend')
   await run('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], frontend)
   await design({ app: frontend, registry, skill }, { run, log })
+  const { packages } = JSON.parse(readFileSync(join(frontend, 'package-lock.json'), 'utf8'))
+  writeFileSync(join(target, 'osv-scanner.toml'), osvSuppressions(packages, now ?? new Date()))
   await run('npm', ['run', 'api:types'], frontend)
 
   if (scriptsPackage) {

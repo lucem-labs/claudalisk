@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
+import { findSuppressionProblems } from '../packages/scripts/src/commands/check-suppressions.mjs'
 import { validateAppConfig } from './app-config.mjs'
 import { missingServices } from './check-new-app.mjs'
 import { appConfig, choosePorts, finishApp, finishSteps, generateApp, hasGitIdentity, LABELS } from './new-app.mjs'
@@ -72,6 +73,23 @@ describe('generateApp', () => {
     const { calls } = await generated()
     const names = calls.map((call) => (call.design ? 'design' : `${call.command} ${call.args[0]}${call.args[1] === 'api:types' ? ' api:types' : ''}`))
     assert.deepEqual(names, ['npm ci', 'design', 'npm run api:types', 'npm install', 'git init', 'git add', 'git commit'])
+  })
+
+  it('suppresses an advisory with no patched version until 90 days after generating, which the suppression check accepts', async () => {
+    const now = new Date('2026-11-08T12:00:00Z')
+    const design = async ({ app }) => writeFileSync(join(app, 'package-lock.json'), JSON.stringify({ packages: { 'node_modules/deepmerge': { version: '4.3.1' } } }))
+    const { target } = await generated({ now }, { design })
+    const text = readFileSync(join(target, 'osv-scanner.toml'), 'utf8')
+    assert.match(text, /^id = "GHSA-gcqx-w48m-w2h4"$/m)
+    assert.match(text, /^ignoreUntil = 2027-02-06$/m)
+    assert.match(text, /^reason = ".+"$/m)
+    assert.deepEqual(findSuppressionProblems('osv-scanner.toml', text, '2026-11-08'), [])
+  })
+
+  it('writes no suppression for a package the lockfile does not have', async () => {
+    const design = async ({ app }) => writeFileSync(join(app, 'package-lock.json'), JSON.stringify({ packages: {} }))
+    const { target } = await generated({}, { design })
+    assert.equal(readFileSync(join(target, 'osv-scanner.toml'), 'utf8'), '')
   })
 
   it('refuses a folder that is not empty', async () => {
