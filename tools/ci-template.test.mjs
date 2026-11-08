@@ -164,8 +164,9 @@ test('a failing migration check still shows the build and test results', () => {
 test('the e2e job gets free ports and uploads the Playwright report when it fails', () => {
   const steps = ci.jobs.e2e.steps;
   assert.ok(steps.some((step) => step.run === 'node scripts/free-ports.mjs E2E_API_PORT E2E_WEB_PORT'));
-  const browser = steps.find((step) => step.run === 'npx playwright install --with-deps chromium');
-  assert.equal(browser.if, "runner.environment == 'github-hosted'");
+  const browser = steps.find((step) => step.name === 'Install the browser');
+  assert.equal(browser.if, undefined);
+  assert.equal(browser.run, 'if [ "$RUNNER_ENVIRONMENT" = "github-hosted" ]; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi');
   assert.equal(browser['working-directory'], 'frontend');
   const upload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'));
   assert.equal(upload.if, 'failure()');
