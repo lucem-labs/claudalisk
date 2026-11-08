@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { addDesignSystem, runCommand } from './add-design-system.mjs'
 import { readAppConfig, validateAppConfig } from './app-config.mjs'
 import { allocatePorts, readRegistry } from './app-registry.mjs'
+import { proxyProblem } from './proxy.mjs'
 import { generateBackend } from './scaffold.mjs'
 
 const PLUGIN_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -176,9 +177,11 @@ export function finishSteps(appRoot, config, node = process.execPath) {
   ]
 }
 
-export async function finishApp({ appRoot, dryRun }, { run = runCommand, log = console.log } = {}) {
+export async function finishApp({ appRoot, dryRun }, { run = runCommand, log = console.log, checkProxy = proxyProblem } = {}) {
   const config = readAppConfig(appRoot)
   if (!config) throw new Error(`${join(appRoot, '.claude', 'claudalisk.json')} is missing.`)
+  const problem = checkProxy()
+  log(problem ? `Warning: ${problem}` : 'The shared proxy is running.')
   const steps = finishSteps(appRoot, config)
   for (const [index, step] of steps.entries()) {
     log(`${index + 1}/${steps.length} ${step.title}: ${[step.command, ...step.args].join(' ')}`)

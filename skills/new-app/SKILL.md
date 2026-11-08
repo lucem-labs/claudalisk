@@ -71,7 +71,7 @@ Ask the owner before running it for real, and name the repository. Then:
 node "${CLAUDE_PLUGIN_ROOT}/tools/new-app.mjs" finish <folder>
 ```
 
-The guardrail asks again before the enrolment (CLA-0083). It stops at the first step that fails. Enrolment needs a registered runner stack for the owner; if there is none, use the `runners` skill and run `node "${CLAUDE_PLUGIN_ROOT}/tools/runners.mjs" enroll <folder>` afterwards. Until the repository is enrolled, its CI jobs queue without running.
+It first reports whether the shared proxy is running, and carries on either way: it never starts or changes the proxy (CLA-0033). The guardrail asks again before the enrolment (CLA-0083). It stops at the first step that fails. Enrolment needs a registered runner stack for the owner; if there is none, use the `runners` skill and run `node "${CLAUDE_PLUGIN_ROOT}/tools/runners.mjs" enroll <folder>` afterwards. Until the repository is enrolled, its CI jobs queue without running.
 
 ## 5. Tell the owner what is left
 

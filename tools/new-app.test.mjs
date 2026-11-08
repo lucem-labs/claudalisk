@@ -175,19 +175,35 @@ describe('finish', () => {
     const appRoot = await appWithConfig()
     const ran = []
     const lines = []
-    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line) })
+    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line), checkProxy: () => null })
     assert.deepEqual(ran, [])
-    assert.equal(lines.length, steps.length)
+    assert.equal(lines.length, steps.length + 1)
   })
 
   it('runs every step in order otherwise, and stops at the first failure', async () => {
     const appRoot = await appWithConfig()
     const ran = []
-    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {} })
+    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, checkProxy: () => null })
     assert.equal(ran.length, 5)
     let count = 0
-    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {} }), /no/)
+    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {}, checkProxy: () => null }), /no/)
     assert.equal(count, 1)
+  })
+
+  it('reports a running proxy first', async () => {
+    const appRoot = await appWithConfig()
+    const lines = []
+    await finishApp({ appRoot, dryRun: true }, { log: (line) => lines.push(line), checkProxy: () => null })
+    assert.equal(lines[0], 'The shared proxy is running.')
+  })
+
+  it('warns about a proxy problem and still runs every step', async () => {
+    const appRoot = await appWithConfig()
+    const ran = []
+    const lines = []
+    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: (line) => lines.push(line), checkProxy: () => 'it is down' })
+    assert.equal(lines[0], 'Warning: it is down')
+    assert.equal(ran.length, 5)
   })
 
   it('refuses a folder with no config', async () => {
