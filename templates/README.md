@@ -147,7 +147,6 @@ The app's first CI run needs the root `package-lock.json` committed, because eve
 The `security` job in `ci.yml` runs beside the test jobs. After `npm ci` it runs `npm audit signatures`, installs the scanners, and runs the forbidden-file (CLA-0026), source-hygiene and suppression checks, gitleaks, the NuGet audit, OSV-Scanner, Semgrep, zizmor and Trivy. Every step runs when an earlier one failed (`!cancelled()`), so one run shows all the findings. Its checkout fetches all history, because the forbidden-file check reads the commits of `origin/main..HEAD`.
 
 - The gitleaks step scans the whole history on every push, on purpose: that is a superset of the pushed commits and does not depend on how much the checkout fetched. An app that wants only the pushed commits replaces it with a script of its own that takes `github.event.before`, through `env`, never inline.
-- `NuGetAudit: "false"` stays on the audit step until lucem-labs/nuget-audit-action#1 is fixed. With warnings as errors, the action's second restore fails on a vulnerable package and reports "Restore failed" instead of the advisory. The build's own NuGet audit (NU1901 to NU1904) stays on, so a vulnerable package still fails the build.
 - `!cancelled()` lets every scan run after another one fails, so one run shows all the findings.
 
 The weekly `security.yml` repeats the dependency scans, builds and scans the images, and runs the ZAP baseline:

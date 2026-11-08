@@ -47,9 +47,7 @@ jobs:
 
       - name: NuGet packages
         if: ${{ !cancelled() }}
-        uses: lucem-labs/nuget-audit-action@cf1e4925eb904fe8ba518eefe18f45c33501af5d
-        env:
-          NuGetAudit: "false"
+        uses: lucem-labs/nuget-audit-action@d6be6286985af88c0c93bef6626192ff87902452
         with:
           path: backend/<Root>.slnx
 
