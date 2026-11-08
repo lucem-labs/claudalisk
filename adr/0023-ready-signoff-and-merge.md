@@ -38,6 +38,6 @@ Tests and the owner's review on uat still miss some bugs. In one change to the u
 - An open pull request always means "ready for review". There is nothing to click before reviewing.
 - A new or updated pull request replaces the one on uat. The agent says so when it opens a pull request while another awaits review.
 - The owner sees in the pull request what the agents found and what was done about it, and spends the uat review on behaviour instead of on what a reviewer agent catches.
-- Most pull requests pay for one or two Sonnet agents and `/code-review`. Three models, Opus among them, are spent only where a missed bug can lose real data.
+- Most pull requests pay for one or two Opus reviewer agents and `/code-review`. Three models are spent only where a missed bug can lose real data.
 - Each agent starts with its diff and its ADRs, so it spends its turns checking, not searching.
 - The quorum keeps single-model noise out of the counted findings, while the optional list still shows the owner what was left out.

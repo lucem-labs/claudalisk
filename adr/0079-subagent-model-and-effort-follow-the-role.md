@@ -16,7 +16,7 @@ Roles differ in what they need. A build, test and fix loop or a search takes man
 
 - **Implementers and research agents run on Sonnet at medium effort.** This covers the build, test and fix loop (CLA-0074) and agents that read and summarise docs or logs.
 - **Code discovery runs on Haiku at low effort.** The `claudalisk:scout` agent searches and reads code for the main thread (CLA-0080). On that task Haiku found the same code as Sonnet for less.
-- **Review agents run on Sonnet at medium effort.** They get their slice of the diff and their ADRs from the review plan (CLA-0023), so they check rather than explore. The plugin's `claudalisk:reviewer` agent declares it.
+- **Review agents run on Opus at medium effort.** They get their slice of the diff and their ADRs from the review plan (CLA-0023), so they check rather than explore. The plugin's `claudalisk:reviewer` agent declares it.
 - **Design agents run on Opus, or at max effort.** They take few steps, and judgement matters more than the cost per step. Max effort is for design only, never for a role that loops.
 - **Watchers that only wait and report run on Haiku.** A watcher runs a command, waits and returns what it saw. It needs no judgement.
 - **The plugin's agents declare their model and effort in frontmatter,** so the default is right without a choice each time. `claudalisk:implementer` declares `model: sonnet` and `effort: medium`, and `claudalisk:scout` declares `model: haiku` and `effort: low`. A new agent in the plugin states both.
@@ -27,7 +27,7 @@ Roles differ in what they need. A build, test and fix loop or a search takes man
 ## Consequences
 
 - The many requests of a loop run on the cheaper model at the effort that fits, so a long loop costs a fraction of what it cost at max effort.
-- Design keeps the stronger model where it changes the outcome, and the review quorum (CLA-0023) brings Opus in where uat data is at risk.
-- The Sonnet review default is measured on past pull requests when the review skill is built (#53), and goes back to Opus if Sonnet misses findings the quorum counts.
+- Design keeps the stronger model where it changes the outcome, and the review quorum (CLA-0023) adds Sonnet and Haiku where uat data is at risk.
+- The review default was measured on three past pull requests of an existing app (#131). Sonnet at medium effort missed findings that neither `/code-review` nor the quorum caught, and Opus on the same briefs found some of them, so the review default is Opus. Opus costs more per token, and the measurement found the same to about 40% more input tokens for one reviewer.
 - A new agent in the plugin is checked against this ADR in review, and `claude plugin validate` rejects frontmatter it cannot read.
 - A role this ADR does not name takes the nearest one: an agent that loops is an implementer, and an agent that judges is a reviewer.

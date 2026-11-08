@@ -70,11 +70,11 @@ test('the knowledge comes from the real skills, with paths and ADRs', () => {
   assert.match(noComments.enforcedBy, /\S/);
 });
 
-test('a frontend-only change gets one Sonnet agent and a medium /code-review', () => {
+test('a frontend-only change gets one Opus agent and a medium /code-review', () => {
   const p = plan(change('frontend/src/pages/home/ui/page.tsx'), change('frontend/src/entities/card/api.ts'));
   assert.equal(p.highRisk, false);
   assert.deepEqual(p.codeReview, { effort: 'medium' });
-  assert.deepEqual(p.domains.map((d) => [d.name, d.models]), [['adr-conformance', ['sonnet']]]);
+  assert.deepEqual(p.domains.map((d) => [d.name, d.models]), [['adr-conformance', ['opus']]]);
   assert.deepEqual(p.domains[0].skills, ['code-standards', 'frontend']);
   const ids = p.domains[0].adrs.map((a) => a.id);
   assert.ok(ids.includes('CLA-0014') && ids.includes('CLA-0035'));
@@ -92,7 +92,7 @@ test('a change to the uat deploy script runs the quorum and a high /code-review'
   assert.deepEqual(uat.skills, ['data-and-migrations', 'environments']);
   assert.ok(uat.adrs.some((a) => a.id === 'CLA-0030'));
   assert.ok(uat.adrs.some((a) => a.id === 'CLA-0031'));
-  assert.deepEqual(p.domains.find((d) => d.name === 'adr-conformance').models, ['sonnet']);
+  assert.deepEqual(p.domains.find((d) => d.name === 'adr-conformance').models, ['opus']);
 });
 
 test('a migration is uat data and is checked against the data ADRs', () => {
@@ -170,7 +170,7 @@ test('a security-relevant change is high-risk without a uat data quorum', () => 
   const p = plan(change('backend/Host/Authentication/JwtSetup.cs'));
   assert.equal(p.highRisk, true);
   assert.deepEqual(p.codeReview, { effort: 'high' });
-  assert.deepEqual(p.domains.map((d) => [d.name, d.models]), [['adr-conformance', ['sonnet']]]);
+  assert.deepEqual(p.domains.map((d) => [d.name, d.models]), [['adr-conformance', ['opus']]]);
 });
 
 test('lock files are skipped and unmapped files are listed', () => {
@@ -227,7 +227,7 @@ test('briefs carry the ADRs, the deviations and only their own hunks', () => {
       deviations: '- CLA-0035: generated files keep their header.',
     });
     const summary = writeBriefs(p, out, pluginRoot);
-    assert.deepEqual(summary.agents.map((a) => `${a.domain}/${a.model}`), ['adr-conformance/sonnet', 'uat-data/opus', 'uat-data/sonnet', 'uat-data/haiku']);
+    assert.deepEqual(summary.agents.map((a) => `${a.domain}/${a.model}`), ['adr-conformance/opus', 'uat-data/opus', 'uat-data/sonnet', 'uat-data/haiku']);
     assert.ok(existsSync(join(out, 'plan.json')));
     const uat = readFileSync(join(out, 'uat-data-haiku.md'), 'utf8');
     assert.match(uat, /^# Review brief: uat-data \(haiku\)/);

@@ -1,6 +1,6 @@
 ---
 name: review
-description: Runs claudalisk's review of a branch or pull request before it opens (CLA-0023). A script plans the review from the diff, Sonnet reviewer agents check ADR conformance and uat data safety, the built-in /code-review checks correctness and security, and Opus, Sonnet and Haiku form a quorum only on high-risk uat data changes. Use when CI is green and dev is verified, before opening a pull request, and again after fixing findings.
+description: Runs claudalisk's review of a branch or pull request before it opens (CLA-0023). A script plans the review from the diff, Opus reviewer agents check ADR conformance and uat data safety, the built-in /code-review checks correctness and security, and Opus, Sonnet and Haiku form a quorum only on high-risk uat data changes. Use when CI is green and dev is verified, before opening a pull request, and again after fixing findings.
 argument-hint: "[<PR number> | <base ref>] [--since <reviewed head>] [--comment]"
 user-invocable: true
 ---
@@ -32,7 +32,7 @@ The script uses no model. It maps each changed file to the knowledge skills thro
 
 In one message, start every agent from `agents` in parallel, and run `/code-review`:
 
-- Each agent is `claudalisk:reviewer`, with the prompt `Review the brief at <brief path>.` Leave its model and effort to its frontmatter (Sonnet, medium). For a quorum agent, pass the summary's `model` (`opus`, `sonnet` or `haiku`) in the call. Every quorum agent runs at medium effort (CLA-0079).
+- Each agent is `claudalisk:reviewer`, with the prompt `Review the brief at <brief path>.` Leave its model and effort to its frontmatter (Opus, medium). For a quorum agent, pass the summary's `model` (`opus`, `sonnet` or `haiku`) in the call. Every quorum agent runs at medium effort (CLA-0079).
 - Run the built-in `/code-review` with the summary's `codeReview.effort` (`medium`, or `high` on a high-risk change) for correctness and security. claudalisk adds no agent for what it covers.
 
 When `agents` is empty, because no changed file is in a knowledge skill's area, run `/code-review` alone. Do not review the diff yourself while they run, and do not re-read the files they report on unless you are about to fix them.
@@ -56,7 +56,7 @@ Put the review into the pull request description:
 
 Reviewed head: <full 40-hex sha of the head of the latest review round>
 
-Domains and models: adr-conformance (sonnet); uat-data (opus, sonnet, haiku); /code-review (high).
+Domains and models: adr-conformance (opus); uat-data (opus, sonnet, haiku); /code-review (high).
 
 | Finding | Domain | Where | Done |
 |---|---|---|---|

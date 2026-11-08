@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { readAdrs, readSkills } from './check-adrs.mjs';
 
 export const QUORUM = ['opus', 'sonnet', 'haiku'];
-export const REVIEW_MODEL = 'sonnet';
+export const REVIEW_MODEL = 'opus';
 
 export const DEFAULT_UAT_DATA = [
   '**/Migrations/**',

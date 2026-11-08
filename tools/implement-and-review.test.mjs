@@ -21,7 +21,7 @@ const plan = (agents, domains, effort = 'medium') => ({
   unmapped: [],
 });
 
-const conformance = { name: 'adr-conformance', files: 2, adrs: 3, models: ['sonnet'], quorum: false };
+const conformance = { name: 'adr-conformance', files: 2, adrs: 3, models: ['opus'], quorum: false };
 const uatData = { name: 'uat-data', files: 1, adrs: 2, models: ['opus', 'sonnet', 'haiku'], quorum: true };
 
 function fakes({ implement = { status: 'green', devVerified: true, head: SHA, report: 'done', questions: [] }, summary = plan([], []) } = {}) {

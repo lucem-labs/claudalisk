@@ -2,7 +2,7 @@
 name: reviewer
 description: Reviews one domain of a claudalisk pull request, ADR conformance or uat data safety, from a brief that the review plan script wrote (CLA-0023). Use only from the claudalisk review skill, one agent per brief; a quorum run passes the model in the call. It never edits, and it returns findings in at most 300 words.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 effort: medium
 ---
 
