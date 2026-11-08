@@ -143,7 +143,12 @@ test('the backend job checks migrations, builds without node reuse and annotates
   assert.ok(runs.some((run) => /^dotnet test --solution backend\/\S+\.slnx --no-build --report-xunit-trx --results-directory "\$RUNNER_TEMP\/trx"$/.test(run)));
   const annotate = ci.jobs.backend.steps.find((step) => step.run?.startsWith('node scripts/trx-annotations.mjs'));
   assert.equal(annotate.if, 'failure()');
-  assert.ok(ci.jobs.backend.steps.some((step) => step.uses?.startsWith('actions/setup-dotnet@') && step.if === undefined));
+});
+
+test('every .NET install runs only on GitHub-hosted runners, because self-hosted runners ship the SDK and cannot write its folder', () => {
+  const installs = [ci, security].flatMap(stepsOf).filter(({ step }) => step.uses?.startsWith('actions/setup-dotnet@'));
+  assert.ok(installs.length > 0);
+  for (const { id, step } of installs) assert.equal(step.if, "runner.environment == 'github-hosted'", id);
 });
 
 test('a failing migration check still shows the build and test results', () => {
