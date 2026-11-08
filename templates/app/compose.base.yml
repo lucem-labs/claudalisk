@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:?Deploy with scripts/deploy.mjs, which sets APP_ENV_FILE}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ${BACKUP_DIR:?Deploy with scripts/deploy.mjs, which sets BACKUP_DIR}:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: <Root>.Api/Dockerfile
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE}
+    environment:
+      DEPLOYED_SHA: ${DEPLOYED_SHA:-unknown}
+      DEPLOYED_REF: ${DEPLOYED_REF:-unknown}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: <Root>.Api/Dockerfile
+    profiles: [migrate]
+    env_file: ${APP_ENV_FILE}
+    environment:
+      DEPLOYED_SHA: ${DEPLOYED_SHA:-unknown}
+      DEPLOYED_REF: ${DEPLOYED_REF:-unknown}
+    command: ["--initialize-databases"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - default
+      - traefik
+
+networks:
+  traefik:
+    name: traefik
+    external: true

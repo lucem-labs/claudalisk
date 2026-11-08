@@ -170,7 +170,7 @@ test('the e2e job gets free ports and uploads the Playwright report when it fail
 
 test('the frontend job runs lint with GitHub annotations, typecheck, tests and the build', () => {
   const runs = ci.jobs.frontend.steps.filter((step) => step['working-directory'] === 'frontend').map((step) => step.run);
-  assert.deepEqual(runs, [ROOT_INSTALL, 'npm run lint:ci', 'npm run typecheck', 'npm test', 'npm run build']);
+  assert.deepEqual(runs, [ROOT_INSTALL, 'npm run lint:ci', 'npm run typecheck', 'npm test', 'npm run build', 'npm run api:types && git diff --exit-code -- src/shared/api/schema.d.ts']);
   const frontend = ci.jobs.frontend.steps.filter((step) => step['working-directory'] === 'frontend');
   assert.equal(frontend.find((step) => step.run === 'npm run lint:ci').if, undefined);
   for (const command of ['npm run typecheck', 'npm test', 'npm run build']) {

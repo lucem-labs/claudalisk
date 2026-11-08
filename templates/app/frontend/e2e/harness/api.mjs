@@ -8,6 +8,7 @@ export function apiEnvironment({ connectionString, port, workers, extra = {} }) 
     ...process.env,
     ...extra,
     ASPNETCORE_ENVIRONMENT: 'Development',
+    APP_ENVIRONMENT: 'e2e',
     ASPNETCORE_URLS: `http://127.0.0.1:${port}`,
     ConnectionStrings__Default: connectionString,
     Jobs__WorkersEnabled: String(workers),

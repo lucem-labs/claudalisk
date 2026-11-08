@@ -4,15 +4,14 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import { stubEnvironment, stubs } from '../stubs/index.mjs'
 import { apiEnvironment, startApi } from './api.mjs'
 import { runProjects } from './playwright-runs.mjs'
 import { resolvePorts } from './ports.mjs'
+import { startPostgres } from './postgres.mjs'
 import { runToEnd, startUntilLogged } from './processes.mjs'
 import { startStubs } from './stubs.mjs'
 
-const POSTGRES_IMAGE = 'postgres:18-alpine'
 const VITE_READY = /ready in \d/
 
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -22,15 +21,6 @@ function solutionRoot() {
   const solution = readdirSync(backend).find((entry) => entry.endsWith('.slnx'))
   if (!solution) throw new Error(`No .slnx file in ${backend}.`)
   return solution.slice(0, -'.slnx'.length)
-}
-
-async function startPostgres(port) {
-  const builder = new PostgreSqlContainer(POSTGRES_IMAGE)
-  const container = await (port ? builder.withExposedPorts({ container: 5432, host: port }) : builder).start()
-  return {
-    connectionString: `Host=${container.getHost()};Port=${container.getPort()};Database=${container.getDatabase()};Username=${container.getUsername()};Password=${container.getPassword()}`,
-    stop: () => container.stop(),
-  }
 }
 
 function runPlaywright(env) {
