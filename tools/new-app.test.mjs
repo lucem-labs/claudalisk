@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
 import { validateAppConfig } from './app-config.mjs'
 import { missingServices } from './check-new-app.mjs'
-import { appConfig, choosePorts, finishApp, finishSteps, generateApp, LABELS } from './new-app.mjs'
+import { appConfig, choosePorts, finishApp, finishSteps, generateApp, hasGitIdentity, LABELS } from './new-app.mjs'
 
 const created = []
 const folder = () => {
@@ -32,7 +32,7 @@ async function generated(overrides = {}, dependencies = {}) {
   const calls = []
   await generateApp(
     { target, ...NAMES, skill: false, scriptsPackage: 'scripts.tgz', ...overrides },
-    { run: async (command, args, cwd) => calls.push({ command, args, cwd }), design: async (options) => calls.push({ design: options }), home: folder(), log: () => {}, isFree: async () => true, ...dependencies },
+    { run: async (command, args, cwd) => calls.push({ command, args, cwd }), design: async (options) => calls.push({ design: options }), home: folder(), log: () => {}, isFree: async () => true, identity: () => true, ...dependencies },
   )
   return { target, calls }
 }
@@ -95,6 +95,29 @@ describe('generateApp', () => {
     const target = join(folder(), 'app')
     await assert.rejects(generateApp({ target, ...NAMES }, { home: folder(), published: () => false }), /not on npm/)
     assert.equal(existsSync(target), false)
+  })
+
+  it('stops before writing anything when git has no identity', async () => {
+    const target = join(folder(), 'app')
+    await assert.rejects(generateApp({ target, ...NAMES, scriptsPackage: 'scripts.tgz' }, { home: folder(), identity: () => false }), /--git-name and --git-email/)
+    assert.equal(existsSync(target), false)
+  })
+
+  it('sets a given identity in the new repository only, before committing', async () => {
+    const { calls } = await generated({ gitName: 'A Person', gitEmail: 'a@example.com' }, { identity: () => assert.fail('a given identity needs no lookup') })
+    const git = calls.filter((call) => call.command === 'git').map((call) => call.args)
+    assert.deepEqual(git.slice(1, 3), [['config', 'user.name', 'A Person'], ['config', 'user.email', 'a@example.com']])
+    assert.ok(git.every((args) => !args.includes('--global')))
+    assert.equal(git.at(-1)[0], 'commit')
+  })
+
+  it('refuses a git name without an email', async () => {
+    await assert.rejects(generateApp({ target: join(folder(), 'app'), ...NAMES, gitName: 'A Person' }, { home: folder() }), /together/)
+  })
+
+  it('finds no identity when git cannot, and one when git can', () => {
+    assert.equal(hasGitIdentity(() => { throw new Error('no identity') }), false)
+    assert.equal(hasGitIdentity(() => 'A <a@example.com> 1 +0000'), true)
   })
 
   for (const [label, names, message] of [
