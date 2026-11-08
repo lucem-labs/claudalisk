@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@claudalisk/scripts": "0.1.0"
+    "@claudalisk/scripts": "0.1.1"
   }
 }
