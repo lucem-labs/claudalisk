@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, w
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
+import { findSuppressionProblems } from '../packages/scripts/src/commands/check-suppressions.mjs'
 import { validateAppConfig } from './app-config.mjs'
 import { missingServices } from './check-new-app.mjs'
 import { appConfig, choosePorts, finishApp, finishSteps, generateApp, hasGitIdentity, LABELS } from './new-app.mjs'
@@ -72,6 +73,15 @@ describe('generateApp', () => {
     const { calls } = await generated()
     const names = calls.map((call) => (call.design ? 'design' : `${call.command} ${call.args[0]}${call.args[1] === 'api:types' ? ' api:types' : ''}`))
     assert.deepEqual(names, ['npm ci', 'design', 'npm run api:types', 'npm install', 'git init', 'git add', 'git commit'])
+  })
+
+  it('suppresses the unpatched deepmerge advisory for the longest time the suppression check accepts', async () => {
+    const now = new Date('2026-11-08T12:00:00Z')
+    const { target } = await generated({ now })
+    const text = readFileSync(join(target, 'osv-scanner.toml'), 'utf8')
+    assert.match(text, /^id = "GHSA-gcqx-w48m-w2h4"$/m)
+    assert.match(text, /^ignoreUntil = 2027-02-06$/m)
+    assert.deepEqual(findSuppressionProblems('osv-scanner.toml', text, '2026-11-08'), [])
   })
 
   it('refuses a folder that is not empty', async () => {

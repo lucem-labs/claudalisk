@@ -62,6 +62,14 @@ export function appConfig(template, { name, repo, ports }) {
   }
 }
 
+const DAY_IN_MILLISECONDS = 86_400_000
+const LONGEST_SUPPRESSION_DAYS = 90
+
+export function osvSuppressions(today) {
+  const until = new Date(today.getTime() + LONGEST_SUPPRESSION_DAYS * DAY_IN_MILLISECONDS).toISOString().slice(0, 10)
+  return `[[IgnoredVulns]]\nid = "GHSA-gcqx-w48m-w2h4"\nignoreUntil = ${until}\nreason = "deepmerge has no patched version, and only the shadcn command line tool uses it"\n`
+}
+
 function copyAppTemplate(target, tokens) {
   const walk = (folder) => {
     for (const entry of readdirSync(folder)) {
@@ -128,6 +136,7 @@ export async function generateApp(
 
   mkdirSync(target, { recursive: true })
   copyAppTemplate(target, appTokens({ root, name, repo }))
+  writeFileSync(join(target, 'osv-scanner.toml'), osvSuppressions(now ?? new Date()))
   generateBackend({ target, root, module, aggregate, plural, now })
   log(`Generated backend/${root}.slnx.`)
 
