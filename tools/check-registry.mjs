@@ -64,7 +64,7 @@ export function compareBuilds(expectedDir, actualDir) {
   return errors;
 }
 
-function serve(dir) {
+export function serve(dir) {
   const root = resolve(dir);
   const server = createServer((request, response) => {
     const path = normalize(join(root, decodeURIComponent(new URL(request.url, 'http://localhost').pathname)));

@@ -1,0 +1,15 @@
+services:
+  db:
+    ports:
+      - "127.0.0.1:${DEV_POSTGRES_PORT:?Set by scripts/init.mjs}:5432"
+
+  web:
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.<AppName>-dev.rule=Host(`<AppName>.dev.localhost`)
+      - traefik.http.routers.<AppName>-dev.entrypoints=web
+      - traefik.http.services.<AppName>-dev.loadbalancer.server.port=8080
+
+volumes:
+  postgres-data:

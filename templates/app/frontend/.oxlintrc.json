@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "ignorePatterns": [".claude/**"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
+  "ignorePatterns": [
+    ".claude/**"
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": [
@@ -20,15 +26,33 @@
   },
   "overrides": [
     {
-      "files": ["src/shared/ui/**"],
+      "files": [
+        "src/shared/ui/**"
+      ],
       "rules": {
         "react/only-export-components": "off"
       }
     },
     {
-      "files": ["src/shared/api/**", "e2e/**", "playwright.config.ts", "vite.config.ts"],
+      "files": [
+        "src/shared/api/**",
+        "e2e/**",
+        "playwright.config.ts",
+        "vite.config.ts",
+        "scripts/**"
+      ],
       "rules": {
         "no-restricted-globals": "off"
+      }
+    },
+    {
+      "files": [
+        "e2e/**"
+      ],
+      "rules": {
+        "react/rules-of-hooks": "off",
+        "no-unused-vars": "off",
+        "no-control-regex": "off"
       }
     }
   ]

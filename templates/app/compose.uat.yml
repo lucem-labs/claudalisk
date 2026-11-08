@@ -1,0 +1,13 @@
+services:
+  web:
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.<AppName>-uat.rule=Host(`<AppName>.uat.localhost`)
+      - traefik.http.routers.<AppName>-uat.entrypoints=web
+      - traefik.http.services.<AppName>-uat.loadbalancer.server.port=8080
+
+volumes:
+  postgres-data:
+    external: true
+    name: <AppName>-uat-data
