@@ -98,13 +98,18 @@ const RELEASE_ASSET_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/d
 
 async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, request) {
   const repository = `https://api.github.com/repos/${owner}/${repo}`;
-  const authorization = `Bearer ${token}`;
-  const release = await request(`${repository}/releases/tags/${tag}`, { headers: { authorization, accept: 'application/vnd.github+json' } });
-  if (!release.ok) throw new Error(`Downloading ${url} failed: looking up the release returned HTTP ${release.status}.`);
+  const lookUpRelease = (credentials) => request(`${repository}/releases/tags/${tag}`, { headers: { ...credentials, accept: 'application/vnd.github+json' } });
+  let credentials = { authorization: `Bearer ${token}` };
+  let release = await lookUpRelease(credentials);
+  if (release.status === 401 || release.status === 403) {
+    credentials = {};
+    release = await lookUpRelease(credentials);
+  }
+  if (!release.ok) throw new Error(`Downloading ${url} failed: looking up the release returned HTTP ${release.status}: ${(await release.text()).slice(0, 300)}`);
   const { assets } = await release.json();
   const asset = assets.find(({ name }) => name === assetName);
   if (!asset) throw new Error(`Downloading ${url} failed: the release has no asset named ${assetName}.`);
-  return request(`${repository}/releases/assets/${asset.id}`, { headers: { authorization, accept: 'application/octet-stream' } });
+  return request(`${repository}/releases/assets/${asset.id}`, { headers: { ...credentials, accept: 'application/octet-stream' } });
 }
 
 export async function download(url, { token, request = fetch } = {}) {
