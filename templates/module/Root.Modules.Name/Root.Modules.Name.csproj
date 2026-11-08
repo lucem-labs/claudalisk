@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Claudalisk.AspNetCore" />
+    <PackageReference Include="Claudalisk.Dispatching.Abstractions" />
+    <PackageReference Include="Claudalisk.Modules" />
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../<Root>.Modules.<Name>.Domain/<Root>.Modules.<Name>.Domain.csproj" />
+    <ProjectReference Include="../<Root>.Modules.<Name>.Interfaces/<Root>.Modules.<Name>.Interfaces.csproj" />
+    <ProjectReference Include="../<Root>.Modules.<Name>.Persistence/<Root>.Modules.<Name>.Persistence.csproj" />
+    <ProjectReference Include="../<Root>.Modules.<Name>.Persistence.Interfaces/<Root>.Modules.<Name>.Persistence.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

@@ -29,6 +29,23 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/backend/Root.Api/Dockerfile`, `app/backend/.dockerignore` | The API image, at `backend/<Root>.Api/Dockerfile` in the app |
 | `app/frontend/Dockerfile`, `app/frontend/.dockerignore`, `app/frontend/nginx.conf` | The frontend image and its server |
 
+## Backend skeleton
+
+`app/backend/` is the backend of a new app and `module/` is one module. Both are generated, never copied by hand:
+
+```
+node tools/scaffold.mjs backend <app folder> --root <Root> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]]
+node tools/scaffold.mjs add-module <app folder> --module <Name> --aggregate <Aggregate> [--plural <Plural>]
+```
+
+`backend` writes `backend/` and `global.json`. Without `--module` and `--aggregate` the app has no modules yet: its architecture rules pass on empty scans, and the tests that need a migration are skipped until the first module exists (CLA-0006). `add-module` is also the `add-module` skill.
+
+- In a file, `<Root>`, `<Name>`, `<Aggregate>`, `<Aggregates>`, `<aggregates>`, `<schema>`, `<route>`, `<routes>`, `<root>` and `<timestamp>` are replaced. In a path, `Root`, `Name`, `Aggregate` and `Timestamp` are.
+- Every `Claudalisk.*` package is pinned to one exact version in `Directory.Packages.props` (CLA-0062).
+- `<Root>.ArchitectureTests` has one test for each rule that an ADR's "Enforced by" line names, in `ArchitectureRuleTests.cs`, and a guard test of the same name in `RuleGuardTests.cs`. A new rule changes both and its ADR. The project references the module projects with a wildcard, so a new module needs no change.
+- The Host takes `--initialize-databases`, `--list-migrations` (prints `schema/id`) and `--health-check`. Without them it refuses to start while migrations are pending (CLA-0008).
+- The tests run on Microsoft.Testing.Platform, set by `global.json` at the app root, so run `dotnet test` from there: `dotnet test --solution backend/<Root>.slnx`.
+
 ## App config
 
 `app/.claude/claudalisk.json` is the app's config (CLA-0082). Copy it, rename `example-app` and fill in the repository, databases, ports and uat names. `tools/app-config.schema.json` defines its shape, and the `$schema` line lets an editor check it. Unknown keys are an error.

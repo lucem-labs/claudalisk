@@ -63,6 +63,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+  backend-scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+      - name: Generate a backend with no modules
+        run: node tools/scaffold.mjs backend "$RUNNER_TEMP/app" --root Acme
+      - name: Test the backend with no modules
+        working-directory: ${{ runner.temp }}/app
+        run: dotnet test --solution backend/Acme.slnx
+      - name: Add the first module
+        run: node tools/scaffold.mjs add-module "$RUNNER_TEMP/app" --module Ordering --aggregate Order
+      - name: Add a second module
+        run: node tools/scaffold.mjs add-module "$RUNNER_TEMP/app" --module OrderHistory --aggregate HistoryEntry --plural HistoryEntries
+      - name: Test the backend with modules
+        working-directory: ${{ runner.temp }}/app
+        run: dotnet test --solution backend/Acme.slnx
+
   unit-of-work-spike:
     runs-on: ubuntu-latest
     steps:

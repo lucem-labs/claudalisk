@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Claudalisk.Dispatching" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../<Root>.Modules.<Name>/<Root>.Modules.<Name>.csproj" />
+    <ProjectReference Include="../<Root>.Testing/<Root>.Testing.csproj" />
+  </ItemGroup>
+</Project>
