@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SECURITY_TOOLS, UsageError, installTool, main, parseArgs, installSecurityTools } from './install-security-tools.mjs';
+import { SECURITY_TOOLS, UsageError, download, installTool, main, parseArgs, installSecurityTools } from './install-security-tools.mjs';
 
 const sha256 = (content) => createHash('sha256').update(content).digest('hex');
 
@@ -116,6 +116,62 @@ test('main leaves GITHUB_PATH alone when a tool fails its checksum', async (t) =
   const io = { download: async () => Buffer.from('tampered'), untar: () => {}, tools: { scanner: { url: 'https://example.invalid/scanner', sha256: sha256('binary'), binary: 'scanner' } } };
   await assert.rejects(main(['--tool', 'scanner', '--destination', join(root, 'bin')], { env: { GITHUB_PATH: githubPath }, log: () => {}, io }), /Checksum mismatch/);
   assert.equal(existsSync(githubPath), false);
+});
+
+const RELEASE_URL = 'https://github.com/acme/scanner/releases/download/v1.2.3/scanner.tar.gz';
+
+function fakeGitHub({ assets = [{ id: 77, name: 'scanner.tar.gz' }], releaseStatus = 200, assetStatus = 200 } = {}) {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push({ url, headers: options?.headers });
+    if (url.endsWith('/releases/tags/v1.2.3')) return new Response(JSON.stringify({ assets }), { status: releaseStatus });
+    return new Response('asset bytes', { status: assetStatus });
+  };
+  return { calls, request };
+}
+
+test('download with a token fetches the release asset through the API by id', async () => {
+  const { calls, request } = fakeGitHub();
+  const content = await download(RELEASE_URL, { token: 'test-token', request });
+  assert.equal(content.toString(), 'asset bytes');
+  assert.deepEqual(calls.map(({ url }) => url), [
+    'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3',
+    'https://api.github.com/repos/acme/scanner/releases/assets/77',
+  ]);
+  assert.equal(calls[1].headers.accept, 'application/octet-stream');
+  assert.ok(calls.every(({ headers }) => headers.authorization === 'Bearer test-token'));
+});
+
+test('download without a token uses the public release URL and sends no credentials', async () => {
+  const { calls, request } = fakeGitHub();
+  await download(RELEASE_URL, { request });
+  assert.deepEqual(calls, [{ url: RELEASE_URL, headers: undefined }]);
+});
+
+test('download keeps the token away from a URL that is not a GitHub release asset', async () => {
+  const { calls, request } = fakeGitHub();
+  await download('https://example.invalid/scanner', { token: 'test-token', request });
+  assert.deepEqual(calls, [{ url: 'https://example.invalid/scanner', headers: undefined }]);
+});
+
+test('download names the URL when the release lookup, the asset name or the asset fetch fails', async () => {
+  for (const [github, expected] of [
+    [fakeGitHub({ releaseStatus: 404 }), /looking up the release returned HTTP 404/],
+    [fakeGitHub({ assets: [{ id: 1, name: 'other' }] }), /no asset named scanner\.tar\.gz/],
+    [fakeGitHub({ assetStatus: 504 }), /failed \(HTTP 504\)/],
+  ]) {
+    await assert.rejects(download(RELEASE_URL, { token: 'test-token', request: github.request }), (error) => error.message.includes(RELEASE_URL) && expected.test(error.message));
+  }
+});
+
+test('main hands GITHUB_TOKEN, or GH_TOKEN without it, to the download', async (t) => {
+  for (const [env, expected] of [[{ GITHUB_TOKEN: 'a', GH_TOKEN: 'b' }, 'a'], [{ GH_TOKEN: 'b' }, 'b'], [{}, undefined]]) {
+    const content = Buffer.from('binary');
+    const seen = [];
+    const io = { download: async (url, options) => { seen.push(options.token); return content; }, untar: () => {}, chmod: () => {}, tools: { scanner: { url: 'https://example.invalid/scanner', sha256: sha256(content), binary: 'scanner' } } };
+    await main(['--tool', 'scanner', '--destination', folder(t)], { env, log: () => {}, io });
+    assert.deepEqual(seen, [expected]);
+  }
 });
 
 test('the command refuses an unknown tool with a usage error that exits 2', async () => {

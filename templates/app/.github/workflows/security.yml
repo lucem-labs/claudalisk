@@ -42,6 +42,8 @@ jobs:
       - name: Install scanners
         id: tools
         run: node scripts/install-security-tools.mjs --tool osv-scanner
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: NuGet packages
         if: ${{ !cancelled() }}
@@ -75,6 +77,8 @@ jobs:
 
       - name: Install scanners
         run: node scripts/install-security-tools.mjs --tool trivy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Build the images
         run: node scripts/scan-images.mjs --build --image <app>-api=backend/<Root>.Api/Dockerfile --image <app>-frontend=frontend/Dockerfile
