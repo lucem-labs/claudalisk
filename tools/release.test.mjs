@@ -104,7 +104,7 @@ test('the notes name the registry URL and items, and the npm approval only with 
 test('the publish job stages the package, with an npm that has the stage command', () => {
   const workflow = readFileSync(join(import.meta.dirname, '..', '.github', 'workflows', 'release.yml'), 'utf8');
   assert.match(workflow, /^ +npm stage publish --provenance --access public$/m);
-  assert.doesNotMatch(workflow, /^ +npm publish/m);
+  assert.doesNotMatch(workflow, /^ +npm publish\b/m);
   const [, major] = workflow.match(/npm install --global npm@(\d+)\./);
   assert.ok(Number(major) >= 12, major);
 });
