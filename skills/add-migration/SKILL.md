@@ -36,7 +36,7 @@ Migrations are a deploy step (CLA-0008). The API refuses to start with pending m
 Run the fresh-database test every time, and with a data fix also the tests of the code that reads the data (CLA-0016):
 
 ```
-dotnet test --filter "FullyQualifiedName~FreshDatabaseMigrates"
+dotnet test --project backend/<Root>.Api.Tests/<Root>.Api.Tests.csproj --filter-method "*FreshDatabaseMigrates"
 ```
 
 It migrates a fresh, empty PostgreSQL database up end to end, then down, then up again. The test is generated for the app with #17 of claudalisk. Until it exists, report that it was not run.

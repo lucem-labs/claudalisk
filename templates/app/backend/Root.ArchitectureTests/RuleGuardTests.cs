@@ -169,7 +169,15 @@ public sealed class RuleGuardTests
 
     [Fact]
     public void AnEmptyScanFailsTheRule() =>
-        Assert.ThrowsAny<Exception>(() => Rule.Holds<string>("empty", [], _ => []));
+        Assert.ThrowsAny<Exception>(() => Rule.Holds<string>("empty", [], _ => [], appHasNoModules: false));
+
+    [Fact]
+    public void AnEmptyScanPassesOnlyWhileTheAppHasNoModules() =>
+        Rule.Holds<string>("empty", [], _ => ["never checked"], appHasNoModules: true);
+
+    [Fact]
+    public void AScanThatFindsSomethingIsCheckedEvenWithoutModules() =>
+        Assert.ThrowsAny<Exception>(() => Rule.Holds<string>("found", ["item"], _ => ["violation"], appHasNoModules: true));
 
     [Fact]
     public void EveryRuleHasAGuardTest()

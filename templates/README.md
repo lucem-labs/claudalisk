@@ -34,17 +34,17 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 `app/backend/` is the backend of a new app and `module/` is one module. Both are generated, never copied by hand:
 
 ```
-node tools/scaffold.mjs backend <app folder> --root <Root> --module <Name> --aggregate <Aggregate> [--plural <Plural>]
+node tools/scaffold.mjs backend <app folder> --root <Root> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]]
 node tools/scaffold.mjs add-module <app folder> --module <Name> --aggregate <Aggregate> [--plural <Plural>]
 ```
 
-`backend` always adds a first module, because a rule whose scan finds nothing fails (CLA-0006). `add-module` is also the `add-module` skill.
+`backend` writes `backend/` and `global.json`. Without `--module` and `--aggregate` the app has no modules yet: its architecture rules pass on empty scans, and the tests that need a migration are skipped until the first module exists (CLA-0006). `add-module` is also the `add-module` skill.
 
 - In a file, `<Root>`, `<Name>`, `<Aggregate>`, `<Aggregates>`, `<aggregates>`, `<schema>`, `<route>`, `<routes>`, `<root>` and `<timestamp>` are replaced. In a path, `Root`, `Name`, `Aggregate` and `Timestamp` are.
 - Every `Claudalisk.*` package is pinned to one exact version in `Directory.Packages.props` (CLA-0062).
 - `<Root>.ArchitectureTests` has one test for each rule that an ADR's "Enforced by" line names, in `ArchitectureRuleTests.cs`, and a guard test of the same name in `RuleGuardTests.cs`. A new rule changes both and its ADR. The project references the module projects with a wildcard, so a new module needs no change.
 - The Host takes `--initialize-databases`, `--list-migrations` (prints `schema/id`) and `--health-check`. Without them it refuses to start while migrations are pending (CLA-0008).
-- The tests run on VSTest through `xunit.v3.mtp-off`, because the `backend` CI job calls `dotnet test <slnx> --logger trx`.
+- The tests run on Microsoft.Testing.Platform, set by `global.json` at the app root, so run `dotnet test` from there: `dotnet test --solution backend/<Root>.slnx`.
 
 ## App config
 

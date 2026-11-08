@@ -27,7 +27,7 @@ Every model request sends the whole conversation again (CLA-0073). Checking a ch
   - **Playwright:** its `github` reporter.
   - **oxlint:** `--format=github`.
   - **`tsc` and the .NET compiler:** the problem matchers that `actions/setup-node` and `actions/setup-dotnet` register.
-  - **.NET tests:** `dotnet test --logger trx`, then `node scripts/trx-annotations.mjs <results folder>` in a step that runs on failure. It writes one annotation per failing test, with its file and line and the message, within GitHub's limit of 10 per step, and a table of every failure to the job summary.
+  - **.NET tests:** `dotnet test --report-xunit-trx`, then `node scripts/trx-annotations.mjs <results folder>` in a step that runs on failure. It writes one annotation per failing test, with its file and line and the message, within GitHub's limit of 10 per step, and a table of every failure to the job summary.
   - A failed job without annotations falls back to its failed step's log: the lines that look like failures (`not ok`, `✖`, `error …:`), then the last lines.
 - **The full logs go to the env-state folder** (CLA-0066). `verify.mjs` saves the log of each failed job to `~/.claudalisk/apps/<app>/verify/<worktree>/<job>.log`, and each run replaces them. The summary ends with the folder, so the agent can grep a log when the summary is not enough. Nothing is written to the checkout.
 - **The agent runs it once per verify cycle,** as one call, and reads the summary. The `claudalisk:implementer` agent (CLA-0074) commits and pushes only through it.

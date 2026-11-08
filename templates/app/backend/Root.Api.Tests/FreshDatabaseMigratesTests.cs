@@ -12,6 +12,7 @@ public sealed class FreshDatabaseMigratesTests
     [Fact]
     public async Task FreshDatabaseMigrates()
     {
+        ModulesExist.OrSkip();
         var cancellationToken = TestContext.Current.CancellationToken;
         var connectionString = await PostgresServer.CreateDatabaseAsync(cancellationToken);
         await using var provider = PostgresServer.BuildAppServices(connectionString);

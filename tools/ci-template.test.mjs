@@ -140,7 +140,7 @@ test('the backend job checks migrations, builds without node reuse and annotates
   const runs = ci.jobs.backend.steps.map((step) => step.run ?? '');
   assert.ok(runs.includes('node scripts/check-migrations.mjs'));
   assert.ok(runs.some((run) => /^dotnet build backend\/\S+\.slnx -nodeReuse:false$/.test(run)));
-  assert.ok(runs.some((run) => /^dotnet test backend\/\S+\.slnx --no-build --logger trx --results-directory "\$RUNNER_TEMP\/trx"$/.test(run)));
+  assert.ok(runs.some((run) => /^dotnet test --solution backend\/\S+\.slnx --no-build --report-xunit-trx --results-directory "\$RUNNER_TEMP\/trx"$/.test(run)));
   const annotate = ci.jobs.backend.steps.find((step) => step.run?.startsWith('node scripts/trx-annotations.mjs'));
   assert.equal(annotate.if, 'failure()');
   assert.ok(ci.jobs.backend.steps.some((step) => step.uses?.startsWith('actions/setup-dotnet@') && step.if === undefined));

@@ -50,6 +50,20 @@ describe('generateBackend', () => {
     assert.match(readFileSync(migration, 'utf8'), /\[Migration\("20261108102030_InitialOrdering"\)\]/)
   })
 
+  it('generates an app with no modules and the runner config at its root', () => {
+    const target = mkdtempSync(join(tmpdir(), 'scaffold-'))
+    created.push(target)
+    assert.equal(generateBackend({ target, root: 'Acme' }).implementation, null)
+    assert.doesNotMatch(readFileSync(join(target, 'backend', 'Acme.slnx'), 'utf8'), /Modules/)
+    assert.equal(JSON.parse(readFileSync(join(target, 'global.json'), 'utf8')).test.runner, 'Microsoft.Testing.Platform')
+  })
+
+  it('refuses a module without an aggregate', () => {
+    const target = mkdtempSync(join(tmpdir(), 'scaffold-'))
+    created.push(target)
+    assert.throws(() => generateBackend({ target, root: 'Acme', module: 'Ordering' }), /together/)
+  })
+
   it('refuses a name that is not PascalCase', () => {
     const target = mkdtempSync(join(tmpdir(), 'scaffold-'))
     created.push(target)

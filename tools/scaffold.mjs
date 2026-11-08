@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -134,8 +134,12 @@ export function generateBackend({ target, root, module, aggregate, plural, now }
     throw new Error(`${backend} already has a backend.`)
   }
   mkdirSync(backend, { recursive: true })
+  if (Boolean(module) !== Boolean(aggregate)) {
+    throw new Error('Pass --module and --aggregate together, or neither for an app with no modules yet.')
+  }
   copyTemplate(BACKEND_TEMPLATE, backend, { Root: root, root: snake(root) }, { root })
-  return addModule({ appRoot: target, module, aggregate, plural, now })
+  copyFileSync(join(PLUGIN_ROOT, 'templates', 'app', 'global.json'), join(target, 'global.json'))
+  return module ? addModule({ appRoot: target, module, aggregate, plural, now }) : { root, implementation: null }
 }
 
 function parseArguments(argv) {
@@ -156,7 +160,7 @@ function main(argv) {
   const { positional: [command, path], options } = parseArguments(argv)
   if (command === 'backend' && path) {
     const result = generateBackend({ target: resolve(path), root: options.root, module: options.module, aggregate: options.aggregate, plural: options.plural })
-    console.log(`Generated backend/${result.root}.slnx with the module ${result.implementation}.`)
+    console.log(`Generated backend/${result.root}.slnx${result.implementation ? ` with the module ${result.implementation}` : ' with no modules yet'}.`)
     return
   }
   if (command === 'add-module' && path) {
@@ -164,7 +168,7 @@ function main(argv) {
     console.log(`Added ${result.implementation}.`)
     return
   }
-  throw new Error('Usage: scaffold.mjs backend <app folder> --root <Root> --module <Name> --aggregate <Aggregate> [--plural <Plural>]\n       scaffold.mjs add-module <app folder> --module <Name> --aggregate <Aggregate> [--plural <Plural>]')
+  throw new Error('Usage: scaffold.mjs backend <app folder> --root <Root> [--module <Name> --aggregate <Aggregate> [--plural <Plural>]]\n       scaffold.mjs add-module <app folder> --module <Name> --aggregate <Aggregate> [--plural <Plural>]')
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

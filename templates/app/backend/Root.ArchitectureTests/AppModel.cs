@@ -77,6 +77,8 @@ public sealed class AppModel
 
     public Naming Naming { get; }
 
+    public bool HasNoModules => !Projects.Any(project => project.Name.Contains(".Modules.", StringComparison.Ordinal));
+
     public IReadOnlyList<ProjectFile> ModuleProjects => [.. Projects.Where(project => Naming.ModuleOf(project.Name) is not null)];
 
     public IReadOnlyList<ProjectFile> ModuleCode => [.. ModuleProjects.Where(project => !Naming.IsTest(project.Name))];

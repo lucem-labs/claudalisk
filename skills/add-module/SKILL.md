@@ -43,7 +43,7 @@ It adds the module to `<Root>.Api/AppModules.cs`, the Host's project references 
 ## 4. Check it
 
 ```
-dotnet test backend/<Root>.slnx
+dotnet test --solution backend/<Root>.slnx
 ```
 
 The tests start PostgreSQL through Testcontainers, so Docker must be running (CLA-0018).

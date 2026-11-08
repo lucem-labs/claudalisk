@@ -24,5 +24,5 @@ Every feature sends its commands and queries through the dispatcher (CLA-0049). 
 - Each operation is one message and one handler.
 - Every cross-module call is logged, validated and joins the unit of work in the same way.
 - A module's operations are found by browsing its Interfaces project, one message per file.
-- A caller's tests fake `IDispatcher`, or compose the target module for real (CLA-0004).
+- A caller's tests use the real dispatcher. They compose the target module for real (CLA-0004), or register a stub handler for the message they send (CLA-0070).
 - A remote call cannot join the caller's unit of work. Callers of a remote module switch to queued work for anything that must be atomic (CLA-0001, CLA-0007).

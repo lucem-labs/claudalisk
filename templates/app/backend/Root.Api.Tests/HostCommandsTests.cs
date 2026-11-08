@@ -7,6 +7,7 @@ public sealed class HostCommandsTests
     [Fact]
     public async Task RefusesToStartWhileMigrationsArePending()
     {
+        ModulesExist.OrSkip();
         var connectionString = await PostgresServer.CreateDatabaseAsync(TestContext.Current.CancellationToken);
         await using var provider = PostgresServer.BuildAppServices(connectionString);
         using var error = new StringWriter();
@@ -39,6 +40,7 @@ public sealed class HostCommandsTests
     [Fact]
     public async Task ListMigrationsPrintsSchemaAndId()
     {
+        ModulesExist.OrSkip();
         var connectionString = await PostgresServer.CreateDatabaseAsync(TestContext.Current.CancellationToken);
         await using var provider = PostgresServer.BuildAppServices(connectionString);
         using var output = new StringWriter();
