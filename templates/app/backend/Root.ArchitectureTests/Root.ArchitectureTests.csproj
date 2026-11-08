@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Claudalisk.Dispatching" />
+    <PackageReference Include="Claudalisk.Jobs" />
+    <PackageReference Include="Claudalisk.Modules" />
+    <PackageReference Include="Claudalisk.Persistence" />
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../<Root>.Testing/<Root>.Testing.csproj" />
+    <ProjectReference Include="../*.Modules.*/*.csproj" Exclude="../*.Modules.*.Tests/*.csproj" />
+  </ItemGroup>
+</Project>

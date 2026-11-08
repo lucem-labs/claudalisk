@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Claudalisk.Persistence" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../<Root>.Modules.<Name>.Domain/<Root>.Modules.<Name>.Domain.csproj" />
+    <ProjectReference Include="../<Root>.Modules.<Name>.Persistence.Interfaces/<Root>.Modules.<Name>.Persistence.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

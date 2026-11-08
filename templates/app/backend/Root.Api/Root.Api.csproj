@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Claudalisk.AspNetCore" />
+    <PackageReference Include="Claudalisk.Dispatching" />
+    <PackageReference Include="Claudalisk.Modules" />
+    <PackageReference Include="Claudalisk.Persistence" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+</Project>
