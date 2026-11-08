@@ -156,8 +156,7 @@ test('the compose file pins Traefik by tag and digest and keeps the fixed names'
 });
 
 const psRow = (labels, networks) => JSON.stringify({ Names: 'proxy', Image: 'traefik', Ports: '', Labels: labels, Networks: networks });
-const dockerWith = (...rows) => () => rows.join('
-');
+const dockerWith = (...rows) => () => rows.join('\n');
 const PROJECT_LABEL = 'com.docker.compose.project=traefik';
 
 test('proxyProblem finds nothing wrong with a proxy on its network', () => {
