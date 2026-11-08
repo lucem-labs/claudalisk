@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, it } from 'node:test'
@@ -154,7 +154,7 @@ describe('finish', () => {
   const config = { repo: 'acme/acme-shop' }
 
   it('creates a private repository first, then the labels, the registration and the enrolment', () => {
-    const steps = finishSteps('/app', config, 'node')
+    const steps = finishSteps('/app', config, { node: 'node' })
     assert.deepEqual(steps[0].args.slice(0, 3), ['repo', 'create', 'acme/acme-shop'])
     assert.ok(steps[0].args.includes('--private'))
     assert.deepEqual(steps.slice(1, 3).map((step) => step.args[2]), LABELS.map((label) => label.name))
@@ -171,11 +171,19 @@ describe('finish', () => {
     return target
   }
 
+  function homeWithStacks(...targets) {
+    const home = folder()
+    mkdirSync(join(home, '.claudalisk'), { recursive: true })
+    const runners = targets.map((target, index) => ({ composeProject: `runners-${index}`, configDir: `/runners-${index}`, scope: 'organization', target, groupId: 1 }))
+    writeFileSync(join(home, '.claudalisk', 'apps.json'), JSON.stringify({ apps: [], runners }))
+    return home
+  }
+
   it('runs nothing on a dry run', async () => {
     const appRoot = await appWithConfig()
     const ran = []
     const lines = []
-    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line) })
+    const steps = await finishApp({ appRoot, dryRun: true }, { run: async (...call) => ran.push(call), log: (line) => lines.push(line), home: homeWithStacks('acme') })
     assert.deepEqual(ran, [])
     assert.equal(lines.length, steps.length)
   })
@@ -183,11 +191,44 @@ describe('finish', () => {
   it('runs every step in order otherwise, and stops at the first failure', async () => {
     const appRoot = await appWithConfig()
     const ran = []
-    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {} })
+    const home = homeWithStacks('acme')
+    await finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home })
     assert.equal(ran.length, 5)
     let count = 0
-    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {} }), /no/)
+    await assert.rejects(finishApp({ appRoot }, { run: async () => { count += 1; throw new Error('no') }, log: () => {}, home }), /no/)
     assert.equal(count, 1)
+  })
+
+  it('changes nothing when no runner stack is registered, and says how to register one', async () => {
+    const appRoot = await appWithConfig()
+    const ran = []
+    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('someone-else') }), /adopt.*Nothing was changed/)
+    assert.deepEqual(ran, [])
+  })
+
+  it('changes nothing when two runner stacks serve the repository', async () => {
+    const appRoot = await appWithConfig()
+    const ran = []
+    await assert.rejects(finishApp({ appRoot }, { run: async (command) => ran.push(command), log: () => {}, home: homeWithStacks('acme', 'ACME') }), /2 registered runner stacks/)
+    assert.deepEqual(ran, [])
+  })
+
+  it('only warns about a missing runner stack on a dry run', async () => {
+    const appRoot = await appWithConfig()
+    const lines = []
+    const steps = await finishApp({ appRoot, dryRun: true }, { log: (line) => lines.push(line), home: homeWithStacks() })
+    assert.match(lines[0], /^Warning: No registered runner stack/)
+    assert.equal(lines.length, steps.length + 1)
+  })
+
+  it('leaves out the enrolment with no-enrol, needs no runner stack for it, and says how to enrol later', async () => {
+    const appRoot = await appWithConfig()
+    const ran = []
+    const lines = []
+    await finishApp({ appRoot, enrol: false }, { run: async (_, args) => ran.push(args), log: (line) => lines.push(line), home: homeWithStacks() })
+    assert.equal(ran.length, 4)
+    assert.ok(ran.every((args) => !args.includes('enroll')))
+    assert.match(lines.at(-1), /enroll/)
   })
 
   it('refuses a folder with no config', async () => {
