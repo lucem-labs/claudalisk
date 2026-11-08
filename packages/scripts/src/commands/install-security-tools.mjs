@@ -94,8 +94,22 @@ export async function installTool({ name, destination, download, untar, chmod = 
   }
 }
 
-async function download(url) {
-  const response = await fetch(url);
+const RELEASE_ASSET_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\/([^/]+)$/;
+
+async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, request) {
+  const repository = `https://api.github.com/repos/${owner}/${repo}`;
+  const authorization = `Bearer ${token}`;
+  const release = await request(`${repository}/releases/tags/${tag}`, { headers: { authorization, accept: 'application/vnd.github+json' } });
+  if (!release.ok) throw new Error(`Downloading ${url} failed: looking up the release returned HTTP ${release.status}.`);
+  const { assets } = await release.json();
+  const asset = assets.find(({ name }) => name === assetName);
+  if (!asset) throw new Error(`Downloading ${url} failed: the release has no asset named ${assetName}.`);
+  return request(`${repository}/releases/assets/${asset.id}`, { headers: { authorization, accept: 'application/octet-stream' } });
+}
+
+export async function download(url, { token, request = fetch } = {}) {
+  const releaseAsset = token ? url.match(RELEASE_ASSET_URL) : null;
+  const response = releaseAsset ? await requestReleaseAsset(url, releaseAsset, token, request) : await request(url);
   if (!response.ok) throw new Error(`Downloading ${url} failed (HTTP ${response.status}).`);
   return Buffer.from(await response.arrayBuffer());
 }
@@ -108,8 +122,10 @@ function untar(archive, folder) {
 export async function main(argv, { env = process.env, log = console.log, io = { download, untar } } = {}) {
   const options = parseArgs(argv);
   const destination = options.destination ?? mkdtempSync(join(env.RUNNER_TEMP || tmpdir(), 'security-tools-'));
+  const token = env.GITHUB_TOKEN || env.GH_TOKEN;
+  const downloadWithToken = (url) => io.download(url, { token });
   for (const name of options.tools) {
-    log(`Installed ${name} at ${await installTool({ name, destination, ...io })}`);
+    log(`Installed ${name} at ${await installTool({ name, destination, ...io, download: downloadWithToken })}`);
   }
   if (env.GITHUB_PATH) appendFileSync(env.GITHUB_PATH, `${destination}\n`);
   return destination;

@@ -216,6 +216,8 @@ jobs:
       - name: Install scanners
         id: tools
         run: node scripts/install-security-tools.mjs --tool gitleaks,osv-scanner,trivy,zizmor,uv
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Forbidden files
         if: ${{ !cancelled() }}
