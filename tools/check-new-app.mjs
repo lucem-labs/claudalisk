@@ -35,6 +35,16 @@ export function missingServices(listed, expected) {
   return expected.filter((service) => !services.includes(service))
 }
 
+async function scanLockfiles(app, work) {
+  if (process.platform !== 'linux') {
+    console.log(`Skipped: the pinned OSV-Scanner is a Linux binary and this is ${process.platform}. CI runs this step.`)
+    return
+  }
+  const tools = join(work, 'security-tools')
+  await runAsync('node', ['scripts/install-security-tools.mjs', '--tool', 'osv-scanner', '--destination', tools], app)
+  await runAsync(join(tools, 'osv-scanner'), ['scan', '--config', 'osv-scanner.toml', '--lockfile', 'package-lock.json', '--lockfile', 'frontend/package-lock.json'], app)
+}
+
 async function checkCompose(app, work) {
   for (const environment of ['dev', 'uat']) {
     const envFile = join(work, `${environment}.env`)
@@ -96,6 +106,7 @@ async function main() {
         await runAsync('node', [`scripts/${script}.mjs`], app)
       }
     })
+    await step('npm packages (OSV-Scanner)', () => scanLockfiles(app, work))
     await step('Compose files', () => checkCompose(app, work))
     await step('Register in a stubbed machine registry', () => checkRegistration(app, work))
     await step('Finish, dry run', () => finishApp({ appRoot: app, dryRun: true }))
