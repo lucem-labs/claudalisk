@@ -100,6 +100,16 @@ function tomlEntries(text) {
   return entries
 }
 
+function expiredAt(block) {
+  const key = 'expired_at:'
+  for (const row of block.split('\n')) {
+    const text = row.trimStart()
+    const field = text[0] === '-' && text[1]?.trim() === '' ? text.slice(1).trimStart() : text
+    if (field.startsWith(key)) return field.slice(key.length).trim()
+  }
+  return null
+}
+
 function trivyEntries(text) {
   const entries = []
   const rows = text.split('\n')
@@ -113,8 +123,7 @@ function trivyEntries(text) {
     let block = rows[i]
     let j = i + 1
     while (j < rows.length && (!rows[j].trim() || rows[j].length - rows[j].trimStart().length > indent)) block += `\n${rows[j++]}`
-    const until = /^\s*(?:-\s+)?expired_at:\s*(.*)$/m.exec(block)
-    entries.push({ line: i + 1, value: until ? until[1] : null })
+    entries.push({ line: i + 1, value: expiredAt(block) })
     i = j - 1
   }
   return entries

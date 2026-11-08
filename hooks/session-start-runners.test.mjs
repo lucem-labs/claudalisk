@@ -135,7 +135,7 @@ test('a group that is not selected says it serves all repositories and never lis
   for (const [visibility, words] of [['all', 'all repositories'], ['private', 'all private repositories']]) {
     const d = deps({ ghRoutes: { ...ROUTES, 'orgs/Acme/actions/runner-groups/7': { name: 'Default', visibility } } });
     const [line] = await linesOf(d);
-    assert.match(line, new RegExp(`runner group Default serves ${words}, including acme.example-app\.$`));
+    assert.match(line, new RegExp(`runner group Default serves ${words}, including acme/example-app\\.$`));
     assert.ok(!d.calls.some((args) => args[1].includes('/repositories')));
   }
   const pub = deps({ ghRoutes: { ...ROUTES, 'repos/acme/example-app': { id: 99, private: false }, 'orgs/Acme/actions/runner-groups/7': { name: 'Default', visibility: 'all' } } });
