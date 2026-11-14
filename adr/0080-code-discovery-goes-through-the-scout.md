@@ -4,7 +4,7 @@
 - **Date:** 2026-11-03
 - **Area:** workflow
 - **Enforced by:** the plugin's `scout-gate` hook (`hooks/scout-gate.mjs`, with its tests); `scout` agent; workflow skill; reviewer
-- **Issue:** #106
+- **Issue:** #106, #196
 
 ## Context
 
@@ -21,6 +21,7 @@ Text search cannot find every use of a method whose receiver is not named at the
 - **The scout runs on Haiku at low effort, with `Read`, `Grep`, `Glob` and `LSP` only.** It never edits, and it answers in at most 300 words.
 - **To find every use of a symbol, the scout uses `LSP`.** It runs `findReferences` on the symbol's definition, not on its class and not with `Grep`, repeats the call until the count stops changing, and reports every `path:line`. Without a language server for the file, it falls back to `Grep` and says the list may miss calls.
 - **The plugin bundles no language server.** An app installs the official Claude Code LSP plugins for its languages, such as `csharp-lsp` for the backend and a TypeScript one for the frontend.
+- **Node scripts carry a `jsconfig.json`.** Without a `jsconfig.json` or `tsconfig.json`, the TypeScript server treats each opened `.mjs` file as a project of its own, and `findReferences` returns only the declaration. The app template puts one at the app root for `scripts/`, and this repository has one for `tools/`, `hooks/` and `packages/scripts/`. The frontend's `.mjs` files under `e2e/` and `scripts/` belong to its `tsconfig.node.json`, because `frontend/tsconfig.json` owns every file under `frontend/` before a root config can. Each sets `allowJs` and leaves `checkJs` off, so the server reports no type errors in scripts that were never type-checked. On `segments` in `hooks/shell.mjs`, it took `findReferences` from the declaration alone to 23 references in 6 files.
 - **After a rename or a signature change, the compiler checks the result.** The verify script (CLA-0076) builds every project before the change is done, so a reference the scout missed fails there.
 - **Subagents search for themselves.** The `implementer` keeps its own `Grep` and `Glob` (CLA-0074): its searches are part of the build, test and fix loop, not exploration.
 - **A hook enforces this in the main thread.** The plugin's `PreToolUse` hook acts only on a tool call whose input has no `agent_id`, the field Claude Code adds when the call comes from a subagent. In the main thread it denies:

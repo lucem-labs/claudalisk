@@ -64,7 +64,7 @@ describe('generateApp', () => {
 
   it('writes the files the environment scripts and the skills read', async () => {
     const { target } = await generated()
-    for (const file of ['compose.base.yml', 'compose.dev.yml', 'compose.uat.yml', '.env.dev.example', '.env.uat.example', 'AGENTS.md', 'CLAUDE.md', '.gitignore', '.github/dependabot.yml', 'global.json', 'backend/Acme.slnx', 'frontend/src/app/main.tsx', 'frontend/steiger.config.ts']) {
+    for (const file of ['compose.base.yml', 'compose.dev.yml', 'compose.uat.yml', '.env.dev.example', '.env.uat.example', 'AGENTS.md', 'CLAUDE.md', '.gitignore', 'jsconfig.json', '.github/dependabot.yml', 'global.json', 'backend/Acme.slnx', 'frontend/src/app/main.tsx', 'frontend/steiger.config.ts']) {
       assert.ok(existsSync(join(target, file)), file)
     }
   })
