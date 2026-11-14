@@ -1,0 +1,17 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-toolkit": {
+      "source": {
+        "source": "github",
+        "repo": "kharabasz/claude-toolkit"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "csharp-ls-lsp@claude-toolkit": true,
+    "ts7-lsp@claude-toolkit": true,
+    "yaml-lsp@claude-toolkit": true,
+    "csharp-lsp@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": false
+  }
+}
