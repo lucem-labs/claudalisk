@@ -4,7 +4,7 @@
 - **Date:** 2026-11-01
 - **Area:** workflow
 - **Enforced by:** `implementer` agent; workflow skill; reviewer
-- **Issue:** #93
+- **Issue:** #93, #194
 
 ## Context
 
@@ -19,6 +19,7 @@ Every model request sends the whole conversation again (CLA-0073). A build, test
 - **The implementer commits and pushes only through the verify script, to the issue branch.** It never opens a pull request, deploys, files issues, rewrites history or pushes `main`. The main thread reviews the branch diff since the brief, and commits what the review changes, before it opens the pull request.
 - **A design question the implementer cannot answer stops it.** It does not guess and it does not file an issue. It returns the question in its report, with the options it sees and what it has done so far. The main thread decides, asks the owner, or files a CLA-0022 issue for a bug outside the issue's scope.
 - **The implementer returns a report of at most 300 words:** what changed, the commits it pushed with the last CI result, and open questions.
+- **An implementer run stays small.** The agent compacts its own context at 200,000 tokens (`autoCompactWindow: 200000`) and stops after 150 turns (`maxTurns: 150`). Each request resends the whole run's context, so a run that grows past 200,000 tokens pays for that context on every later step. In one week of usage logs, implementer runs peaked at a median of 149k tokens and a maximum of 566k, and 6,033 subagent requests each sent more than 200k tokens. A run that reaches `maxTurns` returns its output marked partial ([subagents](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)). The main thread then reads it and either resumes the agent or splits what is left into a narrower brief.
 - Small changes that need no build and test loop, such as a one-line fix or a docs edit, stay on the main thread.
 
 ## Consequences
@@ -27,3 +28,4 @@ Every model request sends the whole conversation again (CLA-0073). A build, test
 - The main thread's context grows by a brief and a short report per loop, not by every command's output.
 - Review stays on the main thread, which holds the issue's design and decisions.
 - The implementer does not see the main thread's conversation, so a vague brief costs a second round. The brief carries what it needs.
+- A compaction at 200,000 tokens summarises what the implementer read earlier in the run, so it may read a file again after compacting. A run that hits 150 turns stops even when it is close to green, and the main thread resumes it.
