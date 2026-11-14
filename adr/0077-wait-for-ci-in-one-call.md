@@ -4,7 +4,7 @@
 - **Date:** 2026-11-01
 - **Area:** workflow
 - **Enforced by:** `scripts/verify.mjs` in the app (CLA-0076); `implementer` agent; workflow skill; `hooks/ci-poll-guard.mjs` (asks before a foreground poll); reviewer.
-- **Issue:** #96
+- **Issue:** #96, #194
 
 ## Context
 
@@ -15,7 +15,7 @@ Every model request sends the whole conversation again (CLA-0073). An agent that
 - **Waiting for CI is one call that blocks until the checks finish.** Polling with a loop of separate calls is not allowed. The agent never checks the status of a run or a pull request again and again, whether by shell calls, the host's pull request status tool, or a scheduled wake-up.
 - **In an app, that call is `node scripts/verify.mjs`** (CLA-0076). It pushes, finds the runs of that exact commit, waits quietly inside the one call, and prints only the failures. There is no second script for waiting: run on a commit the remote already has, `verify.mjs` pushes nothing and only waits.
   - **The main thread** runs it in the background with a timeout longer than the CI run, such as `--timeout 60`, and does other work or ends its turn. The host wakes the session when the script exits. It does not read the script's output until then.
-  - **The `claudalisk:implementer` subagent** (CLA-0074) runs it in the foreground with the Bash tool's timeout at 600000 ms and the script's default of 9 minutes. When the script says CI is still running, the next call waits again. That is at most one request per 9 minutes, not a status check.
+  - **The `claudalisk:implementer` subagent** (CLA-0074) runs it in the foreground with the Bash tool's timeout at 600000 ms and `--timeout 4`. A subagent's prompt cache lasts five minutes, even on a subscription ([prompt caching](https://code.claude.com/docs/en/prompt-caching)). A wait of more than five minutes makes the next request write the agent's whole context to the cache again, at 1.25 times the input price. A wait of four minutes keeps the next request a cache read, at a twentieth of it. When the script says CI is still running, the next call waits again. That is at most one request per 4 minutes, not a status check. In one week of usage logs, 125 of 127 subagent cache writes over 100k tokens came right after a pause of more than five minutes, most of them CI waits of 5 to 10 minutes.
 - **Where there is no script,** such as a repository that is not a claudalisk app, the one call is `gh run watch <run id> --exit-status` or `gh pr checks <pr> --watch --fail-fast`, run in the background. Both reprint the status while they wait, so the agent discards their output and reads only the exit code. After a failure, read `gh run view <run id> --log-failed` once, trimmed to the failing step.
 - **The host's pull request monitor is enough once the pull request is open.** Where the host watches the pull request's checks and wakes the session on a failure, such as the Claude desktop app's CI monitor, the agent relies on it after it opens the pull request (CLA-0023). It does not also run the script or check the status to see whether CI passed, and it reads the host's status tool once when it binds the pull request, not again to wait.
 - **Before the pull request exists, the script is the only way.** CLA-0023 opens the pull request only when CI is green on the branch head, so a host monitor has nothing to watch yet. The script is also the fallback after the pull request is open, on a host without a monitor.
