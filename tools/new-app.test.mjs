@@ -57,6 +57,22 @@ describe('generateApp', () => {
     assert.deepEqual(config.ports, { devDb: 5433, apiLocal: 5100 })
   })
 
+  it('enables the claude-toolkit language servers and turns off the official csharp-lsp and typescript-lsp', async () => {
+    const { target } = await generated()
+    const settings = JSON.parse(readFileSync(join(target, '.claude', 'settings.json'), 'utf8'))
+    const { source } = settings.extraKnownMarketplaces['claude-toolkit']
+    assert.equal(source.source, 'github')
+    assert.equal(source.repo, 'kharabasz/claude-toolkit')
+    assert.match(source.ref, /^[0-9a-f]{40}$/)
+    assert.deepEqual(settings.enabledPlugins, {
+      'csharp-ls-lsp@claude-toolkit': true,
+      'ts7-lsp@claude-toolkit': true,
+      'yaml-lsp@claude-toolkit': true,
+      'csharp-lsp@claude-plugins-official': false,
+      'typescript-lsp@claude-plugins-official': false,
+    })
+  })
+
   it('uses a database name PostgreSQL accepts without quoting', async () => {
     const { target } = await generated()
     assert.match(readFileSync(join(target, '.env.dev.example'), 'utf8'), /^POSTGRES_DB=acme_shop$/m)
