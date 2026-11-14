@@ -3,7 +3,8 @@
     "claude-toolkit": {
       "source": {
         "source": "github",
-        "repo": "kharabasz/claude-toolkit"
+        "repo": "kharabasz/claude-toolkit",
+        "ref": "a148a7ec2879cc6408c4a162de168c67dfc43a39"
       }
     }
   },

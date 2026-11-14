@@ -60,7 +60,10 @@ describe('generateApp', () => {
   it('enables the claude-toolkit language servers and turns off the official csharp-lsp and typescript-lsp', async () => {
     const { target } = await generated()
     const settings = JSON.parse(readFileSync(join(target, '.claude', 'settings.json'), 'utf8'))
-    assert.deepEqual(settings.extraKnownMarketplaces['claude-toolkit'].source, { source: 'github', repo: 'kharabasz/claude-toolkit' })
+    const { source } = settings.extraKnownMarketplaces['claude-toolkit']
+    assert.equal(source.source, 'github')
+    assert.equal(source.repo, 'kharabasz/claude-toolkit')
+    assert.match(source.ref, /^[0-9a-f]{40}$/)
     assert.deepEqual(settings.enabledPlugins, {
       'csharp-ls-lsp@claude-toolkit': true,
       'ts7-lsp@claude-toolkit': true,
