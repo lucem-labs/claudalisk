@@ -44,7 +44,7 @@ export async function coldStart(session, spawnedAt, { timeoutMs = 300000 } = {})
     }
     await sleep(250)
   }
-  throw new Error(`no stable correct findReferences within ${timeoutMs} ms (last answer ${last}, expected ${expectedKey})`)
+  throw new Error(`no stable correct findReferences within ${timeoutMs} ms (last answer ${last}, expected ${expectedKey}); server stderr: ${session.client.stderr.slice(-1200)}`)
 }
 
 export function removeApp(app) {

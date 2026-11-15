@@ -1,5 +1,5 @@
 process.noDeprecation = true
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,10 +40,11 @@ export function addCases(app) {
 }
 
 export async function ensureBase() {
-  const work = process.env.LSP_HOST_WORK ?? join(tmpdir(), 'lsp-host-work')
-  mkdirSync(work, { recursive: true })
+  const wanted = process.env.LSP_HOST_WORK ?? join(tmpdir(), 'lsp-host-work')
+  mkdirSync(wanted, { recursive: true })
+  const work = realpathSync.native(wanted)
   const provided = process.env.LSP_HOST_BASE_APP
-  const base = provided && existsSync(provided) ? provided : join(work, 'base')
+  const base = provided && existsSync(provided) ? realpathSync.native(provided) : join(work, 'base')
   const ready = join(base, '.lsp-host-ready')
   if (!existsSync(ready)) {
     if (!existsSync(base)) await generateBaseApp(work)
