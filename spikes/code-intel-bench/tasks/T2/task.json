@@ -1,0 +1,55 @@
+{
+  "id": "T2",
+  "title": "Rename a DTO property end to end: C#, the OpenAPI document, schema.d.ts, the React consumers",
+  "features": [
+    "E1",
+    "I1"
+  ],
+  "prompt": "The Ordering API's OrderResponse exposes the order's name as name. Rename that property to label everywhere it is part of OrderResponse: the C# record (Label), the OpenAPI document the backend serves, frontend/src/shared/api/schema.d.ts, and every frontend consumer of the response. Leave CreateOrderRequest, OrderSummary, the domain Order, the Billing module and the frontend Order entity (its field stays name) as they are. npm run api:types in frontend regenerates schema.d.ts from the backend if you want to use it.",
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "command": [
+        "dotnet",
+        "build",
+        "backend/Bench.slnx",
+        "--nologo",
+        "--verbosity",
+        "quiet"
+      ]
+    },
+    {
+      "name": "schema.d.ts and the other schemas",
+      "command": [
+        "node",
+        "bench-hidden/t2.mjs"
+      ]
+    },
+    {
+      "name": "hidden backend tests",
+      "command": [
+        "dotnet",
+        "test",
+        "--project",
+        "backend/Bench.Hidden.T2.Tests/Bench.Hidden.T2.Tests.csproj"
+      ]
+    },
+    {
+      "name": "frontend typecheck",
+      "cwd": "frontend",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ]
+    },
+    {
+      "name": "frontend tests",
+      "cwd": "frontend",
+      "command": [
+        "npm",
+        "test"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+diff --git a/frontend/src/shared/lib/slugify.test.ts b/frontend/src/shared/lib/slugify.test.ts
+new file mode 100644
+index 0000000..6088161
+--- /dev/null
++++ b/frontend/src/shared/lib/slugify.test.ts
+@@ -0,0 +1,17 @@
++import { describe, expect, it } from 'vitest'
++
++import { slugify } from './slugify'
++
++describe('slugify', () => {
++  it('joins words with single hyphens', () => {
++    expect(slugify('Hello World')).toBe('hello-world')
++  })
++
++  it('drops punctuation', () => {
++    expect(slugify('Order #42: paid!')).toBe('order-42-paid')
++  })
++
++  it('has nothing left of only punctuation', () => {
++    expect(slugify('***')).toBe('')
++  })
++})
+diff --git a/frontend/src/shared/lib/slugify.ts b/frontend/src/shared/lib/slugify.ts
+new file mode 100644
+index 0000000..ce50c52
+--- /dev/null
++++ b/frontend/src/shared/lib/slugify.ts
+@@ -0,0 +1,8 @@
++export function slugify(text: string): string {
++  return text
++    .normalize('NFD')
++    .replace(/\p{Diacritic}/gu, '')
++    .toLowerCase()
++    .replace(/[^\p{L}\p{N}]+/gu, '-')
++    .replace(/^-+|-+$/g, '')
++}

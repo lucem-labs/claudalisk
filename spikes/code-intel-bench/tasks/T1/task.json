@@ -1,0 +1,46 @@
+{
+  "id": "T1",
+  "title": "Rename a domain command across its module, its Interfaces project and the tests",
+  "features": [
+    "E1"
+  ],
+  "prompt": "Rename the domain command CreateOrderCommand to PlaceOrderCommand. It is declared in the Ordering module's Interfaces project and used by the Ordering module, by the Billing module and by the tests. Rename everything that is named after it so the architecture tests keep passing, and change no behaviour. Update every use, including the other module's and the tests'.",
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "command": [
+        "dotnet",
+        "build",
+        "backend/Bench.slnx",
+        "--nologo",
+        "--verbosity",
+        "quiet"
+      ]
+    },
+    {
+      "name": "the old names are gone",
+      "command": [
+        "node",
+        "bench-hidden/t1.mjs"
+      ]
+    },
+    {
+      "name": "hidden tests",
+      "command": [
+        "dotnet",
+        "test",
+        "--project",
+        "backend/Bench.Hidden.T1.Tests/Bench.Hidden.T1.Tests.csproj"
+      ]
+    },
+    {
+      "name": "architecture tests",
+      "command": [
+        "dotnet",
+        "test",
+        "--project",
+        "backend/Bench.ArchitectureTests/Bench.ArchitectureTests.csproj"
+      ]
+    }
+  ]
+}

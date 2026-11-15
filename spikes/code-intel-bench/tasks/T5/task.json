@@ -1,0 +1,18 @@
+{
+  "id": "T5",
+  "title": "Answer what calls a method where text search gets the receiver wrong",
+  "features": [
+    "N2",
+    "N4"
+  ],
+  "prompt": "Do not change any file except the answer. In the Billing module, find every call of ILedger.Record(string account, decimal amount), the method of the ILedger interface. Other types have a Record method with the same name and parameters (for example IAuditTrail.Record); those calls do not count. A call counts when it runs ILedger.Record, whatever the call site names its receiver. Write the answer to T5-answer.txt in the root of this folder, one call per line as path:line, with the path relative to the root, forward slashes and a one-based line number, and nothing else.",
+  "checks": [
+    {
+      "name": "the answer lists exactly the calls",
+      "command": [
+        "node",
+        "bench-hidden/t5.mjs"
+      ]
+    }
+  ]
+}

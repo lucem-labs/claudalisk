@@ -1,0 +1,31 @@
+{
+  "id": "T3",
+  "title": "Change an interface method signature and all its implementations",
+  "features": [
+    "E3",
+    "N3"
+  ],
+  "prompt": "In the Billing module, change IDiscountPolicy.Apply(decimal amount) to Apply(decimal amount, string customerTier), with no default value, and update every implementation. Callers that are handed a tier by their own callers pass it on: InvoicePricing.Price and PriceAll and InvoiceQuote.Best and Chained gain a trailing string customerTier parameter with the same name. Callers that have no tier in scope, such as the existing tests, pass \"standard\". Change no behaviour: the tier is not used by the existing implementations.",
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "command": [
+        "dotnet",
+        "build",
+        "backend/Bench.slnx",
+        "--nologo",
+        "--verbosity",
+        "quiet"
+      ]
+    },
+    {
+      "name": "hidden tests",
+      "command": [
+        "dotnet",
+        "test",
+        "--project",
+        "backend/Bench.Hidden.T3.Tests/Bench.Hidden.T3.Tests.csproj"
+      ]
+    }
+  ]
+}

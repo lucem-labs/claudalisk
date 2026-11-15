@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Bench.Modules.Ordering/Bench.Modules.Ordering.csproj" />
+    <ProjectReference Include="../Bench.Modules.Billing/Bench.Modules.Billing.csproj" />
+  </ItemGroup>
+</Project>

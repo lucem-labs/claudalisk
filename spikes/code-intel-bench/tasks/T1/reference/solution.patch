@@ -1,0 +1,113 @@
+diff --git a/backend/Bench.Modules.Billing/Features/RaiseInvoice/RaiseInvoiceHandler.cs b/backend/Bench.Modules.Billing/Features/RaiseInvoice/RaiseInvoiceHandler.cs
+index c8c1377..51d45e3 100644
+--- a/backend/Bench.Modules.Billing/Features/RaiseInvoice/RaiseInvoiceHandler.cs
++++ b/backend/Bench.Modules.Billing/Features/RaiseInvoice/RaiseInvoiceHandler.cs
+@@ -11,7 +11,7 @@ internal sealed class RaiseInvoiceHandler(IDispatcher dispatcher, IInvoiceStore
+ {
+     public async ValueTask<InvoiceSummary> HandleAsync(RaiseInvoiceCommand message, CancellationToken cancellationToken)
+     {
+-        var order = await dispatcher.SendAsync<OrderSummary>(new CreateOrderCommand(message.OrderName), cancellationToken);
++        var order = await dispatcher.SendAsync<OrderSummary>(new PlaceOrderCommand(message.OrderName), cancellationToken);
+         var invoice = Invoice.Create(Guid.NewGuid(), $"Invoice for {order.Name}");
+         await store.AddAsync(invoice, cancellationToken);
+         return invoice.ToSummary();
+diff --git a/backend/Bench.Modules.Ordering.Interfaces/CreateOrderCommand.cs b/backend/Bench.Modules.Ordering.Interfaces/CreateOrderCommand.cs
+deleted file mode 100644
+index 6bd48e4..0000000
+--- a/backend/Bench.Modules.Ordering.Interfaces/CreateOrderCommand.cs
++++ /dev/null
+@@ -1,3 +0,0 @@
+-namespace Bench.Modules.Ordering.Interfaces;
+-
+-public sealed record CreateOrderCommand(string Name);
+diff --git a/backend/Bench.Modules.Ordering.Interfaces/PlaceOrderCommand.cs b/backend/Bench.Modules.Ordering.Interfaces/PlaceOrderCommand.cs
+new file mode 100644
+index 0000000..0f871bd
+--- /dev/null
++++ b/backend/Bench.Modules.Ordering.Interfaces/PlaceOrderCommand.cs
+@@ -0,0 +1,3 @@
++namespace Bench.Modules.Ordering.Interfaces;
++
++public sealed record PlaceOrderCommand(string Name);
+diff --git a/backend/Bench.Modules.Ordering.Tests/Features/CreateOrder/CreateOrderTests.cs b/backend/Bench.Modules.Ordering.Tests/Features/CreateOrder/CreateOrderTests.cs
+index ab6e5d1..eaf8153 100644
+--- a/backend/Bench.Modules.Ordering.Tests/Features/CreateOrder/CreateOrderTests.cs
++++ b/backend/Bench.Modules.Ordering.Tests/Features/CreateOrder/CreateOrderTests.cs
+@@ -20,7 +20,7 @@ public sealed class CreateOrderTests
+         await using var scope = provider.CreateAsyncScope();
+         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+ 
+-        var created = await dispatcher.SendAsync<OrderSummary>(new CreateOrderCommand("first"), cancellationToken);
++        var created = await dispatcher.SendAsync<OrderSummary>(new PlaceOrderCommand("first"), cancellationToken);
+ 
+         var found = await dispatcher.SendAsync<OrderSummary>(new GetOrderQuery(created.Id), cancellationToken);
+         Assert.Equal("first", found.Name);
+@@ -35,7 +35,7 @@ public sealed class CreateOrderTests
+         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+ 
+         await Assert.ThrowsAsync<MessageValidationException>(
+-            async () => await dispatcher.SendAsync<OrderSummary>(new CreateOrderCommand(""), cancellationToken));
++            async () => await dispatcher.SendAsync<OrderSummary>(new PlaceOrderCommand(""), cancellationToken));
+     }
+ 
+     private static async Task<ServiceProvider> ComposeAsync(CancellationToken cancellationToken)
+diff --git a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderCommandValidator.cs b/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderCommandValidator.cs
+deleted file mode 100644
+index b7a0830..0000000
+--- a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderCommandValidator.cs
++++ /dev/null
+@@ -1,9 +0,0 @@
+-using FluentValidation;
+-using Bench.Modules.Ordering.Interfaces;
+-
+-namespace Bench.Modules.Ordering.Features.CreateOrder;
+-
+-internal sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
+-{
+-    public CreateOrderCommandValidator() => RuleFor(command => command.Name).NotEmpty().MaximumLength(200);
+-}
+diff --git a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderMapping.cs b/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderMapping.cs
+index 3be4f9a..cacf8f3 100644
+--- a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderMapping.cs
++++ b/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderMapping.cs
+@@ -4,5 +4,5 @@ namespace Bench.Modules.Ordering.Features.CreateOrder;
+ 
+ internal static class CreateOrderMapping
+ {
+-    public static CreateOrderCommand ToCommand(this CreateOrderRequest request) => new(request.Name);
++    public static PlaceOrderCommand ToCommand(this CreateOrderRequest request) => new(request.Name);
+ }
+diff --git a/backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderCommandValidator.cs b/backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderCommandValidator.cs
+new file mode 100644
+index 0000000..4372652
+--- /dev/null
++++ b/backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderCommandValidator.cs
+@@ -0,0 +1,9 @@
++using FluentValidation;
++using Bench.Modules.Ordering.Interfaces;
++
++namespace Bench.Modules.Ordering.Features.CreateOrder;
++
++internal sealed class PlaceOrderCommandValidator : AbstractValidator<PlaceOrderCommand>
++{
++    public PlaceOrderCommandValidator() => RuleFor(command => command.Name).NotEmpty().MaximumLength(200);
++}
+diff --git a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderHandler.cs b/backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderHandler.cs
+similarity index 66%
+rename from backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderHandler.cs
+rename to backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderHandler.cs
+index 5e7f0cc..71d5c28 100644
+--- a/backend/Bench.Modules.Ordering/Features/CreateOrder/CreateOrderHandler.cs
++++ b/backend/Bench.Modules.Ordering/Features/CreateOrder/PlaceOrderHandler.cs
+@@ -6,9 +6,9 @@ using Bench.Modules.Ordering.Shared.Orders;
+ 
+ namespace Bench.Modules.Ordering.Features.CreateOrder;
+ 
+-internal sealed class CreateOrderHandler(IOrderStore store) : IHandler<CreateOrderCommand, OrderSummary>
++internal sealed class PlaceOrderHandler(IOrderStore store) : IHandler<PlaceOrderCommand, OrderSummary>
+ {
+-    public async ValueTask<OrderSummary> HandleAsync(CreateOrderCommand message, CancellationToken cancellationToken)
++    public async ValueTask<OrderSummary> HandleAsync(PlaceOrderCommand message, CancellationToken cancellationToken)
+     {
+         var aggregate = Order.Create(Guid.NewGuid(), message.Name);
+         await store.AddAsync(aggregate, cancellationToken);

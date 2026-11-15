@@ -114,3 +114,19 @@ jobs:
           dotnet-version: 10.0.x
       - name: Unit-of-work spike tests
         run: dotnet test spikes/unit-of-work/UnitOfWorkSpike.slnx
+
+  code-intel-bench:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Code intelligence benchmark harness tests
+        run: node --test "spikes/code-intel-bench/*.test.mjs"
