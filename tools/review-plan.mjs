@@ -135,14 +135,44 @@ function unionAdrs(skills) {
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
+const FILE_TOKEN = /^[^\s*<>]*[/.][^\s*<>]*$/;
+const COMPONENT_TOKEN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const isEnforcerToken = (t) => (FILE_TOKEN.test(t) && !t.startsWith('/')) || COMPONENT_TOKEN.test(t);
+
+export function namesPath(token, path) {
+  if (!isEnforcerToken(token)) return false;
+  if (COMPONENT_TOKEN.test(token)) return path === `agents/${token}.md` || path === `hooks/${token}.mjs`;
+  const dir = token.replace(/\/+$/, '');
+  if (path === dir || path.endsWith(`/${dir}`)) return true;
+  return token.includes('/') && (path.startsWith(`${dir}/`) || path.includes(`/${dir}/`));
+}
+
+const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()).filter(isEnforcerToken);
+
+export function skillsFor(f, knowledge, paths = [f.path, f.oldPath].filter(Boolean), enforcers = enforcersOf(knowledge)) {
+  const names = new Set(knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name));
+  const listing = knowledge.filter((s) => s.adrs.some((a) => paths.includes(a.file)));
+  for (const s of listing) names.add(s.name);
+  if (!listing.length && paths.some((p) => p.startsWith('adr/'))) {
+    const area = f.patch.match(/^[+ ]- \*\*Area:\*\* (\S+)\s*$/m)?.[1];
+    if (area && knowledge.some((s) => s.name === area)) names.add(area);
+  }
+  for (const { skill, tokens } of enforcers) if (tokens.some((t) => paths.some((p) => namesPath(t, p)))) names.add(skill);
+  return [...names].sort();
+}
+
+export const enforcersOf = (knowledge) =>
+  knowledge.map((s) => ({ skill: s.name, tokens: [...new Set(s.adrs.flatMap((a) => enforcerTokens(a.enforcedBy)))] }));
+
 export function planReview({ diff, knowledge, config, deviations = '', round = 'full' }) {
   const all = parseDiff(diff);
   const skipped = all.filter((f) => SKIPPED.some((r) => r.test(f.path))).map((f) => f.path);
+  const enforcers = enforcersOf(knowledge);
   const files = all.filter((f) => !skipped.includes(f.path)).map((f) => {
     const paths = [f.path, f.oldPath].filter(Boolean);
     return {
       ...f,
-      skills: knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name),
+      skills: skillsFor(f, knowledge, paths, enforcers),
       uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')) || changesScriptsPackage(f),
       security: paths.some((p) => matchesAny(p, config.security, 'i')),
     };
