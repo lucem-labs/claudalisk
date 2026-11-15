@@ -7,18 +7,19 @@ import { parseArgs } from 'node:util'
 import { buildFixture } from './fixture.mjs'
 import { cloneFixture, readFixture } from './fixture-repo.mjs'
 import { git } from './lib.mjs'
+import { loadPack, preparePackFixture } from './pack.mjs'
 import { copyDependencies } from './runner.mjs'
 import { accepted, installHidden, loadTask, parseTaskList, runChecks } from './tasks.mjs'
 
-export async function checkTask(id, fixture, { log = console.log, keep = false } = {}) {
-  const task = loadTask(id)
+export async function checkTask(id, fixture, { log = console.log, keep = false, tasksFolder } = {}) {
+  const task = loadTask(id, tasksFolder)
   const problems = []
   for (const variant of ['untouched', 'reference']) {
     const base = mkdtempSync(join(tmpdir(), `claudalisk-bench-${id}-${variant}-`))
     const copy = join(base, 'app')
     try {
       await cloneFixture(copy, { fixture })
-      copyDependencies(fixture.path, copy)
+      copyDependencies(fixture.path, copy, fixture.dependencies)
       if (variant === 'reference') {
         const patch = join(task.folder, 'reference', 'solution.patch')
         if (!existsSync(patch)) throw new Error(`${patch} is missing`)
@@ -41,11 +42,15 @@ export async function checkTask(id, fixture, { log = console.log, keep = false }
 }
 
 export async function main(argv) {
-  const { values } = parseArgs({ args: argv, options: { tasks: { type: 'string' }, build: { type: 'string' }, keep: { type: 'boolean', default: false } } })
+  const { values } = parseArgs({ args: argv, options: { tasks: { type: 'string' }, build: { type: 'string' }, pack: { type: 'string' }, keep: { type: 'boolean', default: false } } })
+  if (values.pack && values.build) throw new Error('--build is for the built-in fixture; a pack prepares its own')
+  const pack = values.pack ? loadPack(values.pack) : null
   if (values.build) await buildFixture(values.build)
-  const fixture = readFixture()
+  const tasksFolder = pack?.tasksFolder
+  const ids = parseTaskList(values.tasks, tasksFolder)
+  const fixture = pack ? await preparePackFixture(pack, { log: console.log }) : readFixture()
   const problems = []
-  for (const id of parseTaskList(values.tasks)) problems.push(...(await checkTask(id, fixture, { keep: values.keep })))
+  for (const id of ids) problems.push(...(await checkTask(id, fixture, { keep: values.keep, tasksFolder })))
   if (problems.length) throw new Error(problems.join('\n'))
   console.log('Every hidden test fails on the untouched fixture and passes on its reference solution.')
 }

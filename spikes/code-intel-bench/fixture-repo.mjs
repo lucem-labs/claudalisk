@@ -11,6 +11,7 @@ export async function cloneFixture(destination, { fixture = readFixture() } = {}
   await git(['clone', '--quiet', '--no-hardlinks', fixture.path, destination], tmpdir())
   const head = await git(['rev-parse', 'HEAD'], destination)
   if (head !== fixture.head) throw new Error(`The fixture at ${fixture.path} is at ${head}, not the pinned ${fixture.head}`)
+  if (fixture.isolate) await git(['remote', 'remove', 'origin'], destination)
   return destination
 }
 

@@ -92,6 +92,40 @@ The plugin's hooks run in every session, as they must. Reading them against a he
 - `guardrail` and `ci-poll-guard` ask or deny on pushes, merges, polling CI, container commands against uat and similar. A task needs none of them, and `-p` has nobody to answer an `ask`. The prompts forbid pushing and waiting for CI, so no task should hit them.
 - `session-start` and the app's own `AGENTS.md` tell the agent to verify through CI with `scripts/verify.mjs`. There is no remote in a benchmark copy, so the prompt preamble says to verify locally. That limitation is recorded here; a task whose agent insists on CI shows up as a failed or expensive run, which is the measurement.
 
+## Private task packs
+
+A task pack runs the same benchmark on an app and tasks that live outside this repository, in the owner's private repository. Nothing about a pack is committed here. A pack is a folder with a `pack.json`, a tasks folder in the same layout as `tasks/` (a `task.json`, `hidden/` and `reference/solution.patch` per task, and an optional `preamble.md`) and a results folder.
+
+```json
+{
+  "id": "private-a",
+  "fixture": {
+    "repository": "https://github.com/owner/app.git",
+    "commit": "<40-hex sha>",
+    "prepare": [{ "cwd": "frontend", "command": ["npm", "ci"] }],
+    "dependencies": ["frontend/node_modules"]
+  },
+  "tasks": "tasks",
+  "results": "results"
+}
+```
+
+- `id` matches `^[a-z0-9][a-z0-9-]*$`. `repository` is a URL or a path; a relative path resolves against the pack folder. `commit` is a full sha. `tasks` and `results` resolve against the pack folder.
+- `prepare` is optional. Each step runs once, in its `cwd` inside the prepared clone.
+- `dependencies` is optional. These folders are copied from the prepared clone into each run's copy, because they are not in git.
+
+Commands:
+
+```
+node spikes/code-intel-bench/check-tasks.mjs --pack <path> [--tasks P1,P2] [--keep]
+node spikes/code-intel-bench/bench.mjs run --arm baseline --pack <path> --runs 3 [--model <id>] [--dry-run]
+node spikes/code-intel-bench/bench.mjs report --arm baseline --pack <path> [--model <id>]
+```
+
+The prepared clone lives in the temp folder as `claudalisk-bench-pack-<id>-<first 12 of the commit>`. It is reused while it is at the pinned commit and its marker (written inside `.git` after `prepare` succeeded) exists; otherwise it is cloned and prepared again. Each run works in a fresh clone of it, checked to be at the pinned commit, with the remote removed. `--dry-run` prepares nothing: it prints the pack id, the task ids, the worst-case spend and the ledger.
+
+Records go to `<results>/<arm>/<model>/` in the pack, per model exactly like the built-in ones, and `--model` works with `--pack` on `run`, `report` and `--dry-run`, and `plan` and `report` read only that folder, so a built-in `T1` and a pack's `P1` never collide. The ledger stays `results/ledger.json` here and is the one budget for every run. A pack run adds exactly `{ arm, model, pack, task, repeat, costUsd, at }`: no file name, no path and no title from the pack.
+
 ## Limits
 
 - Three repeats is what $150 buys; the rule's 5% false-positive rate holds, but it detects only large differences.

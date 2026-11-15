@@ -79,11 +79,11 @@ export function addRun(ledger, { arm, model, task, repeat, file, costUsd, at, ..
   }
 }
 
-export function reserveRun(file, { arm, model, task, repeat, at }, runCap = RUN_CAP_USD) {
-  const id = `${arm}/${model}/${task}-${repeat}/${at}/${process.pid}`
+export function reserveRun(file, { arm, model, pack, task, repeat, at }, runCap = RUN_CAP_USD) {
+  const id = `${pack ? `${pack}/` : ''}${arm}/${model}/${task}-${repeat}/${at}/${process.pid}`
   withLock(file, (ledger) => {
     assertRoom(ledger, runCap)
-    return addRun(ledger, { arm, model, task, repeat, file: null, costUsd: runCap, at, reserved: id })
+    return addRun(ledger, { arm, model, ...(pack ? { pack } : {}), task, repeat, ...(pack ? {} : { file: null }), costUsd: runCap, at, reserved: id })
   })
   return id
 }
@@ -94,12 +94,12 @@ export function settleRun(file, id, { file: recordFile, costUsd, at }) {
     if (index < 0) throw new Error(`The ledger ${file} has no reservation ${id}.`)
     const { reserved, ...entry } = ledger.runs[index]
     const runs = [...ledger.runs]
-    runs[index] = { ...entry, file: recordFile, costUsd: round(costUsd), at }
+    runs[index] = { ...entry, ...(entry.pack ? {} : { file: recordFile }), costUsd: round(costUsd), at }
     return { ...ledger, spentUsd: round(ledger.spentUsd - entry.costUsd + costUsd), runs }
   })
 }
 
-const entryKey = (entry) => entry.reserved ?? (entry.file ? `file:${entry.file}` : `${entry.arm}/${entry.model}/${entry.task}-${entry.repeat}/${entry.at}`)
+const entryKey = (entry) => entry.reserved ?? (entry.file ? `file:${entry.file}` : `${entry.pack ? `${entry.pack}/` : ''}${entry.arm}/${entry.model}/${entry.task}-${entry.repeat}/${entry.at}`)
 
 export function mergeLedgers(target, sources) {
   const seen = new Set(target.runs.map(entryKey))

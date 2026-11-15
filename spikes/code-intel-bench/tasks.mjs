@@ -6,11 +6,23 @@ export const tasksRoot = join(benchRoot, 'tasks')
 const CHECK_TIMEOUT_MS = 20 * 60 * 1000
 const TAIL = 1500
 
+const idNumber = (id) => {
+  const number = Number.parseInt(id.slice(1), 10)
+  return Number.isNaN(number) ? Infinity : number
+}
+
+const compareIds = (left, right) => {
+  const a = idNumber(left)
+  const b = idNumber(right)
+  if (a !== b) return a < b ? -1 : 1
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
 export function taskIds(root = tasksRoot) {
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && existsSync(join(root, entry.name, 'task.json')))
     .map((entry) => entry.name)
-    .sort((left, right) => Number(left.slice(1)) - Number(right.slice(1)))
+    .sort(compareIds)
 }
 
 export function loadTask(id, root = tasksRoot) {
