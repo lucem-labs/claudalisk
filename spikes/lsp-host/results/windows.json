@@ -9,7 +9,7 @@
     "dotnet": "10.0.404",
     "node": "v24.22.2"
   },
-  "date": "2026-11-15T17:51:50.079Z",
+  "date": "2026-11-15T19:31:17.802Z",
   "servers": {
     "csharp-ls": {
       "cases": [
@@ -31,9 +31,29 @@
             "applied": 2,
             "otherOverloads": "renamed too"
           },
-          "coldStartMs": 15654,
-          "memoryMb": 391,
-          "ms": 25898
+          "coldStartMs": 10383,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1021,
+              "durationMs": 9362
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6836,
+            "testMs": 506,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 434,
+          "ms": 20812
         },
         {
           "id": "rename.interface-method",
@@ -52,9 +72,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 14308,
-          "memoryMb": 388,
-          "ms": 22710
+          "coldStartMs": 10541,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1004,
+              "durationMs": 9537
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6632,
+            "testMs": 495,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 437,
+          "ms": 20705
         },
         {
           "id": "rename.partial-class",
@@ -74,9 +114,29 @@
             "prepare": "range",
             "applied": 3
           },
-          "coldStartMs": 13181,
-          "memoryMb": 390,
-          "ms": 20834
+          "coldStartMs": 10273,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1010,
+              "durationMs": 9263
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6534,
+            "testMs": 560,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 433,
+          "ms": 20290
         },
         {
           "id": "rename.record-property",
@@ -95,9 +155,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 13451,
-          "memoryMb": 394,
-          "ms": 21264
+          "coldStartMs": 11341,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1014,
+              "durationMs": 10327
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6246,
+            "testMs": 530,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 440,
+          "ms": 21462
         },
         {
           "id": "rename.generated-regex",
@@ -118,9 +198,29 @@
             "prepare": "range",
             "applied": 1
           },
-          "coldStartMs": 13322,
-          "memoryMb": 391,
-          "ms": 20430
+          "coldStartMs": 10524,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1031,
+              "durationMs": 9493
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6528,
+            "testMs": 528,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 432,
+          "ms": 20493
         },
         {
           "id": "rename.generated-json-context",
@@ -139,9 +239,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 13182,
-          "memoryMb": 417,
-          "ms": 20971
+          "coldStartMs": 10465,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1020,
+              "durationMs": 9445
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6225,
+            "testMs": 488,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 433,
+          "ms": 20244
         },
         {
           "id": "references.into-generated-file",
@@ -156,12 +276,26 @@
             "count": 2,
             "generatedLocations": [],
             "definition": [
-              "file:///C:/Users/runneradmin/AppData/Local/Temp/lsp-host-work/cases/csharp-ls-7/backend/Proof.LspCases/Patterns.cs"
+              "file:///D:/a/_temp/lsp-host-work/cases/csharp-ls-7-9wTymj/backend/Proof.LspCases/Patterns.cs"
             ]
           },
-          "coldStartMs": 13202,
-          "memoryMb": 373,
-          "ms": 16392
+          "coldStartMs": 10577,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1013,
+              "durationMs": 9564
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 416,
+          "ms": 13109
         },
         {
           "id": "rename.file",
@@ -184,6 +318,7 @@
             ],
             "action": "Rename file to Receipt.cs",
             "via": "edit",
+            "effective": false,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Misnamed.cs"
@@ -191,9 +326,23 @@
             "editCount": 0,
             "resourceOperations": []
           },
-          "coldStartMs": 13038,
-          "memoryMb": 381,
-          "ms": 17050
+          "coldStartMs": 10543,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1274,
+              "durationMs": 9269
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 418,
+          "ms": 13811
         },
         {
           "id": "edit.body-replace",
@@ -207,9 +356,29 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 13052,
-          "memoryMb": 384,
-          "ms": 19245
+          "coldStartMs": 10039,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1007,
+              "durationMs": 9032
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6223,
+            "testMs": 481,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 413,
+          "ms": 18982
         },
         {
           "id": "edit.insert-before-after",
@@ -227,9 +396,29 @@
               "Tripled(int value)"
             ]
           },
-          "coldStartMs": 13037,
-          "memoryMb": 381,
-          "ms": 19549
+          "coldStartMs": 10482,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1017,
+              "durationMs": 9465
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6312,
+            "testMs": 529,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 424,
+          "ms": 19648
         },
         {
           "id": "diagnostics",
@@ -238,6 +427,7 @@
           "reason": "",
           "phase": "case",
           "details": {
+            "clientAdvertisesPull": true,
             "buildBroke": "build",
             "pushed": {
               "supported": false
@@ -249,9 +439,60 @@
               "first": "'Pricing' does not contain a definition for 'Totl'"
             }
           },
-          "coldStartMs": 13040,
-          "memoryMb": 376,
-          "ms": 38686
+          "coldStartMs": 10272,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1018,
+              "durationMs": 9254
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 417,
+          "ms": 38275
+        },
+        {
+          "id": "diagnostics.push-only",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "clientAdvertisesPull": false,
+            "buildBroke": "build",
+            "pushed": {
+              "supported": true,
+              "count": 2,
+              "first": "'Pricing' does not contain a definition for 'Totl'"
+            },
+            "pullAdvertised": true,
+            "pulled": {
+              "supported": false
+            }
+          },
+          "coldStartMs": 10123,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1013,
+              "durationMs": 9110
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 421,
+          "ms": 18049
         },
         {
           "id": "hierarchy.type",
@@ -269,9 +510,23 @@
               "IShape"
             ]
           },
-          "coldStartMs": 13253,
-          "memoryMb": 374,
-          "ms": 16371
+          "coldStartMs": 10503,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1082,
+              "durationMs": 9421
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 412,
+          "ms": 12902
         },
         {
           "id": "codeactions.survey",
@@ -651,9 +906,23 @@
             },
             "advertisedKinds": null
           },
-          "coldStartMs": 14328,
-          "memoryMb": 412,
-          "ms": 21442
+          "coldStartMs": 10701,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1015,
+              "durationMs": 9686
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 461,
+          "ms": 16114
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -665,6 +934,7 @@
             "action": "Remove unnecessary usings",
             "kind": "",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -672,9 +942,29 @@
             "editCount": 1,
             "resourceOperations": []
           },
-          "coldStartMs": 13179,
-          "memoryMb": 396,
-          "ms": 20916
+          "coldStartMs": 10434,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1031,
+              "durationMs": 9403
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5788,
+            "testMs": 516,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 439,
+          "ms": 19908
         },
         {
           "id": "codeactions.apply.extract",
@@ -686,6 +976,7 @@
             "action": "Extract method",
             "kind": "",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -693,9 +984,29 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 13134,
-          "memoryMb": 400,
-          "ms": 21433
+          "coldStartMs": 10320,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1012,
+              "durationMs": 9308
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5731,
+            "testMs": 524,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 441,
+          "ms": 20470
         },
         {
           "id": "codeactions.apply.inline",
@@ -707,6 +1018,7 @@
             "action": "Inline temporary variable",
             "kind": "",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -714,31 +1026,79 @@
             "editCount": 3,
             "resourceOperations": []
           },
-          "coldStartMs": 13934,
-          "memoryMb": 396,
-          "ms": 21822
+          "coldStartMs": 10504,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1021,
+              "durationMs": 9483
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6262,
+            "testMs": 520,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 440,
+          "ms": 20670
         },
         {
           "id": "codeactions.apply.move",
           "server": "csharp-ls",
           "status": "fail",
-          "reason": "the applier refused the edit of \"Move type to CasesJsonContext.cs\": file:///C:/Users/runneradmin/AppData/Local/Temp/lsp-host-work/cases/csharp-ls-17/backend/Proof.LspCases/CasesJsonContext.cs does not exist",
+          "reason": "the applier refused the edit of \"Move type to CasesJsonContext.cs\": file:///D:/a/_temp/lsp-host-work/cases/csharp-ls-18-icYBEN/backend/Proof.LspCases/CasesJsonContext.cs does not exist",
           "phase": "case",
           "details": {},
-          "coldStartMs": 13192,
-          "memoryMb": 386,
-          "ms": 17553
+          "coldStartMs": 10337,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1033,
+              "durationMs": 9304
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 427,
+          "ms": 13706
         },
         {
           "id": "codeactions.apply.change-signature",
           "server": "csharp-ls",
           "status": "fail",
-          "reason": "build failed after the edit: f.LspCases\\Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [C:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\csharp-ls-18\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\nC:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\csharp-ls-18\\backend\\Proof.LspCases\\Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [C:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\csharp-ls-18\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\n    0 Warning(s)\r\n    2 Error(s)\r\n\r\nTime Elapsed 00:00:01.52",
+          "reason": "build failed after the edit: D:\\a\\_temp\\lsp-host-work\\cases\\csharp-ls-19-rbvdUb\\backend\\Proof.LspCases\\Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [D:\\a\\_temp\\lsp-host-work\\cases\\csharp-ls-19-rbvdUb\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\nD:\\a\\_temp\\lsp-host-work\\cases\\csharp-ls-19-rbvdUb\\backend\\Proof.LspCases\\Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [D:\\a\\_temp\\lsp-host-work\\cases\\csharp-ls-19-rbvdUb\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\n    0 Warning(s)\r\n    2 Error(s)\r\n\r\nTime Elapsed 00:00:05.31",
           "phase": "case",
           "details": {},
-          "coldStartMs": 13149,
-          "memoryMb": 438,
-          "ms": 20980
+          "coldStartMs": 10418,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 1022,
+              "durationMs": 9396
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5904,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 458,
+          "ms": 20481
         }
       ],
       "warm": {
@@ -817,28 +1177,71 @@
           },
           "semanticTokensProvider": true
         },
-        "coldStartMs": 13106,
+        "coldStartMs": 10490,
         "coldStartAttempts": 2,
         "references": {
           "runs": 25,
-          "medianMs": 3.3,
-          "p95Ms": 5.3
+          "medianMs": 3,
+          "p95Ms": 4.2
         },
         "prepareRename": {
           "runs": 25,
           "medianMs": 1,
-          "p95Ms": 3.7
+          "p95Ms": 1.2
         },
-        "memoryAfterLoadMb": 370,
-        "memoryAfterWorkloadMb": 370
+        "memoryAfterLoadMb": 416,
+        "memoryAfterWorkloadMb": 418,
+        "referenceShapes": {
+          "plain": {
+            "runs": 25,
+            "medianMs": 2.6,
+            "p95Ms": 3.1,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          },
+          "partialResultToken": {
+            "runs": 25,
+            "medianMs": 2.6,
+            "p95Ms": 2.9,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          },
+          "workDoneToken": {
+            "runs": 25,
+            "medianMs": 2.7,
+            "p95Ms": 2.8,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          },
+          "both": {
+            "runs": 25,
+            "medianMs": 2.6,
+            "p95Ms": 2.8,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          }
+        },
+        "workDoneCreates": 1,
+        "serverRequests": [
+          "workspace/configuration",
+          "window/workDoneProgress/create"
+        ]
       },
       "coldStart": {
-        "samples": 18,
-        "medianMs": 13182,
-        "minMs": 13037,
-        "maxMs": 15654
+        "samples": 19,
+        "medianMs": 10465,
+        "minMs": 10039,
+        "maxMs": 11341
       },
-      "memoryAfterCasesMb": 438
+      "memoryAfterCasesMb": 461
     },
     "roslyn": {
       "cases": [
@@ -860,9 +1263,29 @@
             "applied": 2,
             "otherOverloads": "left alone"
           },
-          "coldStartMs": 11249,
-          "memoryMb": 447,
-          "ms": 18873
+          "coldStartMs": 8321,
+          "coldStart": {
+            "attempts": 7,
+            "firstCorrectRequest": {
+              "startMs": 6547,
+              "durationMs": 1774
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6199,
+            "testMs": 536,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 494,
+          "ms": 18367
         },
         {
           "id": "rename.interface-method",
@@ -881,9 +1304,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 9653,
-          "memoryMb": 416,
-          "ms": 16923
+          "coldStartMs": 9116,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7514,
+              "durationMs": 1602
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6539,
+            "testMs": 565,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 456,
+          "ms": 19436
         },
         {
           "id": "rename.partial-class",
@@ -903,9 +1346,29 @@
             "prepare": "range",
             "applied": 3
           },
-          "coldStartMs": 10069,
-          "memoryMb": 416,
-          "ms": 17317
+          "coldStartMs": 8414,
+          "coldStart": {
+            "attempts": 4,
+            "firstCorrectRequest": {
+              "startMs": 5266,
+              "durationMs": 3148
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6213,
+            "testMs": 541,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 442,
+          "ms": 18514
         },
         {
           "id": "rename.record-property",
@@ -924,9 +1387,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 9799,
-          "memoryMb": 421,
-          "ms": 17210
+          "coldStartMs": 8820,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7108,
+              "durationMs": 1712
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6314,
+            "testMs": 567,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 460,
+          "ms": 19321
         },
         {
           "id": "rename.generated-regex",
@@ -936,7 +1419,7 @@
           "phase": "case",
           "details": {
             "referenceUris": [
-              "roslyn-source-generated://76adef7c-a7bd-400f-a825-af3b34de4379/RegexGenerator.g.cs?documentId=2d2089ce-e3c0-0799-cb10-34ed4105c56d&hintName=RegexGenerator.g.cs&assemblyName=System.Text.RegularExpressions.Generator&assemblyVersion=10.0.15.3008&typeName=System.Text.RegularExpressions.Generator.RegexGenerator&assemblyPath=C%3A%5CProgram%20Files%5Cdotnet%5Cpacks%5CMicrosoft.NETCore.App.Ref%5C10.0.15%5Canalyzers%5Cdotnet%5Ccs%5CSystem.Text.RegularExpressions.Generator.dll",
+              "roslyn-source-generated://f0951061-e9f7-4395-9716-04bb96997d5b/RegexGenerator.g.cs?documentId=76336c76-fe6f-bd00-707c-9a0fdaf7e8d6&hintName=RegexGenerator.g.cs&assemblyName=System.Text.RegularExpressions.Generator&assemblyVersion=10.0.15.3008&typeName=System.Text.RegularExpressions.Generator.RegexGenerator&assemblyPath=C%3A%5CProgram%20Files%5Cdotnet%5Cpacks%5CMicrosoft.NETCore.App.Ref%5C10.0.15%5Canalyzers%5Cdotnet%5Ccs%5CSystem.Text.RegularExpressions.Generator.dll",
               "backend/Proof.LspCases/Patterns.cs"
             ],
             "shape": "documentChanges",
@@ -948,9 +1431,29 @@
             "prepare": "range",
             "applied": 1
           },
-          "coldStartMs": 9010,
-          "memoryMb": 413,
-          "ms": 16766
+          "coldStartMs": 8615,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 5722,
+              "durationMs": 2893
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6528,
+            "testMs": 593,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 450,
+          "ms": 19541
         },
         {
           "id": "rename.generated-json-context",
@@ -969,9 +1472,29 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 9643,
-          "memoryMb": 421,
-          "ms": 17131
+          "coldStartMs": 9074,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7479,
+              "durationMs": 1595
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6272,
+            "testMs": 558,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 459,
+          "ms": 19205
         },
         {
           "id": "references.into-generated-file",
@@ -986,15 +1509,29 @@
             ],
             "count": 3,
             "generatedLocations": [
-              "roslyn-source-generated://9b8ae2c2-8412-4b44-8f14-0ace3b906a13/CasesJsonContext.CustomerInfo.g.cs?documentId=47da41e2-c1"
+              "roslyn-source-generated://9eafaa11-2e57-4257-9e5c-28fd713cba9f/CasesJsonContext.CustomerInfo.g.cs?documentId=af900f95-14"
             ],
             "definition": [
-              "file:///c%3A/Users/runneradmin/AppData/Local/Temp/lsp-host-work/cases/roslyn-7/backend/Proof.LspCases/Patterns.cs"
+              "file:///d%3A/a/_temp/lsp-host-work/cases/roslyn-7-eXwPcb/backend/Proof.LspCases/Patterns.cs"
             ]
           },
-          "coldStartMs": 9240,
-          "memoryMb": 399,
-          "ms": 13622
+          "coldStartMs": 9127,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7552,
+              "durationMs": 1575
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 420,
+          "ms": 12659
         },
         {
           "id": "rename.file",
@@ -1022,6 +1559,7 @@
             ],
             "action": "Rename file to Receipt.cs",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [],
             "editCount": 0,
@@ -1030,9 +1568,29 @@
             ],
             "renameTypeOffered": true
           },
-          "coldStartMs": 8999,
-          "memoryMb": 447,
-          "ms": 18166
+          "coldStartMs": 9080,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7535,
+              "durationMs": 1545
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5857,
+            "testMs": 567,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 488,
+          "ms": 19804
         },
         {
           "id": "edit.body-replace",
@@ -1046,9 +1604,29 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 9896,
-          "memoryMb": 405,
-          "ms": 16729
+          "coldStartMs": 9236,
+          "coldStart": {
+            "attempts": 6,
+            "firstCorrectRequest": {
+              "startMs": 7679,
+              "durationMs": 1557
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6155,
+            "testMs": 577,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 445,
+          "ms": 18881
         },
         {
           "id": "edit.insert-before-after",
@@ -1065,9 +1643,29 @@
               "Tripled(int) : int"
             ]
           },
-          "coldStartMs": 9912,
-          "memoryMb": 405,
-          "ms": 16753
+          "coldStartMs": 9193,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7590,
+              "durationMs": 1603
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6503,
+            "testMs": 513,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 442,
+          "ms": 19110
         },
         {
           "id": "diagnostics",
@@ -1076,6 +1674,7 @@
           "reason": "",
           "phase": "case",
           "details": {
+            "clientAdvertisesPull": true,
             "buildBroke": "build",
             "pushed": {
               "supported": false
@@ -1087,9 +1686,58 @@
               "first": "'Pricing' does not contain a definition for 'Totl'"
             }
           },
-          "coldStartMs": 9930,
-          "memoryMb": 442,
-          "ms": 37072
+          "coldStartMs": 9153,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7515,
+              "durationMs": 1638
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 477,
+          "ms": 38573
+        },
+        {
+          "id": "diagnostics.push-only",
+          "server": "roslyn",
+          "status": "fail",
+          "reason": "no pushed diagnostics reported the error when the client does not advertise textDocument.diagnostic",
+          "phase": "case",
+          "details": {
+            "clientAdvertisesPull": false,
+            "buildBroke": "build",
+            "pushed": {
+              "supported": false
+            },
+            "pullAdvertised": false,
+            "pulled": {
+              "supported": false
+            }
+          },
+          "coldStartMs": 9486,
+          "coldStart": {
+            "attempts": 6,
+            "firstCorrectRequest": {
+              "startMs": 7947,
+              "durationMs": 1539
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 439,
+          "ms": 37927
         },
         {
           "id": "hierarchy.type",
@@ -1107,9 +1755,23 @@
               "IShape"
             ]
           },
-          "coldStartMs": 9225,
-          "memoryMb": 393,
-          "ms": 12683
+          "coldStartMs": 8299,
+          "coldStart": {
+            "attempts": 7,
+            "firstCorrectRequest": {
+              "startMs": 6543,
+              "durationMs": 1756
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 420,
+          "ms": 11258
         },
         {
           "id": "codeactions.survey",
@@ -1437,9 +2099,23 @@
               "refactor"
             ]
           },
-          "coldStartMs": 8898,
-          "memoryMb": 491,
-          "ms": 18322
+          "coldStartMs": 8182,
+          "coldStart": {
+            "attempts": 4,
+            "firstCorrectRequest": {
+              "startMs": 6328,
+              "durationMs": 1854
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 506,
+          "ms": 16132
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -1451,6 +2127,7 @@
             "action": "Remove unnecessary usings",
             "kind": "quickfix",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -1458,9 +2135,29 @@
             "editCount": 1,
             "resourceOperations": []
           },
-          "coldStartMs": 9757,
-          "memoryMb": 452,
-          "ms": 18164
+          "coldStartMs": 9049,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7462,
+              "durationMs": 1587
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5652,
+            "testMs": 598,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 490,
+          "ms": 19561
         },
         {
           "id": "codeactions.apply.extract",
@@ -1472,6 +2169,7 @@
             "action": "Extract method",
             "kind": "refactor.extract",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -1479,9 +2177,29 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 9960,
-          "memoryMb": 471,
-          "ms": 18725
+          "coldStartMs": 8996,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7446,
+              "durationMs": 1550
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6671,
+            "testMs": 558,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 517,
+          "ms": 21102
         },
         {
           "id": "codeactions.apply.inline",
@@ -1493,6 +2211,7 @@
             "action": "Inline temporary variable",
             "kind": "refactor.inline",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/Sample.cs"
@@ -1500,9 +2219,29 @@
             "editCount": 3,
             "resourceOperations": []
           },
-          "coldStartMs": 8928,
-          "memoryMb": 456,
-          "ms": 17439
+          "coldStartMs": 8479,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 5786,
+              "durationMs": 2693
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6465,
+            "testMs": 544,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 487,
+          "ms": 20204
         },
         {
           "id": "codeactions.apply.move",
@@ -1514,6 +2253,7 @@
             "action": "Move type to CasesJsonContext.cs",
             "kind": "refactor",
             "via": "edit",
+            "effective": true,
             "shape": "documentChanges",
             "files": [
               "backend/Proof.LspCases/CasesJsonContext.cs",
@@ -1524,20 +2264,54 @@
               "create"
             ]
           },
-          "coldStartMs": 9256,
-          "memoryMb": 469,
-          "ms": 18100
+          "coldStartMs": 9114,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7430,
+              "durationMs": 1684
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 6444,
+            "testMs": 574,
+            "skipped": [
+              "Proof.Api.Tests",
+              "Proof.ArchitectureTests",
+              "Proof.Modules.Ordering.Tests"
+            ],
+            "ran": [
+              "Proof.LspCases.Tests"
+            ]
+          },
+          "memoryMb": 497,
+          "ms": 21085
         },
         {
           "id": "codeactions.apply.change-signature",
           "server": "roslyn",
           "status": "fail",
-          "reason": "build failed after the edit: kend\\Proof.LspCases\\Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [C:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\roslyn-18\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\nC:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\roslyn-18\\backend\\Proof.LspCases\\Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [C:\\Users\\runneradmin\\AppData\\Local\\Temp\\lsp-host-work\\cases\\roslyn-18\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\n    0 Warning(s)\r\n    2 Error(s)\r\n\r\nTime Elapsed 00:00:01.45",
+          "reason": "build failed after the edit: ild FAILED.\r\n\r\nD:\\a\\_temp\\lsp-host-work\\cases\\roslyn-19-acdQ4L\\backend\\Proof.LspCases\\Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [D:\\a\\_temp\\lsp-host-work\\cases\\roslyn-19-acdQ4L\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\nD:\\a\\_temp\\lsp-host-work\\cases\\roslyn-19-acdQ4L\\backend\\Proof.LspCases\\Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [D:\\a\\_temp\\lsp-host-work\\cases\\roslyn-19-acdQ4L\\backend\\Proof.LspCases\\Proof.LspCases.csproj]\r\n    0 Warning(s)\r\n    2 Error(s)\r\n\r\nTime Elapsed 00:00:04.83",
           "phase": "case",
           "details": {},
-          "coldStartMs": 9755,
-          "memoryMb": 478,
-          "ms": 17877
+          "coldStartMs": 8855,
+          "coldStart": {
+            "attempts": 5,
+            "firstCorrectRequest": {
+              "startMs": 7109,
+              "durationMs": 1746
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 5466,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 540,
+          "ms": 19518
         }
       ],
       "warm": {
@@ -1680,28 +2454,72 @@
           },
           "semanticTokensProvider": true
         },
-        "coldStartMs": 9740,
-        "coldStartAttempts": 4,
+        "coldStartMs": 8804,
+        "coldStartAttempts": 5,
         "references": {
           "runs": 25,
-          "medianMs": 505.6,
-          "p95Ms": 509.5
+          "medianMs": 505.4,
+          "p95Ms": 510.1
         },
         "prepareRename": {
           "runs": 25,
-          "medianMs": 1.7,
-          "p95Ms": 2.1
+          "medianMs": 1.8,
+          "p95Ms": 2.6
         },
-        "memoryAfterLoadMb": 390,
-        "memoryAfterWorkloadMb": 417
+        "memoryAfterLoadMb": 416,
+        "memoryAfterWorkloadMb": 447,
+        "referenceShapes": {
+          "plain": {
+            "runs": 25,
+            "medianMs": 503.9,
+            "p95Ms": 510.6,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          },
+          "partialResultToken": {
+            "runs": 25,
+            "medianMs": 505.6,
+            "p95Ms": 512.8,
+            "items": {
+              "returned": 0,
+              "streamed": 4
+            }
+          },
+          "workDoneToken": {
+            "runs": 25,
+            "medianMs": 503.5,
+            "p95Ms": 510.1,
+            "items": {
+              "returned": 4,
+              "streamed": 0
+            }
+          },
+          "both": {
+            "runs": 25,
+            "medianMs": 503.5,
+            "p95Ms": 514.1,
+            "items": {
+              "returned": 0,
+              "streamed": 4
+            }
+          }
+        },
+        "workDoneCreates": 2,
+        "serverRequests": [
+          "workspace/configuration",
+          "window/workDoneProgress/create",
+          "client/registerCapability"
+        ]
       },
       "coldStart": {
-        "samples": 18,
-        "medianMs": 9653,
-        "minMs": 8898,
-        "maxMs": 11249
+        "samples": 19,
+        "medianMs": 9049,
+        "minMs": 8182,
+        "maxMs": 9486
       },
-      "memoryAfterCasesMb": 491
+      "memoryAfterCasesMb": 540
     },
     "typescript": {
       "cases": [
@@ -1725,9 +2543,23 @@
             "importersUpdated": false,
             "barrelAfter": "export { renderPrice as formatPrice, totalPrice }"
           },
-          "coldStartMs": 479,
-          "memoryMb": 353,
-          "ms": 7058
+          "coldStartMs": 383,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 85,
+              "durationMs": 298
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4174,
+            "testMs": 1125,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 311,
+          "ms": 6066
         },
         {
           "id": "rename.barrel-all-sites",
@@ -1748,9 +2580,23 @@
             "prepare": "range",
             "applied": 4
           },
-          "coldStartMs": 465,
-          "memoryMb": 345,
-          "ms": 6773
+          "coldStartMs": 402,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 85,
+              "durationMs": 317
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4078,
+            "testMs": 1086,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 324,
+          "ms": 5933
         },
         {
           "id": "rename.file",
@@ -1767,9 +2613,23 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 442,
-          "memoryMb": 373,
-          "ms": 6864
+          "coldStartMs": 392,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 85,
+              "durationMs": 307
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4098,
+            "testMs": 1102,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 328,
+          "ms": 5998
         },
         {
           "id": "edit.body-replace",
@@ -1783,9 +2643,23 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 479,
-          "memoryMb": 357,
-          "ms": 6768
+          "coldStartMs": 381,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 94,
+              "durationMs": 287
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4071,
+            "testMs": 1087,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 329,
+          "ms": 5889
         },
         {
           "id": "edit.insert-before-after",
@@ -1809,9 +2683,23 @@
               "currency"
             ]
           },
-          "coldStartMs": 477,
-          "memoryMb": 354,
-          "ms": 6907
+          "coldStartMs": 380,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 88,
+              "durationMs": 292
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4068,
+            "testMs": 1091,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 321,
+          "ms": 5892
         },
         {
           "id": "diagnostics",
@@ -1820,6 +2708,7 @@
           "reason": "",
           "phase": "case",
           "details": {
+            "clientAdvertisesPull": true,
             "buildBroke": "build",
             "pushed": {
               "supported": false
@@ -1831,9 +2720,58 @@
               "first": "Expected 1 arguments, but got 2."
             }
           },
-          "coldStartMs": 462,
-          "memoryMb": 286,
-          "ms": 25888
+          "coldStartMs": 400,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 85,
+              "durationMs": 315
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 278,
+          "ms": 24853
+        },
+        {
+          "id": "diagnostics.push-only",
+          "server": "typescript",
+          "status": "fail",
+          "reason": "no pushed diagnostics reported the error when the client does not advertise textDocument.diagnostic",
+          "phase": "case",
+          "details": {
+            "clientAdvertisesPull": false,
+            "buildBroke": "build",
+            "pushed": {
+              "supported": false
+            },
+            "pullAdvertised": true,
+            "pulled": {
+              "supported": false
+            }
+          },
+          "coldStartMs": 421,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 91,
+              "durationMs": 330
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 276,
+          "ms": 24991
         },
         {
           "id": "hierarchy.type",
@@ -1844,9 +2782,23 @@
           "details": {
             "requestedAnyway": "error: textDocument/prepareTypeHierarchy: InvalidRequest (-32600)"
           },
-          "coldStartMs": 454,
-          "memoryMb": 257,
-          "ms": 1103
+          "coldStartMs": 408,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 87,
+              "durationMs": 321
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 259,
+          "ms": 775
         },
         {
           "id": "codeactions.survey",
@@ -2008,9 +2960,23 @@
               "source.fixAll"
             ]
           },
-          "coldStartMs": 466,
-          "memoryMb": 460,
-          "ms": 2032
+          "coldStartMs": 381,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 84,
+              "durationMs": 297
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 466,
+          "ms": 1556
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -2022,6 +2988,7 @@
             "action": "Organize Imports",
             "kind": "source.organizeImports",
             "via": "edit",
+            "effective": true,
             "shape": "changes",
             "files": [
               "frontend/src/pages/pricing/ui/unused.ts"
@@ -2029,9 +2996,23 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 443,
-          "memoryMb": 518,
-          "ms": 7274
+          "coldStartMs": 364,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 84,
+              "durationMs": 280
+            }
+          },
+          "verification": {
+            "runs": 1,
+            "buildMs": 4054,
+            "testMs": 1086,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 488,
+          "ms": 6663
         },
         {
           "id": "codeactions.apply.extract",
@@ -2040,9 +3021,23 @@
           "reason": "no code action matching /extract|introduce parameter/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 462,
-          "memoryMb": 410,
-          "ms": 1789
+          "coldStartMs": 413,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 89,
+              "durationMs": 324
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 409,
+          "ms": 1442
         },
         {
           "id": "codeactions.apply.inline",
@@ -2051,9 +3046,23 @@
           "reason": "no code action matching /inline/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 467,
-          "memoryMb": 411,
-          "ms": 1806
+          "coldStartMs": 381,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 95,
+              "durationMs": 286
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 416,
+          "ms": 1401
         },
         {
           "id": "codeactions.apply.move",
@@ -2062,9 +3071,23 @@
           "reason": "no code action matching /\\bmove\\b|rename (file|type)|sync (namespace|file)/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 439,
-          "memoryMb": 416,
-          "ms": 1810
+          "coldStartMs": 398,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 82,
+              "durationMs": 316
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 405,
+          "ms": 1441
         },
         {
           "id": "codeactions.apply.change-signature",
@@ -2073,9 +3096,23 @@
           "reason": "no code action matching /change signature|add parameter|remove parameter|reorder param/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 456,
-          "memoryMb": 430,
-          "ms": 1842
+          "coldStartMs": 380,
+          "coldStart": {
+            "attempts": 2,
+            "firstCorrectRequest": {
+              "startMs": 83,
+              "durationMs": 297
+            }
+          },
+          "verification": {
+            "runs": 0,
+            "buildMs": 0,
+            "testMs": 0,
+            "skipped": [],
+            "ran": []
+          },
+          "memoryMb": 465,
+          "ms": 1518
         }
       ],
       "warm": {
@@ -2183,28 +3220,72 @@
           "_vs_referencesProvider": true,
           "semanticTokensProvider": true
         },
-        "coldStartMs": 472,
+        "coldStartMs": 392,
         "coldStartAttempts": 2,
         "references": {
           "runs": 25,
           "medianMs": 1.7,
-          "p95Ms": 1.9
+          "p95Ms": 2.1
         },
         "prepareRename": {
           "runs": 25,
-          "medianMs": 0.4,
-          "p95Ms": 0.5
+          "medianMs": 0.5,
+          "p95Ms": 0.6
         },
-        "memoryAfterLoadMb": 260,
-        "memoryAfterWorkloadMb": 261
+        "memoryAfterLoadMb": 254,
+        "memoryAfterWorkloadMb": 259,
+        "referenceShapes": {
+          "plain": {
+            "runs": 25,
+            "medianMs": 1.7,
+            "p95Ms": 2.2,
+            "items": {
+              "returned": 6,
+              "streamed": 0
+            }
+          },
+          "partialResultToken": {
+            "runs": 25,
+            "medianMs": 1.7,
+            "p95Ms": 1.9,
+            "items": {
+              "returned": 6,
+              "streamed": 0
+            }
+          },
+          "workDoneToken": {
+            "runs": 25,
+            "medianMs": 1.7,
+            "p95Ms": 13,
+            "items": {
+              "returned": 6,
+              "streamed": 0
+            }
+          },
+          "both": {
+            "runs": 25,
+            "medianMs": 1.6,
+            "p95Ms": 1.8,
+            "items": {
+              "returned": 6,
+              "streamed": 0
+            }
+          }
+        },
+        "workDoneCreates": 1,
+        "serverRequests": [
+          "workspace/configuration",
+          "client/registerCapability",
+          "window/workDoneProgress/create"
+        ]
       },
       "coldStart": {
-        "samples": 13,
-        "medianMs": 462,
-        "minMs": 439,
-        "maxMs": 479
+        "samples": 14,
+        "medianMs": 383,
+        "minMs": 364,
+        "maxMs": 421
       },
-      "memoryAfterCasesMb": 518
+      "memoryAfterCasesMb": 488
     }
   }
 }

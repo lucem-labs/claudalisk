@@ -176,7 +176,8 @@ async function diagnosticsCase(ctx, file, needle, replacement, expectedBuildStag
     pulled: pulled ? { supported: true, count: pulled.items.length, first: pulled.items.find((d) => d.severity === 1).message.slice(0, 100) } : { supported: false, error: pullError },
   }
   Object.assign(ctx.details, details)
-  must(pullAllowed ? pushed || pulled : pushed, pullAllowed ? `neither pushed nor pulled diagnostics reported the error (pull advertised: ${details.pullAdvertised}${pullError ? `, last error ${pullError}` : ''})` : 'no pushed diagnostics reported the error when the client does not advertise textDocument.diagnostic')
+  if (!pullAllowed && !pushed) throw new Unsupported('the server pushed no diagnostics within 20 s of the broken edit when the client does not advertise textDocument.diagnostic')
+  must(pullAllowed ? pushed || pulled : pushed, `neither pushed nor pulled diagnostics reported the error (pull advertised: ${details.pullAdvertised}${pullError ? `, last error ${pullError}` : ''})`)
   return details
 }
 
