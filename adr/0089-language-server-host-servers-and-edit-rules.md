@@ -65,7 +65,7 @@ What the three OSes showed:
   - **E6, organize imports, fix all, quick fixes:** build the kinds each server returns. Applied and passing: TypeScript's `source.organizeImports` and `source.removeUnusedImports`, and "Remove unnecessary usings" on both C# servers. Roslyn also offers "Fix All" quick fixes, which the spike listed and did not apply. TypeScript advertises `source.fixAll` and returned none in the cases.
   - **E7, extract, inline, move:** build for C#. "Extract method" and "Inline temporary variable" were applied on both servers and passed. "Move type to file" passes on Roslyn only. TypeScript's server offers none.
   - **D1, diagnostics pushed after each edit, and D2, diagnostics on demand:** build both as one host feature over `textDocument/diagnostic`. D1 does not stay with the servers' own push, which only csharp-ls sends, and only to a client that does not advertise pull. Roslyn, the chosen C# server, and TypeScript push nothing in either mode, so the host pulls after each edit and hands the result to the model.
-  - **X2, persistent index:** cold start calls for none. On this 12-project solution the first correct answer took 4 to 13 s for C# and under 0.5 s for TypeScript, and later calls are fast. The host keeps the server running (X1). X2 is reconsidered only if the benchmark in #202 shows a larger solution waiting long on first use.
+  - **X2, persistent index:** cold start calls for none. On this 12-project solution the first correct answer took 6 to 17 s for C# (medians per OS) and under 0.5 s for TypeScript, and later calls are fast. The host keeps the server running (X1). X2 is reconsidered only if the benchmark in #202 shows a larger solution waiting long on first use.
 
 ## Consequences
 
