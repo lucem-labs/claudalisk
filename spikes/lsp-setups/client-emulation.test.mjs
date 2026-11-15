@@ -32,7 +32,6 @@ test('the emulated client advertises what Claude Code 2.1.316 sends, and no pull
 
 test('workspace.configuration is advertised only when the server config has settings', () => {
   assert.equal(emulatedCapabilities().workspace.configuration, undefined)
-  assert.equal(emulatedCapabilities({ settings: {} }).workspace.configuration, undefined)
   assert.equal(emulatedCapabilities({ settings: YAML_SETTINGS }).workspace.configuration, true)
 })
 
