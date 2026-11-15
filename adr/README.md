@@ -95,6 +95,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0086](0086-runners-stack-from-the-kit.md) | One org-wide runner stack from the public kit, configured and guarded by the plugin | accepted | environments |
 | [CLA-0087](0087-work-issue-skill-and-workflow.md) | A work-issue skill strings the lifecycle ADRs together, and a workflow runs the unattended middle | accepted | workflow |
 | [CLA-0088](0088-code-intelligence-ground-rules.md) | Code intelligence is native, deterministic, cross-platform, surface-independent and measured | accepted | workflow |
+| [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 
 ## Format
 
