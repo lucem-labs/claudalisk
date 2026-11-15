@@ -67,10 +67,10 @@ index 76ca01e..ed92dbd 100644
        {biggest ? <p>Biggest: {summarizeOrder(biggest)}</p> : null}
        <a href={`data:text/csv,${encodeURIComponent(ordersToCsv(orders))}`}>Download</a>
 diff --git a/frontend/src/shared/api/schema.d.ts b/frontend/src/shared/api/schema.d.ts
-index a142c2f..6b8ae83 100644
+index bfff81a..ad4f0c1 100644
 --- a/frontend/src/shared/api/schema.d.ts
 +++ b/frontend/src/shared/api/schema.d.ts
-@@ -230,7 +230,7 @@ export interface components {
+@@ -436,7 +436,7 @@ export interface components {
          };
          OrderResponse: {
              id: string;

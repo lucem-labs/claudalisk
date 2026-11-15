@@ -21,7 +21,7 @@ public sealed class OrderResponseTests
     [Fact]
     public void TheLabelIsSerializedAsLabel()
     {
-        using var document = JsonDocument.Parse(JsonSerializer.Serialize(Sample(), JsonSerializerDefaults.Web));
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(Sample(), new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
         Assert.Equal("first", document.RootElement.GetProperty("label").GetString());
         Assert.False(document.RootElement.TryGetProperty("name", out _));

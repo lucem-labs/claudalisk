@@ -32,7 +32,7 @@ It generates an app with `generateApp()` exactly as `tools/check-new-app.mjs` do
 
 The overlay adds what the tasks need: Billing calling Ordering through its Interfaces project (`RaiseInvoiceHandler`); discount policies behind an interface (T3); a ledger and an audit trail whose `Record` methods have the same name and parameters, with calls through fields, properties, delegates, lazy values and locals (T5); a large formatting class (T6); and a frontend `order` entity used by two features, a widget and two pages (T2, T4). The app's own tests still pass with it.
 
-Every run gets `git clone` of the fixture into a temporary folder outside the repository and checks that its HEAD is the pinned one. The fixture's `frontend/node_modules` is linked into the copy, so a run does not reinstall packages.
+Every run gets `git clone` of the fixture into a temporary folder outside the repository and checks that its HEAD is the pinned one. The fixture's `frontend/node_modules` is copied into the copy, so a run does not reinstall packages and cannot change the fixture's.
 
 ## Run the baseline
 

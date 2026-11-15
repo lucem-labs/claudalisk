@@ -63,6 +63,7 @@ export async function buildFixture(out, { log = console.log } = {}) {
     addModule({ appRoot: target, module: FIXTURE.second.module, aggregate: FIXTURE.second.aggregate, now })
     log('Applying the overlay')
     applyOverlay(target)
+    await runAsync('npm', ['run', 'api:types'], join(target, 'frontend'))
     await git(['add', '--all'], target, IDENTITY)
     await git(['commit', '--quiet', '--message', 'Add the benchmark overlay'], target, IDENTITY)
     const head = await git(['rev-parse', 'HEAD'], target)

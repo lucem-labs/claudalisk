@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { claudeArguments, stagePlugin } from './arms.mjs'
@@ -52,9 +52,10 @@ export function describePlan({ arm, steps, ledger }) {
   return lines.join('\n')
 }
 
-export function linkDependencies(source, copy) {
+export function copyDependencies(source, copy) {
   const from = join(source, 'frontend', 'node_modules')
-  if (existsSync(from) && !existsSync(join(copy, 'frontend', 'node_modules'))) symlinkSync(from, join(copy, 'frontend', 'node_modules'), 'junction')
+  const to = join(copy, 'frontend', 'node_modules')
+  if (existsSync(from) && !existsSync(to)) cpSync(from, to, { recursive: true, verbatimSymlinks: true })
 }
 
 export async function pluginCommit(pluginDir) {
@@ -74,7 +75,7 @@ export async function runOnce({ arm, task, run, plugin, claudeCommit, fixture, r
   const copy = join(base, 'app')
   try {
     await cloneFixture(copy, { fixture })
-    linkDependencies(fixture.path, copy)
+    copyDependencies(fixture.path, copy)
     const started = Date.now()
     const outcome = await exec(claudeBinary(), claudeArguments({ arm, plugin, budget: RUN_CAP_USD }), { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
     const wallMs = Date.now() - started

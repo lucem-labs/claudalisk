@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util'
 import { buildFixture } from './fixture.mjs'
 import { cloneFixture, readFixture } from './fixture-repo.mjs'
 import { git } from './lib.mjs'
-import { linkDependencies } from './runner.mjs'
+import { copyDependencies } from './runner.mjs'
 import { accepted, installHidden, loadTask, parseTaskList, runChecks } from './tasks.mjs'
 
 export async function checkTask(id, fixture, { log = console.log, keep = false } = {}) {
@@ -18,7 +18,7 @@ export async function checkTask(id, fixture, { log = console.log, keep = false }
     const copy = join(base, 'app')
     try {
       await cloneFixture(copy, { fixture })
-      linkDependencies(fixture.path, copy)
+      copyDependencies(fixture.path, copy)
       if (variant === 'reference') {
         const patch = join(task.folder, 'reference', 'solution.patch')
         if (!existsSync(patch)) throw new Error(`${patch} is missing`)
