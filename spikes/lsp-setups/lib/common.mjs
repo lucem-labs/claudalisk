@@ -51,7 +51,7 @@ export function normalizeRoot(root, platform = process.platform) {
   try {
     resolved = realpathSync.native(resolved)
   } catch {}
-  const slashed = resolved.replaceAll('\', '/').replace(/\/+$/, '')
+  const slashed = resolved.replaceAll('\\', '/').replace(/\/+$/, '')
   return platform === 'win32' ? slashed.toLowerCase() : slashed
 }
 
