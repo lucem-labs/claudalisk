@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); each code-intelligence tool's CI job on ubuntu, windows and macos; the benchmark from #202
+- **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos, and the benchmark from #202
 - **Issue:** #201, #200
 
 ## Context
@@ -30,7 +30,7 @@ What the evidence in #200 shows:
 
 - **Claudalisk builds its own code-intelligence tools and depends on no external code-intelligence service.** The tools drive the language servers that CLA-0080 sets up, and parse files themselves. Other tools are compared with claudalisk's on the same fixtures. Where one does better, claudalisk rebuilds that behaviour against the LSP 3.17 specification and the servers' documented behaviour. It never copies copyleft code.
 - **Claudalisk defines its own tool interface.** It does not mirror Claude Code's `LSP` tool, which is one client of the language servers, not a contract.
-- **Tool output is deterministic evidence.** It holds language-server results, parsed file content and exact `path:line` locations, and the same code and the same call give the same output. It never holds embeddings, output from a local model, or a summary written by any model. A tool that cannot answer says so, and says what it did not cover, as the scout does today (CLA-0080).
+- **Tool output is deterministic evidence.** It holds language-server results, parsed file content and exact `path:line` locations, and once the language server has loaded the workspace, the same code and the same call give the same output. A tool waits for that itself, as N2 says, and never returns a partial list as if it were complete. It never holds embeddings, output from a local model, or a summary written by any model. A tool that cannot answer says so, and says what it did not cover, as the scout does today (CLA-0080).
 - **The tools run on Windows, Linux and macOS.**
   - Claudalisk's own tests prove it on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse it.
   - When a generated app's CI needs a binary these tools use, such as a language server, the binary goes into the DinD runner image in `lucem-labs/github-runner-dind`, and apps pick it up through the `RUNNER_IMAGE` pin (CLA-0086). It is never installed per job.
@@ -81,6 +81,6 @@ What the evidence in #200 shows:
 - Each tool's CI job runs three times, once per operating system, so a bug that shows on one of them fails CI before it reaches an app.
 - Adding a binary for apps' CI is a change in `lucem-labs/github-runner-dind` and a pin bump in each `runners.env`, not a line in every app's workflow.
 - A surface-limited Claude Code feature can be cheaper on one surface and still not be used. Claudalisk builds its own equivalent instead.
-- The benchmark has a budget of about $150 in total, so each result rests on a few runs per setup. A result inside the noise does not count as a drop.
+- The benchmark has a budget of about $150 in total, so each result rests on a few runs per setup, and #202 says how a drop is told apart from noise.
 - The spikes in #200 record their decisions as ADRs CLA-0089 to CLA-0096, each amending the rows it settles.
 - The ADRs carry no product names, so a reader who wants a source follows the `Issue:` link to #200 or #201.
