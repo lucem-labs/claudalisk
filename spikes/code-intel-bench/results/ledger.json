@@ -1,7 +1,7 @@
 {
   "capUsd": 150,
   "runCapUsd": 3,
-  "spentUsd": 2.283242,
+  "spentUsd": 7.692716,
   "runs": [
     {
       "arm": "baseline",
@@ -191,6 +191,195 @@
       "file": "baseline/claude-sonnet-5-5/20261115T211327Z-T7-3.json",
       "costUsd": 0.077478,
       "at": "2026-11-15T21:13:27.194Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T1",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T220925Z-T1-1.json",
+      "costUsd": 0.311425,
+      "at": "2026-11-15T22:09:25.039Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T2",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T221326Z-T2-1.json",
+      "costUsd": 0.314443,
+      "at": "2026-11-15T22:13:26.402Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T3",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T221753Z-T3-1.json",
+      "costUsd": 0.296213,
+      "at": "2026-11-15T22:17:53.819Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T4",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T222210Z-T4-1.json",
+      "costUsd": 0.203727,
+      "at": "2026-11-15T22:22:10.293Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T5",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T222518Z-T5-1.json",
+      "costUsd": 0.2212,
+      "at": "2026-11-15T22:25:18.188Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T6",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T222906Z-T6-1.json",
+      "costUsd": 0.232417,
+      "at": "2026-11-15T22:29:06.693Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T7",
+      "repeat": 1,
+      "file": "baseline/claude-opus-5-5/20261115T223754Z-T7-1.json",
+      "costUsd": 0.17471,
+      "at": "2026-11-15T22:37:54.764Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T1",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T224157Z-T1-2.json",
+      "costUsd": 0.319335,
+      "at": "2026-11-15T22:41:57.756Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T2",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T224621Z-T2-2.json",
+      "costUsd": 0.290173,
+      "at": "2026-11-15T22:46:21.930Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T3",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T224906Z-T3-2.json",
+      "costUsd": 0.264382,
+      "at": "2026-11-15T22:49:06.839Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T4",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T225130Z-T4-2.json",
+      "costUsd": 0.19566,
+      "at": "2026-11-15T22:51:30.617Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T5",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T225352Z-T5-2.json",
+      "costUsd": 0.308845,
+      "at": "2026-11-15T22:53:52.650Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T6",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T225543Z-T6-2.json",
+      "costUsd": 0.182228,
+      "at": "2026-11-15T22:55:43.082Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T7",
+      "repeat": 2,
+      "file": "baseline/claude-opus-5-5/20261115T225806Z-T7-2.json",
+      "costUsd": 0.228847,
+      "at": "2026-11-15T22:58:06.651Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T1",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T230137Z-T1-3.json",
+      "costUsd": 0.335765,
+      "at": "2026-11-15T23:01:37.840Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T2",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T230532Z-T2-3.json",
+      "costUsd": 0.304514,
+      "at": "2026-11-15T23:05:32.435Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T3",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T230814Z-T3-3.json",
+      "costUsd": 0.25143,
+      "at": "2026-11-15T23:08:14.659Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T4",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T231024Z-T4-3.json",
+      "costUsd": 0.214105,
+      "at": "2026-11-15T23:10:24.666Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T5",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T231235Z-T5-3.json",
+      "costUsd": 0.266559,
+      "at": "2026-11-15T23:12:35.639Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T6",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T231507Z-T6-3.json",
+      "costUsd": 0.271095,
+      "at": "2026-11-15T23:15:07.698Z"
+    },
+    {
+      "arm": "baseline",
+      "model": "claude-opus-5-5",
+      "task": "T7",
+      "repeat": 3,
+      "file": "baseline/claude-opus-5-5/20261115T231716Z-T7-3.json",
+      "costUsd": 0.222401,
+      "at": "2026-11-15T23:17:16.778Z"
     }
   ]
 }
