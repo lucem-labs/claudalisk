@@ -8,6 +8,7 @@ import {
   DEFAULT_SECURITY,
   DEFAULT_UAT_DATA,
   globToRegExp,
+  namesPath,
   parseArgs,
   parseDiff,
   planReview,
@@ -301,4 +302,62 @@ test('a plan with no reviewer domains still runs /code-review', () => {
   const p = plan(change('README.md'));
   assert.deepEqual(p.domains, []);
   assert.deepEqual(p.codeReview, { effort: 'medium' });
+});
+
+test('an ADR file maps to the skills that list it', () => {
+  const p = plan(change('adr/0088-code-intelligence-ground-rules.md'));
+  assert.ok(p.domains.find((d) => d.name === 'adr-conformance').skills.includes('workflow'));
+  assert.deepEqual(p.unmapped, []);
+});
+
+test('a new ADR no skill lists maps to its Area', () => {
+  const p = plan(change('adr/9999-new-thing.md', ['- **Area:** frontend'], 'added'));
+  assert.deepEqual(p.files[0].skills, ['frontend']);
+});
+
+test('files an Enforced by line names map to the skills that list the ADR', () => {
+  const guard = plan(change('hooks/ci-poll-guard.mjs')).files[0].skills;
+  assert.ok(guard.includes('workflow') && guard.includes('code-standards'));
+  assert.ok(plan(change('hooks/scout-gate.mjs')).files[0].skills.includes('workflow'));
+});
+
+test('a token does not match a file that merely contains it', () => {
+  assert.deepEqual(plan(change('hooks/scout-gate-extra.md')).files[0].skills, []);
+  assert.deepEqual(plan(change('docs/my-scout-gate.txt')).files[0].skills, []);
+});
+
+test('a plain word in an Enforced by line names no file', () => {
+  assert.ok(!plan(change('frontend/src/entities/order/model.ts')).files[0].skills.includes('workflow'));
+  assert.equal(namesPath('model', 'frontend/src/entities/order/model'), false);
+  assert.equal(namesPath('scout-gate', 'hooks/scout-gate'), false);
+  assert.equal(namesPath('scout', 'docs/scout.md'), false);
+});
+
+test('a bare agent or hook name maps that agent or hook file', () => {
+  assert.ok(plan(change('agents/implementer.md')).files[0].skills.includes('workflow'));
+  assert.ok(plan(change('agents/scout.md')).files[0].skills.includes('workflow'));
+  assert.equal(namesPath('scout-gate', 'hooks/scout-gate.mjs'), true);
+});
+
+test('a directory token names files under it at any depth', () => {
+  assert.equal(namesPath('frontend/e2e', 'templates/app/frontend/e2e/orders.spec.ts'), true);
+  assert.equal(namesPath('shared/api', 'frontend/src/shared/api/client.ts'), true);
+  assert.equal(namesPath('shared/api', 'frontend/src/myshared/api/client.ts'), false);
+});
+
+test('a token names the same path, a path ending in it, or a file under a directory token', () => {
+  assert.equal(namesPath('scripts/verify.mjs', 'scripts/verify.mjs'), true);
+  assert.equal(namesPath('scripts/verify.mjs', 'templates/app/scripts/verify.mjs'), true);
+  assert.equal(namesPath('.gitignore', 'frontend/.gitignore'), true);
+  assert.equal(namesPath('packages/scripts', 'packages/scripts/deploy.mjs'), true);
+  assert.equal(namesPath('templates/app/', 'templates/app/AGENTS.md'), true);
+  assert.equal(namesPath('packages/scripts', 'packages/scripts-old/deploy.mjs'), false);
+  assert.equal(namesPath('/claudalisk:review', 'claudalisk:review'), false);
+  assert.equal(namesPath('getBy*', 'getBy.ts'), false);
+});
+
+test('an edited ADR no skill lists maps to its unchanged Area', () => {
+  const path = 'adr/9999-new-thing.md';
+  const diff = [`diff --git a/${path} b/${path}`, `--- a/${path}`, `+++ b/${path}`, '@@ -1,3 +1,3 @@', ' # CLA-9999: New thing', ' - **Area:** frontend', '-old', '+new'].join('\n');
+  assert.deepEqual(plan(diff).files[0].skills, ['frontend']);
 });
