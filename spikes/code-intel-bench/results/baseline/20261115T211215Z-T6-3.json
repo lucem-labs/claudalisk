@@ -1,0 +1,45 @@
+{
+  "arm": "baseline",
+  "task": "T6",
+  "repeat": 3,
+  "at": "2026-11-15T21:12:15.494Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "totalCostUsd": 0.10030322000000001,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1534,
+      "output": 1656,
+      "cacheRead": 10272,
+      "cacheCreation": 2968,
+      "costUsd": 0.00145512
+    },
+    "claude-sonnet-5-5": {
+      "input": 14,
+      "output": 1438,
+      "cacheRead": 200041,
+      "cacheCreation": 16109,
+      "costUsd": 0.09884810000000001
+    }
+  },
+  "turns": 2,
+  "subagents": 1,
+  "wallMs": 27840,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

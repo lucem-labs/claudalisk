@@ -1,0 +1,50 @@
+{
+  "arm": "baseline",
+  "task": "T7",
+  "repeat": 1,
+  "at": "2026-11-15T20:52:45.346Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "totalCostUsd": 0.0777345,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1483,
+      "output": 19,
+      "cacheRead": 0,
+      "cacheCreation": 0,
+      "costUsd": 0.0001578
+    },
+    "claude-sonnet-5-5": {
+      "input": 6,
+      "output": 1242,
+      "cacheRead": 74647,
+      "cacheCreation": 14420,
+      "costUsd": 0.0775767
+    }
+  },
+  "turns": 5,
+  "subagents": 0,
+  "wallMs": 25788,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the function ships with its test",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

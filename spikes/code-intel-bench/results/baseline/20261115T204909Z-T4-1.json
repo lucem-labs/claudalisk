@@ -1,0 +1,50 @@
+{
+  "arm": "baseline",
+  "task": "T4",
+  "repeat": 1,
+  "at": "2026-11-15T20:49:09.024Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "totalCostUsd": 0.09840631000000001,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1412,
+      "output": 2521,
+      "cacheRead": 19561,
+      "cacheCreation": 6072,
+      "costUsd": 0.0023563100000000003
+    },
+    "claude-sonnet-5-5": {
+      "input": 12,
+      "output": 1322,
+      "cacheRead": 168060,
+      "cacheCreation": 16500,
+      "costUsd": 0.09605000000000001
+    }
+  },
+  "turns": 3,
+  "subagents": 1,
+  "wallMs": 46135,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "no calculateTotal is left",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}
