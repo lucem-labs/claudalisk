@@ -14,6 +14,7 @@ function workspace(files) {
   return { root, uri: (name) => uriOf(join(root, name)), read: (name) => readFileSync(join(root, name), 'utf8'), done: () => rmSync(root, { recursive: true, force: true }) }
 }
 
+const BOM = String.fromCharCode(0xfeff)
 const edit = (line, from, to, newText) => ({ range: { start: { line, character: from }, end: { line, character: to } }, newText })
 
 function refused(code, action) {
@@ -52,7 +53,7 @@ test('line endings are kept as found, and inserted text takes the document endin
 })
 
 test('a byte order mark is kept and does not count as a character', () => {
-  assert.equal(applyTextEdits('﻿ab', [edit(0, 0, 1, 'X')]), '﻿Xb')
+  assert.equal(applyTextEdits(`${BOM}ab`, [edit(0, 0, 1, 'X')]), `${BOM}Xb`)
 })
 
 test('changes and documentChanges are both applied to disk', () => {

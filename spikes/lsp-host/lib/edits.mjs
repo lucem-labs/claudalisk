@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+const BOM = String.fromCharCode(0xfeff)
+
 export class EditRefused extends Error {
   constructor(code, message) {
     super(message)
@@ -32,7 +34,7 @@ function guard(root, uri) {
 }
 
 export function splitText(text) {
-  const bom = text.startsWith('﻿')
+  const bom = text.startsWith(BOM)
   const body = bom ? text.slice(1) : text
   const eol = /\r\n|\n|\r/.exec(body)?.[0] ?? '\n'
   return { bom, body, eol }
@@ -72,7 +74,7 @@ export function applyTextEdits(text, edits) {
   for (const edit of [...resolved].sort((a, b) => b.start - a.start || b.end - a.end || b.index - a.index)) {
     result = result.slice(0, edit.start) + edit.newText + result.slice(edit.end)
   }
-  return (bom ? '﻿' : '') + result
+  return (bom ? BOM : '') + result
 }
 
 export function operationsOf(edit) {

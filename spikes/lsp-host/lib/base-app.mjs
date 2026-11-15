@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runAsync, serve } from '../../../tools/check-registry.mjs'
 import { generateApp } from '../../../tools/new-app.mjs'
+import { withoutDocker } from './no-docker.mjs'
 import { builtRegistry, readJson, repositoryRoot } from '../../../tools/registry.mjs'
 
 export const ROOT = 'Proof'
@@ -28,7 +29,7 @@ export async function generateBaseApp(work) {
     const registry = `http://127.0.0.1:${server.address().port}/{name}.json`
     await generateApp(
       { target: app, root: ROOT, name: NAME, repo: `lucem-labs/${NAME}`, module: 'Ordering', aggregate: 'Order', registry, skill: false, scriptsPackage },
-      { run: runAsync, home },
+      { run: withoutDocker(runAsync), home },
     )
   } finally {
     server.close()
