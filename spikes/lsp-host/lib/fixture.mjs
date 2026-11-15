@@ -11,7 +11,7 @@ const SKIPPED = new Set(['node_modules', 'bin', 'obj', '.git'])
 
 export function run(command, args, cwd, { timeoutMs = 600000, env } = {}) {
   const started = Date.now()
-  const [file, list, spawnOptions] = spawnArguments(command, args, cwd)
+  const [file, list, spawnOptions] = /^(npm|npx)$/.test(command) ? spawnArguments(command, args, cwd) : [command, args, { cwd }]
   const result = spawnSync(file, list, {
     ...spawnOptions,
     stdio: 'pipe',
