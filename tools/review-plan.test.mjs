@@ -302,3 +302,25 @@ test('a plan with no reviewer domains still runs /code-review', () => {
   assert.deepEqual(p.domains, []);
   assert.deepEqual(p.codeReview, { effort: 'medium' });
 });
+
+test('an ADR file maps to the skills that list it', () => {
+  const p = plan(change('adr/0088-code-intelligence-ground-rules.md'));
+  assert.ok(p.domains.find((d) => d.name === 'adr-conformance').skills.includes('workflow'));
+  assert.deepEqual(p.unmapped, []);
+});
+
+test('a new ADR no skill lists maps to its Area', () => {
+  const p = plan(change('adr/9999-new-thing.md', ['- **Area:** frontend'], 'added'));
+  assert.deepEqual(p.files[0].skills, ['frontend']);
+});
+
+test('files an Enforced by line names map to the skills that list the ADR', () => {
+  const guard = plan(change('hooks/ci-poll-guard.mjs')).files[0].skills;
+  assert.ok(guard.includes('workflow') && guard.includes('code-standards'));
+  assert.ok(plan(change('hooks/scout-gate.mjs')).files[0].skills.includes('workflow'));
+});
+
+test('a base-name token does not match a file that merely contains it', () => {
+  assert.deepEqual(plan(change('hooks/scout-gate-extra.md')).files[0].skills, []);
+  assert.deepEqual(plan(change('docs/my-scout-gate.txt')).files[0].skills, []);
+});

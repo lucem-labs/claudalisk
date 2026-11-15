@@ -135,6 +135,24 @@ function unionAdrs(skills) {
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
+const baseName = (p) => p.split('/').pop().replace(/\.[^.]+$/, '');
+const namesPath = (token, p) => token.length > 0 && !/\s/.test(token) && (token === p || p.endsWith(`/${token}`) || token === baseName(p));
+const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
+
+export function skillsFor(f, knowledge, paths = [f.path, f.oldPath].filter(Boolean)) {
+  const names = new Set(knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name));
+  const listing = knowledge.filter((s) => s.adrs.some((a) => paths.includes(a.file)));
+  for (const s of listing) names.add(s.name);
+  if (!listing.length && paths.some((p) => p.startsWith('adr/'))) {
+    const area = f.patch.match(/^\+- \*\*Area:\*\* (\S+)\s*$/m)?.[1];
+    if (area && knowledge.some((s) => s.name === area)) names.add(area);
+  }
+  for (const s of knowledge) {
+    if (s.adrs.some((a) => enforcerTokens(a.enforcedBy).some((t) => paths.some((p) => namesPath(t, p))))) names.add(s.name);
+  }
+  return [...names].sort();
+}
+
 export function planReview({ diff, knowledge, config, deviations = '', round = 'full' }) {
   const all = parseDiff(diff);
   const skipped = all.filter((f) => SKIPPED.some((r) => r.test(f.path))).map((f) => f.path);
@@ -142,7 +160,7 @@ export function planReview({ diff, knowledge, config, deviations = '', round = '
     const paths = [f.path, f.oldPath].filter(Boolean);
     return {
       ...f,
-      skills: knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name),
+      skills: skillsFor(f, knowledge, paths),
       uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')) || changesScriptsPackage(f),
       security: paths.some((p) => matchesAny(p, config.security, 'i')),
     };
