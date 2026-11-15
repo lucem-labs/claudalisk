@@ -73,8 +73,8 @@ export async function pluginCommit(pluginDir) {
   }
 }
 
-export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
-  const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, ...(fixture.pack ? { pack: fixture.pack } : {}), task: task.id, repeat, at: now().toISOString() })
+export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
+  const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, ...(pack ? { pack } : {}), task: task.id, repeat, at: now().toISOString() })
   const base = mkdtempSync(join(tmpdir(), 'claudalisk-bench-run-'))
   const copy = join(base, 'app')
   try {
@@ -129,7 +129,7 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
   }
 }
 
-export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder }) {
+export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder, pack }) {
   const steps = plan({ tasks, runs, resultsDir, arm: arm.name, model: arm.model })
   const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'))
   const claudeCommit = await pluginCommit(arm.pluginDir)
@@ -138,7 +138,7 @@ export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaul
     for (const step of steps) {
       const task = loadTask(step.task, tasksFolder)
       log(`${arm.name} ${arm.model} ${step.task} repeat ${step.repeat}`)
-      const record = await runOnce({ arm, task, repeat: step.repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
+      const record = await runOnce({ arm, task, repeat: step.repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
       records.push(record)
       log(`  ${record.accepted ? 'accepted' : 'rejected'} (${record.subtype}), $${record.totalCostUsd.toFixed(2)}, ${record.turns} turns, ${record.subagents} subagents`)
     }

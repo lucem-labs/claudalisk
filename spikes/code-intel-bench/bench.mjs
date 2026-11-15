@@ -70,7 +70,7 @@ export async function main(argv, { resultsDir = resultsRoot, ledgerPath = defaul
   }
   const prepared = pack && !fixture ? await preparePackFixture(pack, { log }) : fixture
   for (const model of models) {
-    await runAll({ arm: armForModel(arm, model), tasks, runs: options.runs, resultsDir: results, ledgerPath, keep: options.keep, exec, checkRun, log, tasksFolder, ...(prepared ? { fixture: prepared } : {}) })
+    await runAll({ arm: armForModel(arm, model), tasks, runs: options.runs, resultsDir: results, ledgerPath, keep: options.keep, exec, checkRun, log, tasksFolder, pack: pack?.id, ...(prepared ? { fixture: prepared } : {}) })
   }
 }
 

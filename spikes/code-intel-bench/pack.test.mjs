@@ -258,3 +258,57 @@ test('check-tasks --pack checks the pack tasks against the prepared clone', asyn
   assert.ok(lines.some((line) => /^P1 untouched: FAIL/.test(line)))
   assert.ok(lines.some((line) => /^P1 reference: pass/.test(line)))
 })
+
+const has = (cwd, sha) => {
+  try {
+    execFileSync('git', ['cat-file', '-e', sha], { cwd, stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+test('the prepared clone and a run copy hold nothing newer than the pinned commit', async () => {
+  git(repo, 'commit', '-q', '--allow-empty', '-m', 'newer than the pin')
+  const newer = git(repo, 'rev-parse', 'HEAD')
+  try {
+    const fixture = await preparePackFixture(loadPack(packFolder))
+    const copy = join(base, 'copy-history')
+    await cloneFixture(copy, { fixture })
+
+    assert.equal(has(fixture.path, commit), true)
+    assert.equal(has(fixture.path, newer), false)
+    assert.equal(has(copy, newer), false)
+    assert.equal(git(fixture.path, 'for-each-ref', 'refs/heads'), '')
+    assert.equal(git(fixture.path, 'tag', '--list'), '')
+    assert.equal(git(fixture.path, 'remote'), '')
+  } finally {
+    git(repo, 'reset', '-q', '--hard', commit)
+  }
+})
+
+test('a prepared clone missing a dependency folder is prepared again', async () => {
+  const fixture = await preparePackFixture(loadPack(packFolder))
+  assert.equal(prepares(), 1)
+  rmSync(join(fixture.path, 'sub', 'deps'), { recursive: true, force: true })
+
+  await preparePackFixture(loadPack(packFolder))
+  assert.equal(prepares(), 2)
+})
+
+test('the ledger entry follows the --pack option, not the fixture', async () => {
+  const fixture = await preparePackFixture(loadPack(packFolder))
+  const { pack, ...plain } = fixture
+  await bench(['run', '--arm', 'baseline', '--pack', packFolder, '--model', 'm1', '--tasks', 'P1', '--runs', '1'], { armsDir, ledgerPath, log: () => {}, fixture: plain })
+
+  const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+  assert.deepEqual(Object.keys(ledger.runs[0]).sort(), ['arm', 'at', 'costUsd', 'model', 'pack', 'repeat', 'task'])
+  assert.equal(ledger.runs[0].pack, PACK_ID)
+})
+
+test('a prepare step that exceeds its timeout fails with a clear message', async () => {
+  write(join(base, 'slow.mjs'), 'setTimeout(() => {}, 60000)\n')
+  writePack({}, { prepare: [{ command: [join(base, 'slow.mjs')] }] })
+
+  await assert.rejects(preparePackFixture(loadPack(packFolder), { timeoutMs: 500 }), /timed out after 1 seconds/)
+})
