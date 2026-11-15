@@ -6,10 +6,10 @@
     "csharp-ls": "0.28.0",
     "roslyn": "5.13.0-1.26514.10",
     "typescript": "7.0.2",
-    "dotnet": "11.0.100",
+    "dotnet": "10.0.404",
     "node": "v24.22.2"
   },
-  "date": "2026-11-15T17:30:07.694Z",
+  "date": "2026-11-15T17:46:58.197Z",
   "servers": {
     "csharp-ls": {
       "cases": [
@@ -31,9 +31,9 @@
             "applied": 2,
             "otherOverloads": "renamed too"
           },
-          "coldStartMs": 5442,
-          "memoryMb": 390,
-          "ms": 8241
+          "coldStartMs": 6448,
+          "memoryMb": 417,
+          "ms": 10054
         },
         {
           "id": "rename.interface-method",
@@ -52,9 +52,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 6216,
-          "memoryMb": 379,
-          "ms": 8867
+          "coldStartMs": 7525,
+          "memoryMb": 428,
+          "ms": 10681
         },
         {
           "id": "rename.partial-class",
@@ -74,9 +74,9 @@
             "prepare": "range",
             "applied": 3
           },
-          "coldStartMs": 5645,
-          "memoryMb": 380,
-          "ms": 8080
+          "coldStartMs": 6489,
+          "memoryMb": 420,
+          "ms": 9841
         },
         {
           "id": "rename.record-property",
@@ -95,9 +95,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 5434,
-          "memoryMb": 382,
-          "ms": 8027
+          "coldStartMs": 6934,
+          "memoryMb": 429,
+          "ms": 10341
         },
         {
           "id": "rename.generated-regex",
@@ -118,9 +118,9 @@
             "prepare": "range",
             "applied": 1
           },
-          "coldStartMs": 5415,
-          "memoryMb": 373,
-          "ms": 7864
+          "coldStartMs": 6694,
+          "memoryMb": 416,
+          "ms": 9889
         },
         {
           "id": "rename.generated-json-context",
@@ -139,9 +139,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 5184,
-          "memoryMb": 380,
-          "ms": 7807
+          "coldStartMs": 6616,
+          "memoryMb": 429,
+          "ms": 9817
         },
         {
           "id": "references.into-generated-file",
@@ -159,9 +159,9 @@
               "file:///tmp/lsp-host-work/cases/csharp-ls-7/backend/Proof.LspCases/Patterns.cs"
             ]
           },
-          "coldStartMs": 5412,
-          "memoryMb": 373,
-          "ms": 6483
+          "coldStartMs": 6847,
+          "memoryMb": 413,
+          "ms": 8292
         },
         {
           "id": "rename.file",
@@ -191,9 +191,9 @@
             "editCount": 0,
             "resourceOperations": []
           },
-          "coldStartMs": 5205,
-          "memoryMb": 378,
-          "ms": 6622
+          "coldStartMs": 6536,
+          "memoryMb": 417,
+          "ms": 8322
         },
         {
           "id": "edit.body-replace",
@@ -207,9 +207,9 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 5288,
-          "memoryMb": 369,
-          "ms": 7313
+          "coldStartMs": 6720,
+          "memoryMb": 414,
+          "ms": 9201
         },
         {
           "id": "edit.insert-before-after",
@@ -227,9 +227,9 @@
               "Tripled(int value)"
             ]
           },
-          "coldStartMs": 5044,
-          "memoryMb": 376,
-          "ms": 7046
+          "coldStartMs": 6465,
+          "memoryMb": 409,
+          "ms": 9121
         },
         {
           "id": "diagnostics",
@@ -249,9 +249,9 @@
               "first": "'Pricing' does not contain a definition for 'Totl'"
             }
           },
-          "coldStartMs": 5126,
-          "memoryMb": 374,
-          "ms": 26983
+          "coldStartMs": 6327,
+          "memoryMb": 414,
+          "ms": 28571
         },
         {
           "id": "hierarchy.type",
@@ -269,9 +269,9 @@
               "IShape"
             ]
           },
-          "coldStartMs": 5210,
-          "memoryMb": 358,
-          "ms": 6235
+          "coldStartMs": 6577,
+          "memoryMb": 409,
+          "ms": 7917
         },
         {
           "id": "codeactions.survey",
@@ -651,9 +651,9 @@
             },
             "advertisedKinds": null
           },
-          "coldStartMs": 5198,
-          "memoryMb": 404,
-          "ms": 8155
+          "coldStartMs": 6626,
+          "memoryMb": 435,
+          "ms": 10439
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -672,9 +672,9 @@
             "editCount": 1,
             "resourceOperations": []
           },
-          "coldStartMs": 5116,
-          "memoryMb": 386,
-          "ms": 7576
+          "coldStartMs": 6531,
+          "memoryMb": 427,
+          "ms": 9853
         },
         {
           "id": "codeactions.apply.extract",
@@ -693,9 +693,9 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 5290,
-          "memoryMb": 391,
-          "ms": 8098
+          "coldStartMs": 6570,
+          "memoryMb": 432,
+          "ms": 10147
         },
         {
           "id": "codeactions.apply.inline",
@@ -714,9 +714,9 @@
             "editCount": 3,
             "resourceOperations": []
           },
-          "coldStartMs": 5532,
-          "memoryMb": 386,
-          "ms": 8114
+          "coldStartMs": 6706,
+          "memoryMb": 430,
+          "ms": 10059
         },
         {
           "id": "codeactions.apply.move",
@@ -725,45 +725,120 @@
           "reason": "the applier refused the edit of \"Move type to CasesJsonContext.cs\": file:///tmp/lsp-host-work/cases/csharp-ls-17/backend/Proof.LspCases/CasesJsonContext.cs does not exist",
           "phase": "case",
           "details": {},
-          "coldStartMs": 5219,
-          "memoryMb": 388,
-          "ms": 6841
+          "coldStartMs": 6532,
+          "memoryMb": 421,
+          "ms": 8941
         },
         {
           "id": "codeactions.apply.change-signature",
           "server": "csharp-ls",
           "status": "fail",
-          "reason": "build failed after the edit: ackend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.18",
+          "reason": "build failed after the edit: ackend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.13",
           "phase": "case",
           "details": {},
-          "coldStartMs": 5150,
-          "memoryMb": 402,
-          "ms": 8029
+          "coldStartMs": 6566,
+          "memoryMb": 437,
+          "ms": 10167
         }
       ],
       "warm": {
-        "coldStartMs": 5107,
+        "capabilities": {
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": {
+              "includeText": true
+            }
+          },
+          "completionProvider": {
+            "triggerCharacters": [
+              ".",
+              "'"
+            ],
+            "resolveProvider": true
+          },
+          "hoverProvider": true,
+          "signatureHelpProvider": {
+            "triggerCharacters": [
+              "(",
+              ",",
+              "<",
+              "{",
+              "["
+            ]
+          },
+          "definitionProvider": true,
+          "typeDefinitionProvider": true,
+          "implementationProvider": true,
+          "referencesProvider": true,
+          "documentHighlightProvider": true,
+          "documentSymbolProvider": true,
+          "codeActionProvider": {
+            "resolveProvider": true
+          },
+          "codeLensProvider": {
+            "resolveProvider": true
+          },
+          "workspaceSymbolProvider": true,
+          "documentFormattingProvider": true,
+          "documentRangeFormattingProvider": true,
+          "documentOnTypeFormattingProvider": {
+            "firstTriggerCharacter": ";",
+            "moreTriggerCharacter": [
+              "}",
+              ")"
+            ]
+          },
+          "renameProvider": {
+            "prepareProvider": true
+          },
+          "foldingRangeProvider": true,
+          "callHierarchyProvider": true,
+          "typeHierarchyProvider": true,
+          "inlayHintProvider": {
+            "resolveProvider": false
+          },
+          "diagnosticProvider": {
+            "documentSelector": [
+              {
+                "language": "csharp",
+                "scheme": "file",
+                "pattern": "**/*.cs"
+              }
+            ],
+            "interFileDependencies": false,
+            "workspaceDiagnostics": true
+          },
+          "workspace": {
+            "workspaceFolders": {
+              "supported": true,
+              "changeNotifications": true
+            }
+          },
+          "semanticTokensProvider": true
+        },
+        "coldStartMs": 6625,
         "coldStartAttempts": 2,
         "references": {
           "runs": 25,
-          "medianMs": 1.6,
-          "p95Ms": 3.6
+          "medianMs": 2.3,
+          "p95Ms": 2.7
         },
         "prepareRename": {
           "runs": 25,
-          "medianMs": 0.4,
-          "p95Ms": 0.9
+          "medianMs": 0.6,
+          "p95Ms": 0.8
         },
-        "memoryAfterLoadMb": 364,
-        "memoryAfterWorkloadMb": 370
+        "memoryAfterLoadMb": 405,
+        "memoryAfterWorkloadMb": 405
       },
       "coldStart": {
         "samples": 18,
-        "medianMs": 5219,
-        "minMs": 5044,
-        "maxMs": 6216
+        "medianMs": 6570,
+        "minMs": 6327,
+        "maxMs": 7525
       },
-      "memoryAfterCasesMb": 404
+      "memoryAfterCasesMb": 437
     },
     "roslyn": {
       "cases": [
@@ -785,9 +860,9 @@
             "applied": 2,
             "otherOverloads": "left alone"
           },
-          "coldStartMs": 4783,
-          "memoryMb": 513,
-          "ms": 7557
+          "coldStartMs": 5395,
+          "memoryMb": 505,
+          "ms": 8599
         },
         {
           "id": "rename.interface-method",
@@ -806,9 +881,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 4243,
-          "memoryMb": 461,
-          "ms": 7136
+          "coldStartMs": 4874,
+          "memoryMb": 481,
+          "ms": 8176
         },
         {
           "id": "rename.partial-class",
@@ -828,9 +903,9 @@
             "prepare": "range",
             "applied": 3
           },
-          "coldStartMs": 4193,
-          "memoryMb": 466,
-          "ms": 6974
+          "coldStartMs": 4913,
+          "memoryMb": 472,
+          "ms": 8269
         },
         {
           "id": "rename.record-property",
@@ -849,9 +924,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 4137,
-          "memoryMb": 462,
-          "ms": 7192
+          "coldStartMs": 4866,
+          "memoryMb": 485,
+          "ms": 8176
         },
         {
           "id": "rename.generated-regex",
@@ -861,7 +936,6 @@
           "phase": "case",
           "details": {
             "referenceUris": [
-              "roslyn-source-generated://307c1701-79ed-4863-a826-b9a2fe2c30c1/RegexGenerator.g.cs?documentId=5c6d3da3-eafd-8e08-d55f-ab5eb5e4251c&hintName=RegexGenerator.g.cs&assemblyName=System.Text.RegularExpressions.Generator&assemblyVersion=10.0.15.3008&typeName=System.Text.RegularExpressions.Generator.RegexGenerator&assemblyPath=%2Fusr%2Fshare%2Fdotnet%2Fpacks%2FMicrosoft.NETCore.App.Ref%2F10.0.15%2Fanalyzers%2Fdotnet%2Fcs%2FSystem.Text.RegularExpressions.Generator.dll",
               "backend/Proof.LspCases/Patterns.cs"
             ],
             "shape": "documentChanges",
@@ -873,9 +947,9 @@
             "prepare": "range",
             "applied": 1
           },
-          "coldStartMs": 4206,
-          "memoryMb": 461,
-          "ms": 7385
+          "coldStartMs": 4904,
+          "memoryMb": 479,
+          "ms": 8493
         },
         {
           "id": "rename.generated-json-context",
@@ -894,9 +968,9 @@
             "prepare": "range",
             "applied": 2
           },
-          "coldStartMs": 4124,
-          "memoryMb": 461,
-          "ms": 6964
+          "coldStartMs": 4793,
+          "memoryMb": 476,
+          "ms": 8041
         },
         {
           "id": "references.into-generated-file",
@@ -911,15 +985,15 @@
             ],
             "count": 3,
             "generatedLocations": [
-              "roslyn-source-generated://35d389d2-beb7-4f96-b9c3-1d0dd7965bee/CasesJsonContext.CustomerInfo.g.cs?documentId=96a6718a-70"
+              "roslyn-source-generated://471094d7-4e32-41df-8ba2-7e78193f2647/CasesJsonContext.CustomerInfo.g.cs?documentId=35a65c1e-2e"
             ],
             "definition": [
               "file:///tmp/lsp-host-work/cases/roslyn-7/backend/Proof.LspCases/Patterns.cs"
             ]
           },
-          "coldStartMs": 4166,
-          "memoryMb": 462,
-          "ms": 6468
+          "coldStartMs": 4872,
+          "memoryMb": 469,
+          "ms": 7167
         },
         {
           "id": "rename.file",
@@ -938,11 +1012,11 @@
               ]
             },
             "titlesAtType": [
+              "Rename file to Receipt.cs",
+              "Rename type to Misnamed",
               "Generate constructor 'Receipt()'",
               "Extract interface...",
               "Extract base class...",
-              "Rename file to Receipt.cs",
-              "Rename type to Misnamed",
               "Add 'DebuggerDisplay' attribute"
             ],
             "action": "Rename file to Receipt.cs",
@@ -955,9 +1029,9 @@
             ],
             "renameTypeOffered": true
           },
-          "coldStartMs": 4197,
-          "memoryMb": 521,
-          "ms": 7912
+          "coldStartMs": 4926,
+          "memoryMb": 527,
+          "ms": 9195
         },
         {
           "id": "edit.body-replace",
@@ -971,9 +1045,9 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 4199,
-          "memoryMb": 461,
-          "ms": 6778
+          "coldStartMs": 4874,
+          "memoryMb": 464,
+          "ms": 8153
         },
         {
           "id": "edit.insert-before-after",
@@ -990,9 +1064,9 @@
               "Tripled(int) : int"
             ]
           },
-          "coldStartMs": 4154,
-          "memoryMb": 461,
-          "ms": 6682
+          "coldStartMs": 4864,
+          "memoryMb": 457,
+          "ms": 8038
         },
         {
           "id": "diagnostics",
@@ -1012,9 +1086,9 @@
               "first": "'Pricing' does not contain a definition for 'Totl'"
             }
           },
-          "coldStartMs": 4071,
-          "memoryMb": 513,
-          "ms": 27074
+          "coldStartMs": 4806,
+          "memoryMb": 518,
+          "ms": 28665
         },
         {
           "id": "hierarchy.type",
@@ -1032,9 +1106,9 @@
               "IShape"
             ]
           },
-          "coldStartMs": 4122,
-          "memoryMb": 445,
-          "ms": 6165
+          "coldStartMs": 4923,
+          "memoryMb": 462,
+          "ms": 7188
         },
         {
           "id": "codeactions.survey",
@@ -1134,12 +1208,6 @@
               ],
               "block": [
                 {
-                  "title": "Invert if",
-                  "kind": "refactor",
-                  "edit": false,
-                  "command": false
-                },
-                {
                   "title": "Extract method",
                   "kind": "refactor.extract",
                   "edit": false,
@@ -1148,6 +1216,12 @@
                 {
                   "title": "Extract local function",
                   "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Invert if",
+                  "kind": "refactor",
                   "edit": false,
                   "command": false
                 }
@@ -1160,12 +1234,6 @@
                   "command": true
                 },
                 {
-                  "title": "Inline temporary variable",
-                  "kind": "refactor.inline",
-                  "edit": false,
-                  "command": false
-                },
-                {
                   "title": "Extract method",
                   "kind": "refactor.extract",
                   "edit": false,
@@ -1174,6 +1242,12 @@
                 {
                   "title": "Extract local function",
                   "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Inline temporary variable",
+                  "kind": "refactor.inline",
                   "edit": false,
                   "command": false
                 },
@@ -1244,14 +1318,14 @@
               ],
               "typeDeclaration": [
                 {
-                  "title": "Extract interface...",
-                  "kind": "refactor.extract",
+                  "title": "Move type to CasesJsonContext.cs",
+                  "kind": "refactor",
                   "edit": false,
                   "command": false
                 },
                 {
-                  "title": "Move type to CasesJsonContext.cs",
-                  "kind": "refactor",
+                  "title": "Extract interface...",
+                  "kind": "refactor.extract",
                   "edit": false,
                   "command": false
                 },
@@ -1362,9 +1436,9 @@
               "refactor"
             ]
           },
-          "coldStartMs": 4289,
-          "memoryMb": 573,
-          "ms": 9455
+          "coldStartMs": 4866,
+          "memoryMb": 582,
+          "ms": 11879
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -1383,9 +1457,9 @@
             "editCount": 1,
             "resourceOperations": []
           },
-          "coldStartMs": 4141,
-          "memoryMb": 535,
-          "ms": 7651
+          "coldStartMs": 4856,
+          "memoryMb": 516,
+          "ms": 9732
         },
         {
           "id": "codeactions.apply.extract",
@@ -1404,9 +1478,9 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 4239,
-          "memoryMb": 532,
-          "ms": 8012
+          "coldStartMs": 4864,
+          "memoryMb": 547,
+          "ms": 9978
         },
         {
           "id": "codeactions.apply.inline",
@@ -1425,9 +1499,9 @@
             "editCount": 3,
             "resourceOperations": []
           },
-          "coldStartMs": 4229,
-          "memoryMb": 519,
-          "ms": 7821
+          "coldStartMs": 4829,
+          "memoryMb": 541,
+          "ms": 9615
         },
         {
           "id": "codeactions.apply.move",
@@ -1449,45 +1523,184 @@
               "create"
             ]
           },
-          "coldStartMs": 4077,
-          "memoryMb": 532,
-          "ms": 8064
+          "coldStartMs": 4826,
+          "memoryMb": 542,
+          "ms": 10028
         },
         {
           "id": "codeactions.apply.change-signature",
           "server": "roslyn",
           "status": "fail",
-          "reason": "build failed after the edit: /roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.15",
+          "reason": "build failed after the edit: /roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.19",
           "phase": "case",
           "details": {},
-          "coldStartMs": 4167,
-          "memoryMb": 532,
-          "ms": 7777
+          "coldStartMs": 4934,
+          "memoryMb": 542,
+          "ms": 9930
         }
       ],
       "warm": {
-        "coldStartMs": 4150,
+        "capabilities": {
+          "_vs_onAutoInsertProvider": {
+            "_vs_triggerCharacters": [
+              "'",
+              "/",
+              "\n",
+              "\""
+            ]
+          },
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": {}
+          },
+          "completionProvider": {
+            "triggerCharacters": [
+              "\"",
+              "(",
+              ":",
+              "[",
+              "\\",
+              "{",
+              "#",
+              ".",
+              ">",
+              " ",
+              "~",
+              "<"
+            ],
+            "allCommitCharacters": [
+              " ",
+              "{",
+              "}",
+              "[",
+              "]",
+              "(",
+              ")",
+              ".",
+              ",",
+              ":",
+              ";",
+              "+",
+              "-",
+              "*",
+              "/",
+              "%",
+              "&",
+              "|",
+              "^",
+              "!",
+              "~",
+              "=",
+              "<",
+              ">",
+              "?",
+              "@",
+              "#",
+              "'",
+              "\"",
+              "\\"
+            ],
+            "resolveProvider": true
+          },
+          "hoverProvider": true,
+          "signatureHelpProvider": {
+            "triggerCharacters": [
+              "(",
+              ",",
+              "[",
+              "<",
+              "{"
+            ],
+            "retriggerCharacters": [
+              ")",
+              "]",
+              ">",
+              "}"
+            ]
+          },
+          "definitionProvider": true,
+          "typeDefinitionProvider": true,
+          "implementationProvider": true,
+          "referencesProvider": {
+            "workDoneProgress": true
+          },
+          "documentHighlightProvider": true,
+          "documentSymbolProvider": true,
+          "codeActionProvider": {
+            "codeActionKinds": [
+              "quickfix",
+              "refactor"
+            ],
+            "resolveProvider": true
+          },
+          "codeLensProvider": {
+            "resolveProvider": true
+          },
+          "documentFormattingProvider": true,
+          "documentRangeFormattingProvider": true,
+          "documentOnTypeFormattingProvider": {
+            "firstTriggerCharacter": "}",
+            "moreTriggerCharacter": [
+              ";",
+              "\n"
+            ]
+          },
+          "renameProvider": {
+            "prepareProvider": true
+          },
+          "foldingRangeProvider": true,
+          "executeCommandProvider": {
+            "commands": []
+          },
+          "selectionRangeProvider": true,
+          "callHierarchyProvider": true,
+          "typeHierarchyProvider": true,
+          "inlayHintProvider": {
+            "resolveProvider": true
+          },
+          "diagnosticProvider": {
+            "interFileDependencies": true,
+            "workspaceDiagnostics": false
+          },
+          "workspaceSymbolProvider": true,
+          "workspace": {
+            "fileOperations": {
+              "willRename": {
+                "filters": [
+                  {
+                    "pattern": {
+                      "glob": "**/*.razor"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "semanticTokensProvider": true
+        },
+        "coldStartMs": 4845,
         "coldStartAttempts": 4,
         "references": {
           "runs": 25,
-          "medianMs": 501.7,
+          "medianMs": 503,
           "p95Ms": 504.1
         },
         "prepareRename": {
           "runs": 25,
-          "medianMs": 1.2,
-          "p95Ms": 4.4
+          "medianMs": 1.4,
+          "p95Ms": 3.9
         },
-        "memoryAfterLoadMb": 451,
-        "memoryAfterWorkloadMb": 475
+        "memoryAfterLoadMb": 455,
+        "memoryAfterWorkloadMb": 479
       },
       "coldStart": {
         "samples": 18,
-        "medianMs": 4167,
-        "minMs": 4071,
-        "maxMs": 4783
+        "medianMs": 4866,
+        "minMs": 4793,
+        "maxMs": 5395
       },
-      "memoryAfterCasesMb": 573
+      "memoryAfterCasesMb": 582
     },
     "typescript": {
       "cases": [
@@ -1511,9 +1724,9 @@
             "importersUpdated": false,
             "barrelAfter": "export { renderPrice as formatPrice, totalPrice }"
           },
-          "coldStartMs": 207,
-          "memoryMb": 194,
-          "ms": 3148
+          "coldStartMs": 261,
+          "memoryMb": 193,
+          "ms": 3919
         },
         {
           "id": "rename.barrel-all-sites",
@@ -1534,9 +1747,9 @@
             "prepare": "range",
             "applied": 4
           },
-          "coldStartMs": 192,
-          "memoryMb": 193,
-          "ms": 3129
+          "coldStartMs": 265,
+          "memoryMb": 196,
+          "ms": 3964
         },
         {
           "id": "rename.file",
@@ -1553,9 +1766,9 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 207,
-          "memoryMb": 354,
-          "ms": 3473
+          "coldStartMs": 263,
+          "memoryMb": 359,
+          "ms": 4434
         },
         {
           "id": "edit.body-replace",
@@ -1569,9 +1782,9 @@
             "resultKind": "hierarchical",
             "actions": 1
           },
-          "coldStartMs": 202,
-          "memoryMb": 195,
-          "ms": 3340
+          "coldStartMs": 285,
+          "memoryMb": 193,
+          "ms": 3907
         },
         {
           "id": "edit.insert-before-after",
@@ -1595,9 +1808,9 @@
               "currency"
             ]
           },
-          "coldStartMs": 211,
-          "memoryMb": 197,
-          "ms": 3239
+          "coldStartMs": 252,
+          "memoryMb": 196,
+          "ms": 3922
         },
         {
           "id": "diagnostics",
@@ -1617,9 +1830,9 @@
               "first": "Expected 1 arguments, but got 2."
             }
           },
-          "coldStartMs": 308,
+          "coldStartMs": 255,
           "memoryMb": 213,
-          "ms": 22956
+          "ms": 23555
         },
         {
           "id": "hierarchy.type",
@@ -1630,9 +1843,9 @@
           "details": {
             "requestedAnyway": "error: textDocument/prepareTypeHierarchy: InvalidRequest (-32600)"
           },
-          "coldStartMs": 209,
-          "memoryMb": 192,
-          "ms": 491
+          "coldStartMs": 257,
+          "memoryMb": 195,
+          "ms": 528
         },
         {
           "id": "codeactions.survey",
@@ -1794,9 +2007,9 @@
               "source.fixAll"
             ]
           },
-          "coldStartMs": 202,
-          "memoryMb": 363,
-          "ms": 908
+          "coldStartMs": 253,
+          "memoryMb": 364,
+          "ms": 1159
         },
         {
           "id": "codeactions.apply.organize-or-fix-all",
@@ -1815,9 +2028,9 @@
             "editCount": 2,
             "resourceOperations": []
           },
-          "coldStartMs": 208,
-          "memoryMb": 351,
-          "ms": 3700
+          "coldStartMs": 250,
+          "memoryMb": 354,
+          "ms": 4608
         },
         {
           "id": "codeactions.apply.extract",
@@ -1826,9 +2039,9 @@
           "reason": "no code action matching /extract|introduce parameter/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 210,
+          "coldStartMs": 266,
           "memoryMb": 343,
-          "ms": 873
+          "ms": 1131
         },
         {
           "id": "codeactions.apply.inline",
@@ -1837,9 +2050,9 @@
           "reason": "no code action matching /inline/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 214,
+          "coldStartMs": 259,
           "memoryMb": 343,
-          "ms": 881
+          "ms": 1118
         },
         {
           "id": "codeactions.apply.move",
@@ -1848,9 +2061,9 @@
           "reason": "no code action matching /\\bmove\\b|rename (file|type)|sync (namespace|file)/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 194,
-          "memoryMb": 342,
-          "ms": 849
+          "coldStartMs": 262,
+          "memoryMb": 343,
+          "ms": 1108
         },
         {
           "id": "codeactions.apply.change-signature",
@@ -1859,32 +2072,136 @@
           "reason": "no code action matching /change signature|add parameter|remove parameter|reorder param/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
           "phase": "case",
           "details": {},
-          "coldStartMs": 188,
+          "coldStartMs": 258,
           "memoryMb": 385,
-          "ms": 879
+          "ms": 1144
         }
       ],
       "warm": {
-        "coldStartMs": 205,
+        "capabilities": {
+          "positionEncoding": "utf-16",
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": true
+          },
+          "completionProvider": {
+            "triggerCharacters": [
+              ".",
+              "\"",
+              "'",
+              "`",
+              "/",
+              "@",
+              "<",
+              "#",
+              " ",
+              "*"
+            ],
+            "resolveProvider": true,
+            "completionItem": {
+              "labelDetailsSupport": true
+            }
+          },
+          "hoverProvider": true,
+          "signatureHelpProvider": {
+            "triggerCharacters": [
+              "(",
+              ",",
+              "<"
+            ],
+            "retriggerCharacters": [
+              ")"
+            ]
+          },
+          "definitionProvider": true,
+          "typeDefinitionProvider": true,
+          "implementationProvider": true,
+          "referencesProvider": true,
+          "documentHighlightProvider": true,
+          "documentSymbolProvider": true,
+          "codeActionProvider": {
+            "codeActionKinds": [
+              "quickfix",
+              "source.organizeImports",
+              "source.removeUnusedImports",
+              "source.sortImports",
+              "source.fixAll"
+            ]
+          },
+          "codeLensProvider": {
+            "resolveProvider": true
+          },
+          "workspaceSymbolProvider": true,
+          "documentFormattingProvider": true,
+          "documentRangeFormattingProvider": true,
+          "documentOnTypeFormattingProvider": {
+            "firstTriggerCharacter": "{",
+            "moreTriggerCharacter": [
+              "}",
+              ";",
+              "\n"
+            ]
+          },
+          "renameProvider": {
+            "prepareProvider": true
+          },
+          "foldingRangeProvider": true,
+          "selectionRangeProvider": true,
+          "callHierarchyProvider": true,
+          "linkedEditingRangeProvider": true,
+          "inlayHintProvider": true,
+          "diagnosticProvider": {
+            "identifier": "typescript",
+            "interFileDependencies": true,
+            "workspaceDiagnostics": false
+          },
+          "workspace": {
+            "fileOperations": {
+              "willRename": {
+                "filters": [
+                  {
+                    "scheme": "file",
+                    "pattern": {
+                      "glob": "**/*.{ts,tsx,js,jsx,cts,cjs,mts,mjs,json}"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "experimental": {
+            "customSourceDefinitionProvider": true,
+            "customMultiDocumentHighlightProvider": true
+          },
+          "_vs_onAutoInsertProvider": {
+            "_vs_triggerCharacters": [
+              ">"
+            ]
+          },
+          "_vs_referencesProvider": true,
+          "semanticTokensProvider": true
+        },
+        "coldStartMs": 250,
         "coldStartAttempts": 2,
         "references": {
           "runs": 25,
-          "medianMs": 0.5,
-          "p95Ms": 0.6
+          "medianMs": 0.9,
+          "p95Ms": 1.2
         },
         "prepareRename": {
           "runs": 25,
-          "medianMs": 0.1,
-          "p95Ms": 0.3
+          "medianMs": 0.2,
+          "p95Ms": 0.4
         },
-        "memoryAfterLoadMb": 194,
+        "memoryAfterLoadMb": 195,
         "memoryAfterWorkloadMb": 196
       },
       "coldStart": {
         "samples": 13,
-        "medianMs": 207,
-        "minMs": 188,
-        "maxMs": 308
+        "medianMs": 259,
+        "minMs": 250,
+        "maxMs": 285
       },
       "memoryAfterCasesMb": 385
     }

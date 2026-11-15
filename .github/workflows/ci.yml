@@ -122,7 +122,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            result: linux
+          - os: windows-latest
+            result: windows
+          - os: macos-latest
+            result: macos
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -153,5 +159,5 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: lsp-host-results-${{ matrix.os }}
-          path: spikes/lsp-host/results/*.json
+          path: spikes/lsp-host/results/${{ matrix.result }}.json
           if-no-files-found: ignore
