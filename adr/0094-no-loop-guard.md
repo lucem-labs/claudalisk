@@ -38,9 +38,9 @@ Six more churn chains in the main thread had an owner's prompt inside them and w
 ## Decision
 
 - **Claudalisk builds no loop guard.** Over five weeks, loops of every kind measured cost about $20 out of about $4,157, or 0.5%. The churn row is an upper bound, because it counts every turn between the first and last edit of a chain, so the real share is lower.
-- **The loops that do happen are short.** Most end after one or two extra attempts and a few turns. A guard that waits for 18 turns, as the reference design does, would fire after most of them had already ended.
+- **The loops that do happen are short.** No repeated command or CI run went past three attempts, and the costliest of them was $1.35. A guard that caught every one of them at its first repeat would save less than the turns it adds when it fires on a session that is not looping.
 - **The reference design's triggers would fire mostly on sessions that are not looping.** 46 transcripts had 8 or more tool errors, and 419 ran past 18 turns, but the spike found only 31 loop runs in all. An error count or a long session does not mark a loop.
-- **CI loops are already bounded.** The verify script prints only the failures (CLA-0076), waiting for CI takes one call (CLA-0077), and an unexplained failure is rerun once and then investigated or filed (CLA-0022). The same CI failure came back 5 times as an extra attempt, 2 of them without an edit, at $2.40 in total.
+- **CI loops are already bounded.** The verify script prints only the failures (CLA-0076), waiting for CI takes one call (CLA-0077), and an unexplained failure is rerun once and then investigated or filed (CLA-0022). The same CI failure came back in 4 runs, with 5 extra attempts in all, at $2.40. In 2 of those runs a repeat came with no edit between.
 - **A later loop guard needs a new spike.** If a spike over at least four weeks of transcripts shows loops above 2% of spend, the guard is designed then. It would act through PostToolUse `additionalContext` and never stop the session, as #211 requires. The spike's method is in #211.
 
 ## Consequences
