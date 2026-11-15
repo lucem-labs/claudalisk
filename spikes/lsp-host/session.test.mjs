@@ -40,8 +40,8 @@ test('documents are identified by path, so an encoded form of the same URI finds
 
 test('keys ignore the drive letter case and its encoding on Windows and macOS, and keep case on Linux', () => {
   assert.equal(keyOf('file:///C:/Work/a.cs', 'win32'), keyOf('file:///c%3A/work/A.cs', 'win32'))
-  assert.equal(keyOf('file:///Work/a.cs', 'darwin'), keyOf('file:///work/A.cs', 'darwin'))
-  assert.notEqual(keyOf('file:///Work/a.cs', 'linux'), keyOf('file:///work/a.cs', 'linux'))
+  assert.equal(keyOf('file:///C:/Work/a.cs', 'darwin'), keyOf('file:///C:/work/A.cs', 'darwin'))
+  assert.notEqual(keyOf('file:///C:/Work/a.cs', 'linux'), keyOf('file:///C:/work/a.cs', 'linux'))
   assert.equal(keyOf('untitled:Untitled-1'), 'untitled:Untitled-1')
 })
 

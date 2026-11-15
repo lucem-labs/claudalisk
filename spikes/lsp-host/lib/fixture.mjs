@@ -37,6 +37,11 @@ export function addCases(app) {
       '  <Project Path="Proof.LspCases/Proof.LspCases.csproj" />\n  <Project Path="Proof.LspCases.Tests/Proof.LspCases.Tests.csproj" />\n</Solution>',
     ),
   )
+  const architecture = join(backend, 'Proof.ArchitectureTests', 'Proof.ArchitectureTests.csproj')
+  writeFileSync(
+    architecture,
+    readFileSync(architecture, 'utf8').replace('</Project>', '  <ItemGroup>\n    <ProjectReference Include="../Proof.LspCases/Proof.LspCases.csproj" />\n  </ItemGroup>\n</Project>'),
+  )
   cpSync(join(fixtures, 'frontend'), join(app, 'frontend'), { recursive: true })
 }
 
