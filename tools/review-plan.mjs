@@ -135,32 +135,40 @@ function unionAdrs(skills) {
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
-const baseName = (p) => p.split('/').pop().replace(/\.[^.]+$/, '');
-const namesPath = (token, p) => token.length > 0 && !/\s/.test(token) && (token === p || p.endsWith(`/${token}`) || token === baseName(p));
-const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim());
+const FILE_TOKEN = /^[^\s*<>]*[/.][^\s*<>]*$/;
 
-export function skillsFor(f, knowledge, paths = [f.path, f.oldPath].filter(Boolean)) {
+export function namesPath(token, path) {
+  if (!FILE_TOKEN.test(token) || token.startsWith('/')) return false;
+  const dir = token.replace(/\/+$/, '');
+  return path === dir || path.endsWith(`/${dir}`) || (token.includes('/') && path.startsWith(`${dir}/`));
+}
+
+const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()).filter((t) => FILE_TOKEN.test(t));
+
+export function skillsFor(f, knowledge, paths = [f.path, f.oldPath].filter(Boolean), enforcers = enforcersOf(knowledge)) {
   const names = new Set(knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name));
   const listing = knowledge.filter((s) => s.adrs.some((a) => paths.includes(a.file)));
   for (const s of listing) names.add(s.name);
   if (!listing.length && paths.some((p) => p.startsWith('adr/'))) {
-    const area = f.patch.match(/^\+- \*\*Area:\*\* (\S+)\s*$/m)?.[1];
+    const area = f.patch.match(/^[+ ]- \*\*Area:\*\* (\S+)\s*$/m)?.[1];
     if (area && knowledge.some((s) => s.name === area)) names.add(area);
   }
-  for (const s of knowledge) {
-    if (s.adrs.some((a) => enforcerTokens(a.enforcedBy).some((t) => paths.some((p) => namesPath(t, p))))) names.add(s.name);
-  }
+  for (const { skill, tokens } of enforcers) if (tokens.some((t) => paths.some((p) => namesPath(t, p)))) names.add(skill);
   return [...names].sort();
 }
+
+export const enforcersOf = (knowledge) =>
+  knowledge.map((s) => ({ skill: s.name, tokens: [...new Set(s.adrs.flatMap((a) => enforcerTokens(a.enforcedBy)))] }));
 
 export function planReview({ diff, knowledge, config, deviations = '', round = 'full' }) {
   const all = parseDiff(diff);
   const skipped = all.filter((f) => SKIPPED.some((r) => r.test(f.path))).map((f) => f.path);
+  const enforcers = enforcersOf(knowledge);
   const files = all.filter((f) => !skipped.includes(f.path)).map((f) => {
     const paths = [f.path, f.oldPath].filter(Boolean);
     return {
       ...f,
-      skills: skillsFor(f, knowledge, paths),
+      skills: skillsFor(f, knowledge, paths, enforcers),
       uatData: paths.some((p) => matchesAny(p, config.uatData, 'i')) || changesScriptsPackage(f),
       security: paths.some((p) => matchesAny(p, config.security, 'i')),
     };
