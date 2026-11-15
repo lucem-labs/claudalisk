@@ -6,6 +6,11 @@ import { Session } from './session.mjs'
 
 export const WARM_RUNS = 25
 
+export function slimCapabilities(capabilities) {
+  const { semanticTokensProvider, ...rest } = capabilities
+  return { ...rest, semanticTokensProvider: semanticTokensProvider ? true : undefined }
+}
+
 async function timed(action) {
   const started = performance.now()
   await action()
@@ -29,7 +34,7 @@ export async function warmMeasurement({ server, base, work, runs = WARM_RUNS }) 
       prepares.push(await timed(() => session.prepareRename(probe.file, probe.needle)))
     }
     const memoryAfterWorkloadMb = treeMemory(session.client.pid).megabytes
-    return { coldStartMs: cold.ms, coldStartAttempts: cold.attempts, references: stats(references), prepareRename: stats(prepares), memoryAfterLoadMb, memoryAfterWorkloadMb }
+    return { capabilities: slimCapabilities(session.capabilities), coldStartMs: cold.ms, coldStartAttempts: cold.attempts, references: stats(references), prepareRename: stats(prepares), memoryAfterLoadMb, memoryAfterWorkloadMb }
   } finally {
     if (session) await session.stop().catch(() => session.client.child?.kill())
     removeApp(app)

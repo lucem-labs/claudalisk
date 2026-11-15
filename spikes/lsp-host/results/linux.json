@@ -1,0 +1,1892 @@
+{
+  "os": "linux",
+  "platform": "linux",
+  "arch": "x64",
+  "versions": {
+    "csharp-ls": "0.28.0",
+    "roslyn": "5.13.0-1.26514.10",
+    "typescript": "7.0.2",
+    "dotnet": "11.0.100",
+    "node": "v24.22.2"
+  },
+  "date": "2026-11-15T17:30:07.694Z",
+  "servers": {
+    "csharp-ls": {
+      "cases": [
+        {
+          "id": "rename.overload",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Pricing.cs",
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 8,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2,
+            "otherOverloads": "renamed too"
+          },
+          "coldStartMs": 5442,
+          "memoryMb": 390,
+          "ms": 8241
+        },
+        {
+          "id": "rename.interface-method",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Shapes.cs"
+            ],
+            "editCount": 5,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 6216,
+          "memoryMb": 379,
+          "ms": 8867
+        },
+        {
+          "id": "rename.partial-class",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Ledger.Entries.cs",
+              "backend/Proof.LspCases/Ledger.Totals.cs"
+            ],
+            "editCount": 3,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 3
+          },
+          "coldStartMs": 5645,
+          "memoryMb": 380,
+          "ms": 8080
+        },
+        {
+          "id": "rename.record-property",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Customer.cs"
+            ],
+            "editCount": 4,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 5434,
+          "memoryMb": 382,
+          "ms": 8027
+        },
+        {
+          "id": "rename.generated-regex",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "referenceUris": [
+              "backend/Proof.LspCases/Patterns.cs"
+            ],
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Patterns.cs"
+            ],
+            "editCount": 2,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 1
+          },
+          "coldStartMs": 5415,
+          "memoryMb": 373,
+          "ms": 7864
+        },
+        {
+          "id": "rename.generated-json-context",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Customer.cs"
+            ],
+            "editCount": 7,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 5184,
+          "memoryMb": 380,
+          "ms": 7807
+        },
+        {
+          "id": "references.into-generated-file",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "referenceKinds": [
+              "file"
+            ],
+            "count": 2,
+            "generatedLocations": [],
+            "definition": [
+              "file:///tmp/lsp-host-work/cases/csharp-ls-7/backend/Proof.LspCases/Patterns.cs"
+            ]
+          },
+          "coldStartMs": 5412,
+          "memoryMb": 373,
+          "ms": 6483
+        },
+        {
+          "id": "rename.file",
+          "server": "csharp-ls",
+          "status": "unsupported",
+          "reason": "the action \"Rename file to Receipt.cs\" is offered, but its edit holds no RenameFile operation (0 text edits)",
+          "phase": "case",
+          "details": {
+            "willRename": null,
+            "titlesAtType": [
+              "Generate overrides...",
+              "Generate Equals(...)...",
+              "Generate Equals and GetHashCode...",
+              "Extract interface...",
+              "Rename file to Receipt.cs",
+              "Rename type to Misnamed",
+              "Generate constructor 'Receipt()'",
+              "Extract base class...",
+              "Add 'DebuggerDisplay' attribute"
+            ],
+            "action": "Rename file to Receipt.cs",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Misnamed.cs"
+            ],
+            "editCount": 0,
+            "resourceOperations": []
+          },
+          "coldStartMs": 5205,
+          "memoryMb": 378,
+          "ms": 6622
+        },
+        {
+          "id": "edit.body-replace",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "replacedStartsWith": "    public static string Describe(IShape",
+            "replacedEndsWith": "hape.Area():0.00}\";\n",
+            "resultKind": "hierarchical",
+            "actions": 1
+          },
+          "coldStartMs": 5288,
+          "memoryMb": 369,
+          "ms": 7313
+        },
+        {
+          "id": "edit.insert-before-after",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "symbolsAfter": [
+              "Sample.cs",
+              "LspCases",
+              "Sample",
+              "Doubled(int value)",
+              "Label(int quantity, decimal unit)",
+              "Tripled(int value)"
+            ]
+          },
+          "coldStartMs": 5044,
+          "memoryMb": 376,
+          "ms": 7046
+        },
+        {
+          "id": "diagnostics",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "buildBroke": "build",
+            "pushed": {
+              "supported": false
+            },
+            "pullAdvertised": true,
+            "pulled": {
+              "supported": true,
+              "count": 2,
+              "first": "'Pricing' does not contain a definition for 'Totl'"
+            }
+          },
+          "coldStartMs": 5126,
+          "memoryMb": 374,
+          "ms": 26983
+        },
+        {
+          "id": "hierarchy.type",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "prepared": "IShape",
+            "subtypes": [
+              "Circle",
+              "Square"
+            ],
+            "supertypes": [
+              "IShape"
+            ]
+          },
+          "coldStartMs": 5210,
+          "memoryMb": 358,
+          "ms": 6235
+        },
+        {
+          "id": "codeactions.survey",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "byPosition": {
+              "signature": [
+                {
+                  "title": "Wrap every parameter - Align wrapped parameters",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Wrap every parameter - Indent all parameters",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Wrap every parameter - Indent wrapped parameters",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Unwrap and indent all parameters",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Move static members to another type...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract base class...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "selection": [
+                {
+                  "title": "Introduce local - Introduce local for 'quantity * unit'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce local - Introduce local for all occurrences of 'quantity * unit'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract method",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'quantity * unit' - and update call sites directly",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'quantity * unit' - into extracted method to invoke at call sites",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'quantity * unit' - into new overload",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'quantity * unit' - and update call sites directly",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'quantity * unit' - into extracted method to invoke at call sites",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'quantity * unit' - into new overload",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "block": [
+                {
+                  "title": "Extract method",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract local function",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Invert if",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "statement": [
+                {
+                  "title": "Introduce local - Introduce local for '$\"Total {total}\"'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce local - Introduce local for all occurrences of '$\"Total {total}\"'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract method",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract local function",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Inline temporary variable",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "unusedImport": [
+                {
+                  "title": "Remove unnecessary usings",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "variable": [
+                {
+                  "title": "Introduce local - Introduce local for 'Pricing.Total(quantity, unit)'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce local - Introduce local for all occurrences of 'Pricing.Total(quantity, unit)'",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'Pricing.Total(quantity, unit)' - and update call sites directly",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'Pricing.Total(quantity, unit)' - into extracted method to invoke at call sites",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'Pricing.Total(quantity, unit)' - into new overload",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - and update call sites directly",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - into extracted method to invoke at call sites",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - into new overload",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Inline temporary variable",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "typeDeclaration": [
+                {
+                  "title": "Generate overrides...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Generate Equals(...)...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Generate Equals and GetHashCode...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract interface...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Move type to CasesJsonContext.cs",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Generate constructor from members...",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Add 'DebuggerDisplay' attribute",
+                  "kind": "",
+                  "edit": false,
+                  "command": false
+                }
+              ]
+            },
+            "errorSites": {
+              "unknown-method": {
+                "diagnostics": [
+                  "'Pricing' does not contain a definition for 'Totl'",
+                  "Unnecessary using directive."
+                ],
+                "actions": [
+                  {
+                    "title": "Extract method",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Extract local function",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Change 'Totl' to 'Total'.",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Generate method 'Totl'",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  }
+                ]
+              },
+              "extra-argument": {
+                "diagnostics": [
+                  "No overload for method 'Total' takes 3 arguments",
+                  "Unnecessary using directive."
+                ],
+                "actions": [
+                  {
+                    "title": "Extract method",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Extract local function",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Add parameter to 'Total' - Add to 'Total(int quantity, decimal unit)'",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Add parameter to 'Total' - Add to 'Total(decimal amount)'",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Add parameter to 'Total' - Add to 'Total(IEnumerable<decimal> amounts)'",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Generate method 'Total'",
+                    "kind": "",
+                    "edit": false,
+                    "command": false
+                  }
+                ]
+              }
+            },
+            "features": {
+              "E3_changeSignature": [
+                ": Add parameter to 'Total' - Add to 'Total(int quantity, decimal unit)'",
+                ": Add parameter to 'Total' - Add to 'Total(decimal amount)'",
+                ": Add parameter to 'Total' - Add to 'Total(IEnumerable<decimal> amounts)'"
+              ],
+              "E6_organizeFixAll": [
+                ": Remove unnecessary usings"
+              ],
+              "E7_extract": [
+                ": Extract base class...",
+                ": Extract method",
+                ": Introduce parameter for 'quantity * unit' - and update call sites directly",
+                ": Introduce parameter for 'quantity * unit' - into extracted method to invoke at call sites",
+                ": Introduce parameter for 'quantity * unit' - into new overload",
+                ": Introduce parameter for all occurrences of 'quantity * unit' - and update call sites directly",
+                ": Introduce parameter for all occurrences of 'quantity * unit' - into extracted method to invoke at call sites",
+                ": Introduce parameter for all occurrences of 'quantity * unit' - into new overload",
+                ": Extract local function",
+                ": Introduce parameter for 'Pricing.Total(quantity, unit)' - and update call sites directly",
+                ": Introduce parameter for 'Pricing.Total(quantity, unit)' - into extracted method to invoke at call sites",
+                ": Introduce parameter for 'Pricing.Total(quantity, unit)' - into new overload",
+                ": Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - and update call sites directly",
+                ": Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - into extracted method to invoke at call sites",
+                ": Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)' - into new overload",
+                ": Extract interface..."
+              ],
+              "E7_inline": [
+                ": Inline temporary variable"
+              ],
+              "E7_move": [
+                ": Move static members to another type...",
+                ": Move type to CasesJsonContext.cs"
+              ]
+            },
+            "advertisedKinds": null
+          },
+          "coldStartMs": 5198,
+          "memoryMb": 404,
+          "ms": 8155
+        },
+        {
+          "id": "codeactions.apply.organize-or-fix-all",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Remove unnecessary usings",
+            "kind": "",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 1,
+            "resourceOperations": []
+          },
+          "coldStartMs": 5116,
+          "memoryMb": 386,
+          "ms": 7576
+        },
+        {
+          "id": "codeactions.apply.extract",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Extract method",
+            "kind": "",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 2,
+            "resourceOperations": []
+          },
+          "coldStartMs": 5290,
+          "memoryMb": 391,
+          "ms": 8098
+        },
+        {
+          "id": "codeactions.apply.inline",
+          "server": "csharp-ls",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Inline temporary variable",
+            "kind": "",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 3,
+            "resourceOperations": []
+          },
+          "coldStartMs": 5532,
+          "memoryMb": 386,
+          "ms": 8114
+        },
+        {
+          "id": "codeactions.apply.move",
+          "server": "csharp-ls",
+          "status": "fail",
+          "reason": "the applier refused the edit of \"Move type to CasesJsonContext.cs\": file:///tmp/lsp-host-work/cases/csharp-ls-17/backend/Proof.LspCases/CasesJsonContext.cs does not exist",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 5219,
+          "memoryMb": 388,
+          "ms": 6841
+        },
+        {
+          "id": "codeactions.apply.change-signature",
+          "server": "csharp-ls",
+          "status": "fail",
+          "reason": "build failed after the edit: ackend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/csharp-ls-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.18",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 5150,
+          "memoryMb": 402,
+          "ms": 8029
+        }
+      ],
+      "warm": {
+        "coldStartMs": 5107,
+        "coldStartAttempts": 2,
+        "references": {
+          "runs": 25,
+          "medianMs": 1.6,
+          "p95Ms": 3.6
+        },
+        "prepareRename": {
+          "runs": 25,
+          "medianMs": 0.4,
+          "p95Ms": 0.9
+        },
+        "memoryAfterLoadMb": 364,
+        "memoryAfterWorkloadMb": 370
+      },
+      "coldStart": {
+        "samples": 18,
+        "medianMs": 5219,
+        "minMs": 5044,
+        "maxMs": 6216
+      },
+      "memoryAfterCasesMb": 404
+    },
+    "roslyn": {
+      "cases": [
+        {
+          "id": "rename.overload",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Pricing.cs",
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 4,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2,
+            "otherOverloads": "left alone"
+          },
+          "coldStartMs": 4783,
+          "memoryMb": 513,
+          "ms": 7557
+        },
+        {
+          "id": "rename.interface-method",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Shapes.cs"
+            ],
+            "editCount": 5,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 4243,
+          "memoryMb": 461,
+          "ms": 7136
+        },
+        {
+          "id": "rename.partial-class",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Ledger.Entries.cs",
+              "backend/Proof.LspCases/Ledger.Totals.cs"
+            ],
+            "editCount": 3,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 3
+          },
+          "coldStartMs": 4193,
+          "memoryMb": 466,
+          "ms": 6974
+        },
+        {
+          "id": "rename.record-property",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Customer.cs"
+            ],
+            "editCount": 4,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 4137,
+          "memoryMb": 462,
+          "ms": 7192
+        },
+        {
+          "id": "rename.generated-regex",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "referenceUris": [
+              "roslyn-source-generated://307c1701-79ed-4863-a826-b9a2fe2c30c1/RegexGenerator.g.cs?documentId=5c6d3da3-eafd-8e08-d55f-ab5eb5e4251c&hintName=RegexGenerator.g.cs&assemblyName=System.Text.RegularExpressions.Generator&assemblyVersion=10.0.15.3008&typeName=System.Text.RegularExpressions.Generator.RegexGenerator&assemblyPath=%2Fusr%2Fshare%2Fdotnet%2Fpacks%2FMicrosoft.NETCore.App.Ref%2F10.0.15%2Fanalyzers%2Fdotnet%2Fcs%2FSystem.Text.RegularExpressions.Generator.dll",
+              "backend/Proof.LspCases/Patterns.cs"
+            ],
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Patterns.cs"
+            ],
+            "editCount": 2,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 1
+          },
+          "coldStartMs": 4206,
+          "memoryMb": 461,
+          "ms": 7385
+        },
+        {
+          "id": "rename.generated-json-context",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases.Tests/CaseTests.cs",
+              "backend/Proof.LspCases/Customer.cs"
+            ],
+            "editCount": 7,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 2
+          },
+          "coldStartMs": 4124,
+          "memoryMb": 461,
+          "ms": 6964
+        },
+        {
+          "id": "references.into-generated-file",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "referenceKinds": [
+              "roslyn-source-generated",
+              "file"
+            ],
+            "count": 3,
+            "generatedLocations": [
+              "roslyn-source-generated://35d389d2-beb7-4f96-b9c3-1d0dd7965bee/CasesJsonContext.CustomerInfo.g.cs?documentId=96a6718a-70"
+            ],
+            "definition": [
+              "file:///tmp/lsp-host-work/cases/roslyn-7/backend/Proof.LspCases/Patterns.cs"
+            ]
+          },
+          "coldStartMs": 4166,
+          "memoryMb": 462,
+          "ms": 6468
+        },
+        {
+          "id": "rename.file",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "willRename": {
+              "filters": [
+                {
+                  "pattern": {
+                    "glob": "**/*.razor"
+                  }
+                }
+              ]
+            },
+            "titlesAtType": [
+              "Generate constructor 'Receipt()'",
+              "Extract interface...",
+              "Extract base class...",
+              "Rename file to Receipt.cs",
+              "Rename type to Misnamed",
+              "Add 'DebuggerDisplay' attribute"
+            ],
+            "action": "Rename file to Receipt.cs",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [],
+            "editCount": 0,
+            "resourceOperations": [
+              "rename"
+            ],
+            "renameTypeOffered": true
+          },
+          "coldStartMs": 4197,
+          "memoryMb": 521,
+          "ms": 7912
+        },
+        {
+          "id": "edit.body-replace",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "replacedStartsWith": "public static string Describe(IShape sha",
+            "replacedEndsWith": "shape.Area():0.00}\";",
+            "resultKind": "hierarchical",
+            "actions": 1
+          },
+          "coldStartMs": 4199,
+          "memoryMb": 461,
+          "ms": 6778
+        },
+        {
+          "id": "edit.insert-before-after",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "symbolsAfter": [
+              "Proof.LspCases",
+              "Sample",
+              "Doubled(int) : int",
+              "Label(int, decimal) : string",
+              "Tripled(int) : int"
+            ]
+          },
+          "coldStartMs": 4154,
+          "memoryMb": 461,
+          "ms": 6682
+        },
+        {
+          "id": "diagnostics",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "buildBroke": "build",
+            "pushed": {
+              "supported": false
+            },
+            "pullAdvertised": true,
+            "pulled": {
+              "supported": true,
+              "count": 2,
+              "first": "'Pricing' does not contain a definition for 'Totl'"
+            }
+          },
+          "coldStartMs": 4071,
+          "memoryMb": 513,
+          "ms": 27074
+        },
+        {
+          "id": "hierarchy.type",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "prepared": "IShape",
+            "subtypes": [
+              "Circle",
+              "Square"
+            ],
+            "supertypes": [
+              "IShape"
+            ]
+          },
+          "coldStartMs": 4122,
+          "memoryMb": 445,
+          "ms": 6165
+        },
+        {
+          "id": "codeactions.survey",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "byPosition": {
+              "signature": [
+                {
+                  "title": "Use block body for method",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Fix All: Use block body for method",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Move static members to another type...",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Wrap every parameter",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Unwrap and indent all parameters",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract base class...",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Suppress or configure issues",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                }
+              ],
+              "selection": [
+                {
+                  "title": "Introduce local",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Extract method",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Use block body for method",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Fix All: Use block body for method",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Introduce parameter for 'quantity * unit'",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'quantity * unit'",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Suppress or configure issues",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                }
+              ],
+              "block": [
+                {
+                  "title": "Invert if",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract method",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract local function",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                }
+              ],
+              "statement": [
+                {
+                  "title": "Introduce local",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Inline temporary variable",
+                  "kind": "refactor.inline",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract method",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Extract local function",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Use explicit type instead of 'var'",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Fix All: Use explicit type instead of 'var'",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Suppress or configure issues",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                }
+              ],
+              "unusedImport": [
+                {
+                  "title": "Remove unnecessary usings",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Fix All: Remove unnecessary usings",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Suppress or configure issues",
+                  "kind": "quickfix",
+                  "edit": false,
+                  "command": true
+                }
+              ],
+              "variable": [
+                {
+                  "title": "Introduce local",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Inline temporary variable",
+                  "kind": "refactor.inline",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Introduce parameter for 'Pricing.Total(quantity, unit)'",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                },
+                {
+                  "title": "Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)'",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": true
+                }
+              ],
+              "typeDeclaration": [
+                {
+                  "title": "Extract interface...",
+                  "kind": "refactor.extract",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Move type to CasesJsonContext.cs",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": false
+                },
+                {
+                  "title": "Add 'DebuggerDisplay' attribute",
+                  "kind": "refactor",
+                  "edit": false,
+                  "command": false
+                }
+              ]
+            },
+            "errorSites": {
+              "unknown-method": {
+                "diagnostics": [
+                  "Using directive is unnecessary.",
+                  "'Pricing' does not contain a definition for 'Totl'"
+                ],
+                "actions": [
+                  {
+                    "title": "Extract method",
+                    "kind": "refactor.extract",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Extract local function",
+                    "kind": "refactor.extract",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Generate method 'Totl'",
+                    "kind": "quickfix",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Change 'Totl' to 'Total'.",
+                    "kind": "quickfix",
+                    "edit": false,
+                    "command": false
+                  }
+                ]
+              },
+              "extra-argument": {
+                "diagnostics": [
+                  "Using directive is unnecessary.",
+                  "No overload for method 'Total' takes 3 arguments"
+                ],
+                "actions": [
+                  {
+                    "title": "Extract method",
+                    "kind": "refactor.extract",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Extract local function",
+                    "kind": "refactor.extract",
+                    "edit": false,
+                    "command": false
+                  },
+                  {
+                    "title": "Add parameter to 'Total'",
+                    "kind": "quickfix",
+                    "edit": false,
+                    "command": true
+                  },
+                  {
+                    "title": "Generate method 'Total'",
+                    "kind": "quickfix",
+                    "edit": false,
+                    "command": false
+                  }
+                ]
+              }
+            },
+            "features": {
+              "E3_changeSignature": [
+                "quickfix: Add parameter to 'Total'"
+              ],
+              "E6_organizeFixAll": [
+                "quickfix: Fix All: Use block body for method",
+                "quickfix: Fix All: Use explicit type instead of 'var'",
+                "quickfix: Remove unnecessary usings",
+                "quickfix: Fix All: Remove unnecessary usings"
+              ],
+              "E7_extract": [
+                "refactor.extract: Extract base class...",
+                "refactor.extract: Extract method",
+                "refactor: Introduce parameter for 'quantity * unit'",
+                "refactor: Introduce parameter for all occurrences of 'quantity * unit'",
+                "refactor.extract: Extract local function",
+                "refactor: Introduce parameter for 'Pricing.Total(quantity, unit)'",
+                "refactor: Introduce parameter for all occurrences of 'Pricing.Total(quantity, unit)'",
+                "refactor.extract: Extract interface..."
+              ],
+              "E7_inline": [
+                "refactor.inline: Inline temporary variable"
+              ],
+              "E7_move": [
+                "refactor: Move static members to another type...",
+                "refactor: Move type to CasesJsonContext.cs"
+              ]
+            },
+            "advertisedKinds": [
+              "quickfix",
+              "refactor"
+            ]
+          },
+          "coldStartMs": 4289,
+          "memoryMb": 573,
+          "ms": 9455
+        },
+        {
+          "id": "codeactions.apply.organize-or-fix-all",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Remove unnecessary usings",
+            "kind": "quickfix",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 1,
+            "resourceOperations": []
+          },
+          "coldStartMs": 4141,
+          "memoryMb": 535,
+          "ms": 7651
+        },
+        {
+          "id": "codeactions.apply.extract",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Extract method",
+            "kind": "refactor.extract",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 2,
+            "resourceOperations": []
+          },
+          "coldStartMs": 4239,
+          "memoryMb": 532,
+          "ms": 8012
+        },
+        {
+          "id": "codeactions.apply.inline",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Inline temporary variable",
+            "kind": "refactor.inline",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/Sample.cs"
+            ],
+            "editCount": 3,
+            "resourceOperations": []
+          },
+          "coldStartMs": 4229,
+          "memoryMb": 519,
+          "ms": 7821
+        },
+        {
+          "id": "codeactions.apply.move",
+          "server": "roslyn",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Move type to CasesJsonContext.cs",
+            "kind": "refactor",
+            "via": "edit",
+            "shape": "documentChanges",
+            "files": [
+              "backend/Proof.LspCases/CasesJsonContext.cs",
+              "backend/Proof.LspCases/Customer.cs"
+            ],
+            "editCount": 3,
+            "resourceOperations": [
+              "create"
+            ]
+          },
+          "coldStartMs": 4077,
+          "memoryMb": 532,
+          "ms": 8064
+        },
+        {
+          "id": "codeactions.apply.change-signature",
+          "server": "roslyn",
+          "status": "fail",
+          "reason": "build failed after the edit: /roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n\nBuild FAILED.\n\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(14,47): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Pricing.cs(7,52): error CS7036: There is no argument given that corresponds to the required parameter 'v' of 'Pricing.Total(int, decimal, int)' [/tmp/lsp-host-work/cases/roslyn-18/backend/Proof.LspCases/Proof.LspCases.csproj]\n    0 Warning(s)\n    2 Error(s)\n\nTime Elapsed 00:00:00.15",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 4167,
+          "memoryMb": 532,
+          "ms": 7777
+        }
+      ],
+      "warm": {
+        "coldStartMs": 4150,
+        "coldStartAttempts": 4,
+        "references": {
+          "runs": 25,
+          "medianMs": 501.7,
+          "p95Ms": 504.1
+        },
+        "prepareRename": {
+          "runs": 25,
+          "medianMs": 1.2,
+          "p95Ms": 4.4
+        },
+        "memoryAfterLoadMb": 451,
+        "memoryAfterWorkloadMb": 475
+      },
+      "coldStart": {
+        "samples": 18,
+        "medianMs": 4167,
+        "minMs": 4071,
+        "maxMs": 4783
+      },
+      "memoryAfterCasesMb": 573
+    },
+    "typescript": {
+      "cases": [
+        {
+          "id": "rename.barrel",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "changes",
+            "files": [
+              "frontend/src/shared/lib/price/format-price.test.ts",
+              "frontend/src/shared/lib/price/format-price.ts",
+              "frontend/src/shared/lib/price/index.ts"
+            ],
+            "editCount": 4,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 3,
+            "importersUpdated": false,
+            "barrelAfter": "export { renderPrice as formatPrice, totalPrice }"
+          },
+          "coldStartMs": 207,
+          "memoryMb": 194,
+          "ms": 3148
+        },
+        {
+          "id": "rename.barrel-all-sites",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "changes",
+            "files": [
+              "frontend/src/pages/pricing/ui/pricing-summary.ts",
+              "frontend/src/shared/lib/price/format-price.test.ts",
+              "frontend/src/shared/lib/price/format-price.ts",
+              "frontend/src/shared/lib/price/index.ts"
+            ],
+            "editCount": 6,
+            "resourceOperations": [],
+            "prepare": "range",
+            "applied": 4
+          },
+          "coldStartMs": 192,
+          "memoryMb": 193,
+          "ms": 3129
+        },
+        {
+          "id": "rename.file",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "shape": "documentChanges",
+            "files": [
+              "frontend/src/shared/lib/price/format-price.test.ts",
+              "frontend/src/shared/lib/price/index.ts"
+            ],
+            "editCount": 2,
+            "resourceOperations": []
+          },
+          "coldStartMs": 207,
+          "memoryMb": 354,
+          "ms": 3473
+        },
+        {
+          "id": "edit.body-replace",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "replacedStartsWith": "export function totalPrice(prices: Price",
+            "replacedEndsWith": "urrency ?? 'EUR' }\n}",
+            "resultKind": "hierarchical",
+            "actions": 1
+          },
+          "coldStartMs": 202,
+          "memoryMb": 195,
+          "ms": 3340
+        },
+        {
+          "id": "edit.insert-before-after",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "symbolsAfter": [
+              "Price",
+              "formatPrice",
+              "zeroPrice",
+              "amount",
+              "currency",
+              "totalPrice",
+              "amount",
+              "prices.reduce() callback",
+              "currency",
+              "doublePrice",
+              "amount",
+              "currency"
+            ]
+          },
+          "coldStartMs": 211,
+          "memoryMb": 197,
+          "ms": 3239
+        },
+        {
+          "id": "diagnostics",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "buildBroke": "build",
+            "pushed": {
+              "supported": false
+            },
+            "pullAdvertised": true,
+            "pulled": {
+              "supported": true,
+              "count": 1,
+              "first": "Expected 1 arguments, but got 2."
+            }
+          },
+          "coldStartMs": 308,
+          "memoryMb": 213,
+          "ms": 22956
+        },
+        {
+          "id": "hierarchy.type",
+          "server": "typescript",
+          "status": "unsupported",
+          "reason": "typeHierarchyProvider is not advertised; prepareTypeHierarchy error: textDocument/prepareTypeHierarchy: InvalidRequest (-32600)",
+          "phase": "case",
+          "details": {
+            "requestedAnyway": "error: textDocument/prepareTypeHierarchy: InvalidRequest (-32600)"
+          },
+          "coldStartMs": 209,
+          "memoryMb": 192,
+          "ms": 491
+        },
+        {
+          "id": "codeactions.survey",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "byPosition": {
+              "signature": [
+                {
+                  "title": "Organize Imports",
+                  "kind": "source.organizeImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Remove Unused Imports",
+                  "kind": "source.removeUnusedImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Sort Imports",
+                  "kind": "source.sortImports",
+                  "edit": true,
+                  "command": false
+                }
+              ],
+              "selection": [
+                {
+                  "title": "Organize Imports",
+                  "kind": "source.organizeImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Remove Unused Imports",
+                  "kind": "source.removeUnusedImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Sort Imports",
+                  "kind": "source.sortImports",
+                  "edit": true,
+                  "command": false
+                }
+              ],
+              "block": [
+                {
+                  "title": "Organize Imports",
+                  "kind": "source.organizeImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Remove Unused Imports",
+                  "kind": "source.removeUnusedImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Sort Imports",
+                  "kind": "source.sortImports",
+                  "edit": true,
+                  "command": false
+                }
+              ],
+              "unusedImport": [
+                {
+                  "title": "Organize Imports",
+                  "kind": "source.organizeImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Remove Unused Imports",
+                  "kind": "source.removeUnusedImports",
+                  "edit": true,
+                  "command": false
+                },
+                {
+                  "title": "Sort Imports",
+                  "kind": "source.sortImports",
+                  "edit": true,
+                  "command": false
+                }
+              ]
+            },
+            "errorSites": {
+              "unknown-name": {
+                "diagnostics": [
+                  "'formatPrice' is declared but its value is never read.",
+                  "Cannot find name 'formatPrce'. Did you mean 'formatPrice'?"
+                ],
+                "actions": [
+                  {
+                    "title": "Organize Imports",
+                    "kind": "source.organizeImports",
+                    "edit": true,
+                    "command": false
+                  },
+                  {
+                    "title": "Remove Unused Imports",
+                    "kind": "source.removeUnusedImports",
+                    "edit": true,
+                    "command": false
+                  },
+                  {
+                    "title": "Sort Imports",
+                    "kind": "source.sortImports",
+                    "edit": true,
+                    "command": false
+                  }
+                ]
+              },
+              "extra-argument": {
+                "diagnostics": [
+                  "Expected 1 arguments, but got 2."
+                ],
+                "actions": [
+                  {
+                    "title": "Organize Imports",
+                    "kind": "source.organizeImports",
+                    "edit": true,
+                    "command": false
+                  },
+                  {
+                    "title": "Remove Unused Imports",
+                    "kind": "source.removeUnusedImports",
+                    "edit": true,
+                    "command": false
+                  },
+                  {
+                    "title": "Sort Imports",
+                    "kind": "source.sortImports",
+                    "edit": true,
+                    "command": false
+                  }
+                ]
+              }
+            },
+            "features": {
+              "E3_changeSignature": [],
+              "E6_organizeFixAll": [
+                "source.organizeImports: Organize Imports",
+                "source.removeUnusedImports: Remove Unused Imports"
+              ],
+              "E7_extract": [],
+              "E7_inline": [],
+              "E7_move": []
+            },
+            "advertisedKinds": [
+              "quickfix",
+              "source.organizeImports",
+              "source.removeUnusedImports",
+              "source.sortImports",
+              "source.fixAll"
+            ]
+          },
+          "coldStartMs": 202,
+          "memoryMb": 363,
+          "ms": 908
+        },
+        {
+          "id": "codeactions.apply.organize-or-fix-all",
+          "server": "typescript",
+          "status": "pass",
+          "reason": "",
+          "phase": "case",
+          "details": {
+            "action": "Organize Imports",
+            "kind": "source.organizeImports",
+            "via": "edit",
+            "shape": "changes",
+            "files": [
+              "frontend/src/pages/pricing/ui/unused.ts"
+            ],
+            "editCount": 2,
+            "resourceOperations": []
+          },
+          "coldStartMs": 208,
+          "memoryMb": 351,
+          "ms": 3700
+        },
+        {
+          "id": "codeactions.apply.extract",
+          "server": "typescript",
+          "status": "unsupported",
+          "reason": "no code action matching /extract|introduce parameter/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 210,
+          "memoryMb": 343,
+          "ms": 873
+        },
+        {
+          "id": "codeactions.apply.inline",
+          "server": "typescript",
+          "status": "unsupported",
+          "reason": "no code action matching /inline/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 214,
+          "memoryMb": 343,
+          "ms": 881
+        },
+        {
+          "id": "codeactions.apply.move",
+          "server": "typescript",
+          "status": "unsupported",
+          "reason": "no code action matching /\\bmove\\b|rename (file|type)|sync (namespace|file)/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports | Organize Imports | Remove Unused Imports | Sort Imports",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 194,
+          "memoryMb": 342,
+          "ms": 849
+        },
+        {
+          "id": "codeactions.apply.change-signature",
+          "server": "typescript",
+          "status": "unsupported",
+          "reason": "no code action matching /change signature|add parameter|remove parameter|reorder param/i at the chosen positions; offered: Organize Imports | Remove Unused Imports | Sort Imports",
+          "phase": "case",
+          "details": {},
+          "coldStartMs": 188,
+          "memoryMb": 385,
+          "ms": 879
+        }
+      ],
+      "warm": {
+        "coldStartMs": 205,
+        "coldStartAttempts": 2,
+        "references": {
+          "runs": 25,
+          "medianMs": 0.5,
+          "p95Ms": 0.6
+        },
+        "prepareRename": {
+          "runs": 25,
+          "medianMs": 0.1,
+          "p95Ms": 0.3
+        },
+        "memoryAfterLoadMb": 194,
+        "memoryAfterWorkloadMb": 196
+      },
+      "coldStart": {
+        "samples": 13,
+        "medianMs": 207,
+        "minMs": 188,
+        "maxMs": 308
+      },
+      "memoryAfterCasesMb": 385
+    }
+  }
+}

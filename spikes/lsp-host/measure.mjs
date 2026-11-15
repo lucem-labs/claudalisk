@@ -19,16 +19,16 @@ function option(name) {
 
 const log = (line) => process.stderr.write(`${line}\n`)
 
-function versions() {
+function versions(base) {
   const manifest = JSON.parse(readFileSync(join(here, '.config', 'dotnet-tools.json'), 'utf8')).tools
   const typescript = JSON.parse(readFileSync(join(here, 'node_modules', 'typescript', 'package.json'), 'utf8')).version
-  const dotnet = spawnSync('dotnet', ['--version'], { encoding: 'utf8' }).stdout.trim()
+  const dotnet = spawnSync('dotnet', ['--version'], { cwd: base, encoding: 'utf8' }).stdout.trim()
   return { 'csharp-ls': manifest['csharp-ls'].version, roslyn: manifest['roslyn-language-server'].version, typescript, dotnet, node: process.version }
 }
 
 async function measure({ servers = ALL, filter = '', warmRuns }) {
   const { base, work } = await ensureBase()
-  const out = { os: OS, platform: process.platform, arch: process.arch, versions: versions(), date: new Date().toISOString(), servers: {} }
+  const out = { os: OS, platform: process.platform, arch: process.arch, versions: versions(base), date: new Date().toISOString(), servers: {} }
   for (const server of servers) {
     const entry = { cases: [], warm: null }
     out.servers[server] = entry

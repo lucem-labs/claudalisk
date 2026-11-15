@@ -53,6 +53,12 @@ export function render(results) {
   }))), '')
   out.push('## Resident memory of the server process tree, MB', '')
   out.push(table(['Server', 'OS', 'After load', 'After the warm workload', 'Highest at the end of a case'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]).map((s) => [s, r.os, r.servers[s].warm?.memoryAfterLoadMb, r.servers[s].warm?.memoryAfterWorkloadMb, r.servers[s].memoryAfterCasesMb]))), '')
+  out.push('## Advertised capabilities', '')
+  const yes = (value) => (value ? 'yes' : 'no')
+  out.push(table(['Server', 'Rename prepare', 'Call hierarchy', 'Type hierarchy', 'Implementation', 'Code action kinds', 'Pull diagnostics', 'willRename filters'], SERVERS.filter((s) => results[0].servers[s]?.warm?.capabilities).map((s) => {
+    const c = results[0].servers[s].warm.capabilities
+    return [s, yes(c.renameProvider?.prepareProvider), yes(c.callHierarchyProvider), yes(c.typeHierarchyProvider), yes(c.implementationProvider), c.codeActionProvider?.codeActionKinds?.join(', ') ?? (c.codeActionProvider ? 'not listed' : 'none'), yes(c.diagnosticProvider), c.workspace?.fileOperations?.willRename?.filters?.map((f) => f.pattern.glob).join(', ') ?? 'none']
+  })), '')
   out.push('## What each server does', '')
   const first = results[0]
   const rows = []

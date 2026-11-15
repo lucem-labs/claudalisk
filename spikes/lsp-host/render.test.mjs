@@ -9,7 +9,7 @@ const result = (os, status) => ({
     'csharp-ls': {
       cases: [{ id: 'rename.overload', status, reason: status === 'pass' ? '' : 'build failed', coldStartMs: 4000, details: { otherOverloads: 'left alone' } }],
       coldStart: { medianMs: 4000, minMs: 3000, maxMs: 5000, samples: 3 },
-      warm: { coldStartMs: 4100, references: { runs: 25, medianMs: 12, p95Ms: 30 }, prepareRename: { runs: 25, medianMs: 8, p95Ms: 20 }, memoryAfterLoadMb: 500, memoryAfterWorkloadMb: 600 },
+      warm: { capabilities: { renameProvider: { prepareProvider: true }, callHierarchyProvider: true, codeActionProvider: { codeActionKinds: ['quickfix'] } }, coldStartMs: 4100, references: { runs: 25, medianMs: 12, p95Ms: 30 }, prepareRename: { runs: 25, medianMs: 8, p95Ms: 20 }, memoryAfterLoadMb: 500, memoryAfterWorkloadMb: 600 },
       memoryAfterCasesMb: 700,
     },
   },
@@ -22,6 +22,7 @@ test('the table has one column per OS and a reason for every case that did not p
   assert.ok(markdown.includes('`rename.overload` on windows (fail): build failed'))
   assert.ok(markdown.includes('| csharp-ls | linux | 4000 | 3000 | 5000 | 3 | 4100 |'))
   assert.ok(markdown.includes('| csharp-ls | windows | 12 | 30 | 8 | 20 | 25 |'))
+  assert.ok(markdown.includes('| csharp-ls | yes | yes | no | no | quickfix | no | none |'))
 })
 
 test('an empty folder renders a note instead of failing', () => {
