@@ -14,6 +14,10 @@ export function loadResults(folder) {
     .sort((a, b) => ORDER.indexOf(a.os) - ORDER.indexOf(b.os))
 }
 
+const list = (titles) => {
+  const unique = [...new Set(titles.map((t) => t.replace(/^: /, '')))]
+  return unique.length ? `${unique.slice(0, 4).join('; ')}${unique.length > 4 ? `; and ${unique.length - 4} more` : ''}` : 'none'
+}
 const cell = (value) => (value === null || value === undefined ? 'n/a' : String(value)).replaceAll('|', '/')
 const table = (header, rows) => [`| ${header.join(' | ')} |`, `|${header.map(() => '---').join('|')}|`, ...rows.map((row) => `| ${row.map(cell).join(' | ')} |`)].join('\n')
 const find = (result, server, id) => result.servers[server]?.cases?.find((c) => c.id === id)
@@ -64,9 +68,9 @@ export function render(results) {
       diag.pushed ? (diag.pushed.supported ? 'yes' : 'no') : 'n/a',
       diag.pulled ? (diag.pulled.supported ? 'yes' : 'no') : 'n/a',
       hierarchy.subtypes ? `subtypes ${hierarchy.subtypes.join(', ')}; supertypes ${hierarchy.supertypes.join(', ')}` : 'no',
-      (features.E3_changeSignature ?? []).join('; ') || 'none',
-      (features.E6_organizeFixAll ?? []).join('; ') || 'none',
-      [...(features.E7_extract ?? []), ...(features.E7_inline ?? []), ...(features.E7_move ?? [])].join('; ') || 'none',
+      list(features.E3_changeSignature ?? []),
+      list(features.E6_organizeFixAll ?? []),
+      list([...(features.E7_extract ?? []), ...(features.E7_inline ?? []), ...(features.E7_move ?? [])]),
     ])
   }
   out.push(table(['Server', 'Rename: other overloads / barrel', 'Pushed diagnostics', 'Pulled diagnostics', 'Type hierarchy (N5)', 'Change signature (E3)', 'Organize, fix all (E6)', 'Extract, inline, move (E7)'], rows), '')

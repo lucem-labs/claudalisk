@@ -198,9 +198,9 @@ async function hierarchyCase(ctx, file, needle, expectedSubtypes, superFile, sup
 }
 
 const KIND_PATTERNS = {
-  E3: /change signature|add parameter|remove parameter|reorder param|introduce parameter/i,
+  E3: /change signature|add parameter|remove parameter|reorder param/i,
   E6: /organi[sz]e|sort usings|remove unnecessary|remove unused|fix all|fix-all/i,
-  extract: /extract/i,
+  extract: /extract|introduce parameter/i,
   inline: /inline/i,
   move: /\bmove\b|rename (file|type)|sync (namespace|file)/i,
 }
@@ -284,7 +284,11 @@ async function applyAction(ctx, action) {
     throw new Error(`the action "${action.title}" carries neither an edit nor a command`)
   }
   const summary = summarize(resolved.edit, session.root)
-  session.apply(resolved.edit)
+  try {
+    session.apply(resolved.edit)
+  } catch (error) {
+    throw new Error(`the applier refused the edit of "${action.title}": ${error.message}`)
+  }
   return { via: 'edit', ...summary }
 }
 
@@ -458,6 +462,8 @@ export const csharpCases = [
         return { via: 'willRenameFiles' }
       }
       const applied = await applyAction(ctx, candidate)
+      Object.assign(ctx.details, { action: candidate.title, ...applied })
+      if (!applied.resourceOperations?.includes('rename')) throw new Unsupported(`the action "${candidate.title}" is offered, but its edit holds no RenameFile operation (${applied.editCount ?? 0} text edits)`)
       ctx.details.renameTypeOffered = actions.some((a) => /rename type/i.test(a.title))
       must(!existsSync(join(ctx.app, MISNAMED)) && existsSync(join(ctx.app, 'backend/Proof.LspCases/Receipt.cs')), 'the file was not renamed to Receipt.cs')
       ctx.verify()
