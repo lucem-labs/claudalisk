@@ -330,6 +330,19 @@ test('a plain word in an Enforced by line names no file', () => {
   assert.ok(!plan(change('frontend/src/entities/order/model.ts')).files[0].skills.includes('workflow'));
   assert.equal(namesPath('model', 'frontend/src/entities/order/model'), false);
   assert.equal(namesPath('scout-gate', 'hooks/scout-gate'), false);
+  assert.equal(namesPath('scout', 'docs/scout.md'), false);
+});
+
+test('a bare agent or hook name maps that agent or hook file', () => {
+  assert.ok(plan(change('agents/implementer.md')).files[0].skills.includes('workflow'));
+  assert.ok(plan(change('agents/scout.md')).files[0].skills.includes('workflow'));
+  assert.equal(namesPath('scout-gate', 'hooks/scout-gate.mjs'), true);
+});
+
+test('a directory token names files under it at any depth', () => {
+  assert.equal(namesPath('frontend/e2e', 'templates/app/frontend/e2e/orders.spec.ts'), true);
+  assert.equal(namesPath('shared/api', 'frontend/src/shared/api/client.ts'), true);
+  assert.equal(namesPath('shared/api', 'frontend/src/myshared/api/client.ts'), false);
 });
 
 test('a token names the same path, a path ending in it, or a file under a directory token', () => {

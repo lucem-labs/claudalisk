@@ -136,14 +136,18 @@ function unionAdrs(skills) {
 }
 
 const FILE_TOKEN = /^[^\s*<>]*[/.][^\s*<>]*$/;
+const COMPONENT_TOKEN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const isEnforcerToken = (t) => (FILE_TOKEN.test(t) && !t.startsWith('/')) || COMPONENT_TOKEN.test(t);
 
 export function namesPath(token, path) {
-  if (!FILE_TOKEN.test(token) || token.startsWith('/')) return false;
+  if (!isEnforcerToken(token)) return false;
+  if (COMPONENT_TOKEN.test(token)) return path === `agents/${token}.md` || path === `hooks/${token}.mjs`;
   const dir = token.replace(/\/+$/, '');
-  return path === dir || path.endsWith(`/${dir}`) || (token.includes('/') && path.startsWith(`${dir}/`));
+  if (path === dir || path.endsWith(`/${dir}`)) return true;
+  return token.includes('/') && (path.startsWith(`${dir}/`) || path.includes(`/${dir}/`));
 }
 
-const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()).filter((t) => FILE_TOKEN.test(t));
+const enforcerTokens = (text) => [...text.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()).filter(isEnforcerToken);
 
 export function skillsFor(f, knowledge, paths = [f.path, f.oldPath].filter(Boolean), enforcers = enforcersOf(knowledge)) {
   const names = new Set(knowledge.filter((s) => s.paths.length && paths.some((p) => matchesAny(p, s.paths))).map((s) => s.name));
