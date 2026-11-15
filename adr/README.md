@@ -94,6 +94,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0085](0085-session-start-router.md) | A session-start hook prints what dev and uat run and points to the workflow skill | accepted | environments |
 | [CLA-0086](0086-runners-stack-from-the-kit.md) | One org-wide runner stack from the public kit, configured and guarded by the plugin | accepted | environments |
 | [CLA-0087](0087-work-issue-skill-and-workflow.md) | A work-issue skill strings the lifecycle ADRs together, and a workflow runs the unattended middle | accepted | workflow |
+| [CLA-0088](0088-code-intelligence-ground-rules.md) | Code intelligence is native, deterministic, cross-platform, surface-independent and measured | accepted | workflow |
 
 ## Format
 
