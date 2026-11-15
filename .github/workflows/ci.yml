@@ -25,7 +25,7 @@ jobs:
       - name: Tool dependencies
         run: npm ci --prefix tools --ignore-scripts --no-audit --no-fund
       - name: Tool tests
-        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs 'packages/scripts/**/*.test.mjs'
+        run: node --test tools/*.test.mjs templates/app/scripts/*.test.mjs hooks/*.test.mjs 'packages/scripts/**/*.test.mjs' spikes/lsp-host/edits.test.mjs spikes/lsp-host/solution.test.mjs spikes/lsp-host/memory.test.mjs spikes/lsp-host/rpc.test.mjs spikes/lsp-host/render.test.mjs
       - name: No comments
         run: node tools/no-comments.mjs
       - name: Source hygiene
@@ -114,3 +114,44 @@ jobs:
           dotnet-version: 10.0.x
       - name: Unit-of-work spike tests
         run: dotnet test spikes/unit-of-work/UnitOfWorkSpike.slnx
+
+  lsp-host-spike:
+    name: lsp-host-spike (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Tool dependencies
+        run: npm ci --prefix tools --ignore-scripts --no-audit --no-fund
+      - name: Spike dependencies
+        run: npm ci --prefix spikes/lsp-host --ignore-scripts --no-audit --no-fund
+      - name: Restore the pinned language servers
+        working-directory: spikes/lsp-host
+        run: dotnet tool restore
+      - name: Tests, the capability probe first
+        working-directory: spikes/lsp-host
+        run: node --test --test-concurrency=1 *.test.mjs
+        timeout-minutes: 40
+      - name: Measure
+        working-directory: spikes/lsp-host
+        run: node measure.mjs
+        timeout-minutes: 75
+      - name: Upload the results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lsp-host-results-${{ matrix.os }}
+          path: spikes/lsp-host/results/*.json
+          if-no-files-found: ignore
