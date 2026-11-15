@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { quoteForWindowsShell } from '../../tools/registry.mjs'
@@ -17,20 +17,51 @@ export function commandLine(command, args, platform = process.platform) {
   return [file, list, {}]
 }
 
-export function runCaptured(command, args, { cwd, env, input, timeoutMs } = {}) {
+const KILL_GRACE_MS = 5000
+
+export function killTree(child, platform = process.platform) {
+  try {
+    if (platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true })
+    else process.kill(-child.pid, 'SIGKILL')
+  } catch {
+    child.kill('SIGKILL')
+  }
+}
+
+export function runCaptured(command, args, { cwd, env, input, timeoutMs, graceMs = KILL_GRACE_MS } = {}) {
   return new Promise((done) => {
     const [file, list, extra] = commandLine(command, args)
-    const child = spawn(file, list, { cwd, env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, ...extra })
+    const child = spawn(file, list, { cwd, env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32', ...extra })
     let stdout = ''
     let stderr = ''
     let timedOut = false
-    const timer = timeoutMs ? setTimeout(() => { timedOut = true; child.kill() }, timeoutMs) : undefined
+    let settled = false
+    let timer
+    let grace
+    const finish = (code, extraStderr = '') => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      clearTimeout(grace)
+      done({ code, stdout, stderr: `${stderr}${extraStderr}`, timedOut })
+    }
+    if (timeoutMs) {
+      timer = setTimeout(() => {
+        timedOut = true
+        killTree(child)
+        grace = setTimeout(() => {
+          child.stdout.destroy()
+          child.stderr.destroy()
+          finish(-1)
+        }, graceMs)
+      }, timeoutMs)
+    }
     child.stdout.setEncoding('utf8')
     child.stderr.setEncoding('utf8')
     child.stdout.on('data', (chunk) => { stdout += chunk })
     child.stderr.on('data', (chunk) => { stderr += chunk })
-    child.on('error', (error) => { clearTimeout(timer); done({ code: -1, stdout, stderr: `${stderr}${error.message}`, timedOut }) })
-    child.on('close', (code) => { clearTimeout(timer); done({ code: code ?? -1, stdout, stderr, timedOut }) })
+    child.on('error', (error) => finish(-1, error.message))
+    child.on('close', (code) => finish(code ?? -1))
     child.stdin.on('error', () => {})
     child.stdin.end(input ?? '')
   })

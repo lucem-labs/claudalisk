@@ -1,6 +1,7 @@
 import { REPEATS, costPerAccepted, judge } from './noise.mjs'
 import { sumUsage } from './usage.mjs'
 
+const repeatNumber = (record) => record.repeat ?? record.run
 const cacheRead = (record) => sumUsage(record.models ?? {}).cacheRead
 
 export function stats(values) {
@@ -9,14 +10,14 @@ export function stats(values) {
 }
 
 export function repeatsOf(records, tasks) {
-  const numbers = [...new Set(records.map((record) => record.run))].sort((left, right) => left - right)
+  const numbers = [...new Set(records.map(repeatNumber))].sort((left, right) => left - right)
   return numbers
-    .map((run) => {
-      const inRepeat = records.filter((record) => record.run === run)
+    .map((repeat) => {
+      const inRepeat = records.filter((record) => repeatNumber(record) === repeat)
       const complete = tasks.every((task) => inRepeat.some((record) => record.task === task))
       const passedByTask = Object.fromEntries(tasks.map((task) => [task, inRepeat.filter((record) => record.task === task && record.accepted).length]))
       return {
-        run,
+        repeat,
         complete,
         runs: inRepeat.length,
         costUsd: inRepeat.reduce((sum, record) => sum + record.totalCostUsd, 0),
@@ -65,7 +66,7 @@ export function renderArm(name, records, tasks) {
     lines.push('No complete repeat yet: a repeat is one run of every task.')
   } else {
     lines.push('Cost per accepted task, one value per repeat (the repeat\'s total cost divided by its runs that passed):')
-    for (const repeat of repeats) lines.push(`- repeat ${repeat.run}: ${usd(repeat.costUsd)} over ${repeat.passed} of ${repeat.runs} runs passed, ${perAccepted(costPerAccepted(repeat))} per accepted task`)
+    for (const repeat of repeats) lines.push(`- repeat ${repeat.repeat}: ${usd(repeat.costUsd)} over ${repeat.passed} of ${repeat.runs} runs passed, ${perAccepted(costPerAccepted(repeat))} per accepted task`)
   }
   return lines.join('\n')
 }

@@ -7,7 +7,7 @@ import { after, before, beforeEach, test } from 'node:test'
 import { benchRoot } from './lib.mjs'
 import { cloneFixture } from './fixture-repo.mjs'
 import { emptyLedger, readLedger, writeLedger } from './ledger.mjs'
-import { nextRunNumber, plan, runAll, runOnce } from './runner.mjs'
+import { pluginCommit, plan, runAll, runOnce } from './runner.mjs'
 import { loadTask } from './tasks.mjs'
 
 const identity = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com' }
@@ -75,7 +75,7 @@ after(() => {
 const calls = () => (existsSync(logFile) ? readFileSync(logFile, 'utf8').trim().split('\n').map((line) => JSON.parse(line)) : [])
 
 function once(overrides = {}) {
-  return runOnce({ arm, task: loadTask('T1', tasksFolder), run: 1, plugin: pluginFolder, claudeCommit: 'abc123', fixture, resultsDir, ledgerPath, ...overrides })
+  return runOnce({ arm, task: loadTask('T1', tasksFolder), repeat: 1, plugin: pluginFolder, claudeCommit: 'abc123', fixture, resultsDir, ledgerPath, ...overrides })
 }
 
 test('a run works in a fresh copy of the pinned fixture and sends the prompt on stdin', async () => {
@@ -132,7 +132,7 @@ test('a run that exceeds its budget fails, keeps its cost and is added to the le
   assert.equal(readLedger(ledgerPath).spentUsd, 3.02)
 })
 
-test('a run whose claude exits with no result is a failed run with no cost', async () => {
+test('a run whose claude exits with no result is a failed run charged the run cap', async () => {
   process.env.FAKE_CLAUDE_SCENARIO = 'crash'
 
   const record = await once()
@@ -140,7 +140,9 @@ test('a run whose claude exits with no result is a failed run with no cost', asy
   assert.equal(record.accepted, false)
   assert.equal(record.subtype, 'no_result')
   assert.equal(record.exitCode, 1)
-  assert.equal(record.totalCostUsd, 0)
+  assert.equal(record.totalCostUsd, 3)
+  assert.equal(record.costEstimated, true)
+  assert.equal(readLedger(ledgerPath).spentUsd, 3)
 })
 
 test('a run is refused before claude starts when its cap would cross the budget', async () => {
@@ -166,20 +168,60 @@ test('the ledger is written after each run, so the next run sees it', async () =
   assert.equal(calls().length, 2)
 })
 
-test('runs are numbered after the ones already recorded, one pass over the tasks at a time', async () => {
+test('repeats are numbered after the ones already recorded, one pass over the tasks at a time', async () => {
   await runAll({ arm, tasks: ['T1', 'T2'], runs: 2, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
   await runAll({ arm, tasks: ['T1'], runs: 1, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
 
-  const numbers = readLedger(ledgerPath).runs.map((entry) => `${entry.task}-${entry.run}`)
+  const numbers = readLedger(ledgerPath).runs.map((entry) => `${entry.task}-${entry.repeat}`)
   assert.deepEqual(numbers, ['T1-1', 'T2-1', 'T1-2', 'T2-2', 'T1-3'])
-  assert.equal(nextRunNumber(resultsDir, 'fake', 'T1'), 4)
-  assert.equal(nextRunNumber(resultsDir, 'fake', 'T2'), 3)
+  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake' }), [{ task: 'T2', repeat: 3 }])
   assert.deepEqual(plan({ tasks: ['T2', 'T1'], runs: 2, resultsDir, arm: 'fake' }), [
-    { task: 'T2', run: 3 },
-    { task: 'T1', run: 4 },
-    { task: 'T2', run: 4 },
-    { task: 'T1', run: 5 },
+    { task: 'T2', repeat: 3 },
+    { task: 'T2', repeat: 4 },
+    { task: 'T1', repeat: 4 },
   ])
+})
+
+test('a re-run of one task fills the lowest repeat that lacks it', async () => {
+  await runAll({ arm, tasks: ['T1', 'T2'], runs: 3, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
+  for (const name of readdirSync(join(resultsDir, 'fake'))) {
+    if (/-T2-2.json$/.test(name)) rmSync(join(resultsDir, 'fake', name))
+  }
+
+  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake' }), [{ task: 'T2', repeat: 2 }])
+  assert.deepEqual(plan({ tasks: ['T1', 'T2'], runs: 2, resultsDir, arm: 'fake' }), [
+    { task: 'T2', repeat: 2 },
+    { task: 'T1', repeat: 4 },
+    { task: 'T2', repeat: 4 },
+  ])
+})
+
+test('the cost reaches the ledger and a partial record before the hidden checks run', async () => {
+  const checkRun = async () => { throw new Error('interrupted') }
+
+  await assert.rejects(once({ checkRun }), /interrupted/)
+
+  assert.equal(readLedger(ledgerPath).spentUsd, 0.5)
+  const [file] = readdirSync(join(resultsDir, 'fake'))
+  const saved = JSON.parse(readFileSync(join(resultsDir, 'fake', file), 'utf8'))
+  assert.equal(saved.totalCostUsd, 0.5)
+  assert.equal(saved.checksPending, true)
+  assert.equal(saved.accepted, false)
+})
+
+test('changes under spikes do not make the plugin commit dirty', async () => {
+  const repo = join(base, 'plugin-repo')
+  write(join(repo, 'hooks.json'), '{}')
+  git(repo, 'init', '-q', '-b', 'main')
+  git(repo, 'add', '--all')
+  git(repo, 'commit', '-q', '-m', 'plugin')
+  const head = git(repo, 'rev-parse', 'HEAD')
+
+  write(join(repo, 'spikes', 'out.txt'), 'x')
+  assert.equal(await pluginCommit(repo), head)
+
+  write(join(repo, 'hooks.json'), '{"a":1}')
+  assert.equal(await pluginCommit(repo), `${head}-dirty`)
 })
 
 test('the plugin the agent sees leaves out spikes', async () => {

@@ -1,3 +1,5 @@
+import { RUN_CAP_USD } from './ledger.mjs'
+
 const SUBAGENT_TOOLS = new Set(['Agent', 'Task'])
 
 export function parseStream(text) {
@@ -47,7 +49,7 @@ export function sumUsage(usage) {
 export function summarizeRun(parsed, wallMs, exit) {
   const { result } = parsed
   if (!result) {
-    return { isError: true, subtype: exit?.timedOut ? 'timeout' : 'no_result', costUsd: 0, turns: 0, subagents: parsed.subagents, wallMs, models: {} }
+    return { isError: true, subtype: exit?.timedOut ? 'timeout' : 'no_result', costUsd: RUN_CAP_USD, costEstimated: true, turns: 0, subagents: parsed.subagents, wallMs, models: {} }
   }
   return {
     isError: Boolean(result.is_error),

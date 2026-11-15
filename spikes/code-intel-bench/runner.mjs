@@ -18,21 +18,23 @@ export function stamp(date) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
 }
 
-export function nextRunNumber(resultsDir, arm, task) {
-  const folder = join(resultsDir, arm)
-  if (!existsSync(folder)) return 1
-  const numbers = readdirSync(folder)
-    .map((name) => new RegExp(`^[^-]+-${task}-(\\d+)\\.json$`).exec(name)?.[1])
-    .filter(Boolean)
-    .map(Number)
-  return Math.max(0, ...numbers) + 1
+export function repeatsDone(resultsDir, arm) {
+  const done = {}
+  for (const record of readResults(resultsDir, arm)) {
+    const repeat = record.repeat ?? record.run
+    ;(done[record.task] ??= new Set()).add(repeat)
+  }
+  return done
 }
 
 export function plan({ tasks, runs, resultsDir, arm }) {
-  const next = Object.fromEntries(tasks.map((task) => [task, nextRunNumber(resultsDir, arm, task)]))
+  const done = repeatsDone(resultsDir, arm)
   const steps = []
-  for (let repeat = 0; repeat < runs; repeat += 1) {
-    for (const task of tasks) steps.push({ task, run: next[task] + repeat })
+  let repeat = 0
+  for (let pass = 0; pass < runs; pass += 1) {
+    do repeat += 1
+    while (tasks.every((task) => done[task]?.has(repeat)))
+    for (const task of tasks) if (!done[task]?.has(repeat)) steps.push({ task, repeat })
   }
   return steps
 }
@@ -42,7 +44,7 @@ export function describePlan({ arm, steps, ledger }) {
   const lines = [
     `Arm ${arm.name}: model ${arm.model}, plugin ${arm.pluginDir}, settings ${arm.settings}`,
     `${steps.length} runs, each capped at $${RUN_CAP_USD.toFixed(2)}, so at most $${worst.toFixed(2)}:`,
-    ...steps.map((step) => `  ${step.task} run ${step.run}`),
+    ...steps.map((step) => `  ${step.task} repeat ${step.repeat}`),
     `Ledger: $${ledger.spentUsd.toFixed(2)} spent of $${ledger.capUsd.toFixed(2)} over ${ledger.runs.length} runs; $${Math.max(0, room(ledger, 0)).toFixed(2)} left.`,
   ]
   if (ledger.spentUsd + worst > ledger.capUsd) {
@@ -61,14 +63,14 @@ export function copyDependencies(source, copy) {
 export async function pluginCommit(pluginDir) {
   try {
     const commit = await git(['rev-parse', 'HEAD'], pluginDir)
-    const dirty = (await git(['status', '--porcelain'], pluginDir)).length > 0
+    const dirty = (await git(['status', '--porcelain', '--', '.', ':!spikes'], pluginDir)).length > 0
     return dirty ? `${commit}-dirty` : commit
   } catch {
     return 'unknown'
   }
 }
 
-export async function runOnce({ arm, task, run, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
+export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
   const ledger = readLedger(ledgerPath)
   assertRoom(ledger)
   const base = mkdtempSync(join(tmpdir(), 'claudalisk-bench-run-'))
@@ -80,18 +82,17 @@ export async function runOnce({ arm, task, run, plugin, claudeCommit, fixture, r
     const outcome = await exec(claudeBinary(), claudeArguments({ arm, plugin, budget: RUN_CAP_USD }), { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
     const wallMs = Date.now() - started
     const summary = summarizeRun(parseStream(outcome.stdout), wallMs, outcome)
-    installHidden(task, copy)
-    const checks = await runChecks(task, copy, checkRun)
     const at = now()
-    const record = {
+    let record = {
       arm: arm.name,
       task: task.id,
-      run,
+      repeat,
       at: at.toISOString(),
       claudaliskCommit: claudeCommit,
       fixtureHead: fixture.head,
       model: arm.model,
       totalCostUsd: summary.costUsd,
+      ...(summary.costEstimated ? { costEstimated: true } : {}),
       models: summary.models,
       turns: summary.turns,
       subagents: summary.subagents,
@@ -99,15 +100,23 @@ export async function runOnce({ arm, task, run, plugin, claudeCommit, fixture, r
       isError: summary.isError,
       subtype: summary.subtype,
       completed: completed(summary),
-      checks,
-      accepted: completed(summary) && accepted(checks),
+      checks: [],
+      checksPending: true,
+      accepted: false,
       ...(outcome.code === 0 ? {} : { exitCode: outcome.code, stderr: outcome.stderr.slice(-1500) }),
     }
     const folder = join(resultsDir, arm.name)
     mkdirSync(folder, { recursive: true })
-    const file = `${stamp(at)}-${task.id}-${run}.json`
-    writeFileSync(join(folder, file), `${JSON.stringify(record, null, 2)}\n`)
-    writeLedger(ledgerPath, addRun(readLedger(ledgerPath), { arm: arm.name, task: task.id, run, file: `${arm.name}/${file}`, costUsd: summary.costUsd, at: record.at }))
+    const file = `${stamp(at)}-${task.id}-${repeat}.json`
+    const save = () => writeFileSync(join(folder, file), `${JSON.stringify(record, null, 2)}
+`)
+    save()
+    writeLedger(ledgerPath, addRun(readLedger(ledgerPath), { arm: arm.name, task: task.id, repeat, file: `${arm.name}/${file}`, costUsd: summary.costUsd, at: record.at }))
+    installHidden(task, copy)
+    const checks = await runChecks(task, copy, checkRun)
+    const { checksPending, ...rest } = record
+    record = { ...rest, checks, accepted: completed(summary) && accepted(checks) }
+    save()
     return record
   } finally {
     if (!keep) rmSync(base, { recursive: true, force: true })
@@ -123,8 +132,8 @@ export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = ledger
   try {
     for (const step of steps) {
       const task = loadTask(step.task, tasksFolder)
-      log(`${arm.name} ${step.task} run ${step.run}`)
-      const record = await runOnce({ arm, task, run: step.run, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
+      log(`${arm.name} ${step.task} repeat ${step.repeat}`)
+      const record = await runOnce({ arm, task, repeat: step.repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
       records.push(record)
       log(`  ${record.accepted ? 'accepted' : 'rejected'} (${record.subtype}), $${record.totalCostUsd.toFixed(2)}, ${record.turns} turns, ${record.subagents} subagents`)
     }

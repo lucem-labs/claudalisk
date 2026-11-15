@@ -38,7 +38,7 @@ test('a repeat is one run of every task, and an incomplete pass is left out', ()
   const repeats = repeatsOf(records, TASKS)
 
   assert.equal(repeats.length, 1)
-  assert.deepEqual(repeats[0], { run: 1, complete: true, runs: 2, costUsd: 4, passed: 1, passedByTask: { T1: 1, T2: 0 } })
+  assert.deepEqual(repeats[0], { repeat: 1, complete: true, runs: 2, costUsd: 4, passed: 1, passedByTask: { T1: 1, T2: 0 } })
 })
 
 test('the suite line gives the cost per accepted task of each repeat', () => {
@@ -85,7 +85,7 @@ test('a dry run prints the plan, the worst-case spend and the ledger without cal
 
     const text = lines.join('\n')
     assert.match(text, /21 runs, each capped at \$3\.00, so at most \$63\.00/)
-    assert.match(text, /T7 run 3/)
+    assert.match(text, /T7 repeat 3/)
     assert.match(text, /Ledger: \$100\.00 spent of \$150\.00 over 0 runs; \$50\.00 left\./)
     assert.match(text, /worst case would cross the budget; the runner starts at most 16 of these/)
     assert.deepEqual(calls, [])
@@ -107,4 +107,15 @@ test('the report command reads the results of an arm', async () => {
   } finally {
     rmSync(base, { recursive: true, force: true })
   }
+})
+
+test('repeats are grouped by their repeat number, not by per-task run numbers', () => {
+  const records = [
+    { ...record('T1', 1), repeat: 1 },
+    { ...record('T2', 1), repeat: 1 },
+    { ...record('T1', 2), repeat: 2 },
+    { ...record('T2', 5), repeat: 2 },
+  ]
+
+  assert.deepEqual(repeatsOf(records, ['T1', 'T2']).map((repeat) => repeat.repeat), [1, 2])
 })

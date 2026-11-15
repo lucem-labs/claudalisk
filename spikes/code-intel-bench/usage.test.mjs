@@ -34,12 +34,13 @@ test('a run that stops on its budget is an error that keeps its cost', () => {
   assert.equal(completed(summary), false)
 })
 
-test('a stream with no result is an error with no cost', () => {
+test('a stream with no result is an error charged the run cap as an estimate', () => {
   const summary = summarizeRun(parseStream(stream('crash')), 10, { timedOut: false })
 
   assert.equal(summary.isError, true)
   assert.equal(summary.subtype, 'no_result')
-  assert.equal(summary.costUsd, 0)
+  assert.equal(summary.costUsd, 3)
+  assert.equal(summary.costEstimated, true)
   assert.equal(summarizeRun(parseStream(''), 10, { timedOut: true }).subtype, 'timeout')
 })
 

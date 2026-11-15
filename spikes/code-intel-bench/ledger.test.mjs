@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { addRun, assertRoom, emptyLedger, readLedger, room, spentByArm, writeLedger } from './ledger.mjs'
 
-const entry = (costUsd, arm = 'baseline') => ({ arm, task: 'T1', run: 1, file: 'x.json', costUsd, at: '2026-01-01T00:00:00.000Z' })
+const entry = (costUsd, arm = 'baseline') => ({ arm, task: 'T1', repeat: 1, file: 'x.json', costUsd, at: '2026-01-01T00:00:00.000Z' })
 
 test('a missing ledger starts empty with the epic budget', () => {
   const ledger = readLedger(join(tmpdir(), 'no-such-ledger.json'))
