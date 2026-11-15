@@ -41,7 +41,7 @@ export function render(results) {
     }
     if (notes.length) out.push('Reasons:', '', ...notes, '')
   }
-  out.push('## Cold start, process spawn to the first correct and stable findReferences', '')
+  out.push('## Cold start, process spawn to the answer of the first correct findReferences that a second correct one confirmed', '')
   out.push(table(['Server', 'OS', 'Median ms', 'Min ms', 'Max ms', 'Samples', 'Dedicated run ms'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]).map((s) => {
     const e = r.servers[s]
     return [s, r.os, e.coldStart?.medianMs, e.coldStart?.minMs, e.coldStart?.maxMs, e.coldStart?.samples, e.warm?.coldStartMs]
@@ -50,6 +50,21 @@ export function render(results) {
   out.push(table(['Server', 'OS', 'findReferences median ms', 'p95 ms', 'prepareRename median ms', 'p95 ms', 'Runs'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]).map((s) => {
     const w = r.servers[s].warm
     return [s, r.os, w?.references?.medianMs, w?.references?.p95Ms, w?.prepareRename?.medianMs, w?.prepareRename?.p95Ms, w?.references?.runs ?? w?.error]
+  }))), '')
+  out.push('## Warm findReferences by call shape, median ms (p95 ms)', '')
+  const shapes = ['plain', 'partialResultToken', 'workDoneToken', 'both']
+  out.push(table(['Server', 'OS', ...shapes, 'Items returned / streamed, partialResultToken'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]?.warm?.referenceShapes).map((s) => {
+    const shape = r.servers[s].warm.referenceShapes
+    const items = shape.partialResultToken?.items
+    return [s, r.os, ...shapes.map((name) => (shape[name] ? `${shape[name].medianMs} (${shape[name].p95Ms})` : 'n/a')), items ? `${items.returned} / ${items.streamed}` : 'n/a']
+  }))), '')
+  out.push('## Build and test after each edit, summed over the cases that ran them', '')
+  out.push(table(['Server', 'OS', 'Builds', 'Mean build ms', 'Mean test ms', 'Test projects run', 'Test projects skipped'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]).map((s) => {
+    const records = r.servers[s].cases.map((c) => c.verification).filter((v) => v?.runs)
+    const runs = records.reduce((sum, v) => sum + v.runs, 0)
+    const mean = (key) => (runs ? Math.round(records.reduce((sum, v) => sum + v[key], 0) / runs) : null)
+    const union = (key) => [...new Set(records.flatMap((v) => v[key] ?? []))].join(', ') || 'none'
+    return [s, r.os, runs, mean('buildMs'), mean('testMs'), union('ran'), union('skipped')]
   }))), '')
   out.push('## Resident memory of the server process tree, MB', '')
   out.push(table(['Server', 'OS', 'After load', 'After the warm workload', 'Highest at the end of a case'], results.flatMap((r) => SERVERS.filter((s) => r.servers[s]).map((s) => [s, r.os, r.servers[s].warm?.memoryAfterLoadMb, r.servers[s].warm?.memoryAfterWorkloadMb, r.servers[s].memoryAfterCasesMb]))), '')
@@ -67,19 +82,21 @@ export function render(results) {
     const survey = g('codeactions.survey')
     const features = survey.features ?? {}
     const diag = g('diagnostics')
+    const pushOnly = g('diagnostics.push-only')
     const hierarchy = g('hierarchy.type')
     rows.push([
       server,
       g('rename.overload').otherOverloads ?? g('rename.barrel').barrelAfter,
       diag.pushed ? (diag.pushed.supported ? 'yes' : 'no') : 'n/a',
       diag.pulled ? (diag.pulled.supported ? 'yes' : 'no') : 'n/a',
+      pushOnly.pushed ? (pushOnly.pushed.supported ? 'yes' : 'no') : 'n/a',
       hierarchy.subtypes ? `subtypes ${hierarchy.subtypes.join(', ')}; supertypes ${hierarchy.supertypes.join(', ')}` : 'no',
       list(features.E3_changeSignature ?? []),
       list(features.E6_organizeFixAll ?? []),
       list([...(features.E7_extract ?? []), ...(features.E7_inline ?? []), ...(features.E7_move ?? [])]),
     ])
   }
-  out.push(table(['Server', 'Rename: other overloads / barrel', 'Pushed diagnostics', 'Pulled diagnostics', 'Type hierarchy (N5)', 'Change signature (E3)', 'Organize, fix all (E6)', 'Extract, inline, move (E7)'], rows), '')
+  out.push(table(['Server', 'Rename: other overloads / barrel', 'Pushed diagnostics (client advertises pull)', 'Pulled diagnostics', 'Pushed diagnostics (client does not advertise pull)', 'Type hierarchy (N5)', 'Change signature (E3)', 'Organize, fix all (E6)', 'Extract, inline, move (E7)'], rows), '')
   out.push('Taken from the first OS file listed above; the case ids are in the correctness tables.', '')
   return out.join('\n')
 }

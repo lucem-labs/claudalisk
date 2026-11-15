@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { applyTextEdits, applyWorkspaceEdit, EditRefused, uriOf } from './lib/edits.mjs'
+import { applyTextEdits, applyWorkspaceEdit, EditRefused, hasEffect, keyOf, uriOf } from './lib/edits.mjs'
 
 function workspace(files) {
   const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'lsp-host-edits-')))
@@ -98,7 +98,7 @@ test('a parent folder reference that leaves the root is refused', () => {
 test('a version that does not match the open document is refused, a matching one is applied', () => {
   const w = workspace({ 'a.txt': 'hello' })
   try {
-    const open = new Map([[w.uri('a.txt'), 3]])
+    const open = new Map([[keyOf(w.uri('a.txt')), 3]])
     const change = (version) => ({ documentChanges: [{ textDocument: { uri: w.uri('a.txt'), version }, edits: [edit(0, 0, 5, 'bye')] }] })
     refused('version', () => applyWorkspaceEdit(change(2), { root: w.root, openDocuments: open }))
     refused('version', () => applyWorkspaceEdit(change(1), { root: w.root, openDocuments: new Map() }))
@@ -195,6 +195,35 @@ test('a URI that is not a file, such as a generated document, is refused', () =>
   const w = workspace({})
   try {
     refused('not-a-file', () => applyWorkspaceEdit({ changes: { 'roslyn-source-generated://x/Y.cs': [edit(0, 0, 0, 'x')] } }, { root: w.root }))
+  } finally {
+    w.done()
+  }
+})
+
+test('the version check finds the document under another spelling of its URI', () => {
+  const w = workspace({ 'a.txt': 'hello' })
+  try {
+    const open = new Map([[keyOf(w.uri('a.txt')), 3]])
+    const spelled = w.uri('a.txt').replace('a.txt', '%61.txt')
+    applyWorkspaceEdit({ documentChanges: [{ textDocument: { uri: spelled, version: 3 }, edits: [edit(0, 0, 5, 'bye')] }] }, { root: w.root, openDocuments: open })
+    assert.equal(w.read('a.txt'), 'bye')
+  } finally {
+    w.done()
+  }
+})
+
+test('an edit that rewrites text to itself has no effect, and a create, rename or delete always has one', () => {
+  const w = workspace({ 'a.txt': 'hello' })
+  try {
+    const same = applyWorkspaceEdit({ documentChanges: [{ textDocument: { uri: w.uri('a.txt'), version: null }, edits: [edit(0, 0, 5, 'hello')] }] }, { root: w.root })
+    assert.equal(hasEffect(same), false)
+    assert.equal(hasEffect([]), false)
+    const created = applyWorkspaceEdit({ documentChanges: [{ kind: 'create', uri: w.uri('c.txt') }] }, { root: w.root })
+    assert.equal(hasEffect(created), true)
+    const renamed = applyWorkspaceEdit({ documentChanges: [{ kind: 'rename', oldUri: w.uri('c.txt'), newUri: w.uri('d.txt') }] }, { root: w.root })
+    assert.equal(hasEffect(renamed), true)
+    const changed = applyWorkspaceEdit({ documentChanges: [{ textDocument: { uri: w.uri('a.txt'), version: null }, edits: [edit(0, 0, 5, 'bye')] }] }, { root: w.root })
+    assert.equal(hasEffect(changed), true)
   } finally {
     w.done()
   }

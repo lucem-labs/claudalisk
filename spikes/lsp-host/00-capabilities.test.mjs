@@ -1,7 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { join } from 'node:path'
-import { copyFresh, ensureBase } from './lib/fixture.mjs'
+import { caseFolder, copyFresh, ensureBase } from './lib/fixture.mjs'
 import { removeApp } from './lib/runner.mjs'
 import { Session } from './lib/session.mjs'
 
@@ -9,7 +8,7 @@ const TEN_MINUTES = 10 * 60 * 1000
 const fixture = await ensureBase()
 
 async function capabilitiesOf(server) {
-  const app = copyFresh(fixture.base, join(fixture.work, 'cases', `capabilities-${server}`))
+  const app = copyFresh(fixture.base, caseFolder(fixture.work, `capabilities-${server}`))
   const session = await Session.start(server, app)
   try {
     return session.capabilities

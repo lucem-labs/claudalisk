@@ -12,8 +12,8 @@ export const CODE_ACTION_KINDS = [
   'source.fixAll',
 ]
 
-export function clientCapabilities() {
-  return {
+export function clientCapabilities({ pullDiagnostics = true } = {}) {
+  const capabilities = {
     workspace: {
       applyEdit: true,
       workspaceEdit: {
@@ -51,9 +51,11 @@ export function clientCapabilities() {
       },
     },
   }
+  if (!pullDiagnostics) delete capabilities.textDocument.diagnostic
+  return capabilities
 }
 
-export function initializeParams(root) {
+export function initializeParams(root, options = {}) {
   const uri = uriOf(root)
   return {
     processId: process.pid,
@@ -62,7 +64,7 @@ export function initializeParams(root) {
     rootPath: root,
     rootUri: uri,
     workspaceFolders: [{ uri, name: 'workspace' }],
-    capabilities: clientCapabilities(),
+    capabilities: clientCapabilities(options),
     initializationOptions: {},
     trace: 'off',
   }

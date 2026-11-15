@@ -22,6 +22,12 @@ export function pathOf(uri) {
 
 export const uriOf = (path) => pathToFileURL(path).href
 
+export function keyOf(uri, platform = process.platform) {
+  if (!uri.startsWith('file:')) return uri
+  const path = pathOf(uri)
+  return platform === 'win32' || platform === 'darwin' ? path.toLowerCase() : path
+}
+
 function inside(root, path) {
   const rel = relative(resolve(root), path)
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
@@ -109,7 +115,7 @@ export function planWorkspaceEdit(edit, { root, openDocuments = new Map() }) {
         if (!operation.options?.overwrite) refuse('exists', `${operation.uri} already exists`)
       }
       virtual.files.set(path, '')
-      actions.push({ type: 'write', path, content: '' })
+      actions.push({ type: 'write', path, content: '', changed: true })
     } else if (operation.kind === 'rename') {
       const from = guard(root, operation.oldUri)
       const to = guard(root, operation.newUri)
@@ -136,14 +142,15 @@ export function planWorkspaceEdit(edit, { root, openDocuments = new Map() }) {
       const { uri, version } = operation.textDocument
       const path = guard(root, uri)
       if (version !== null && version !== undefined) {
-        if (!openDocuments.has(uri)) refuse('version', `${uri} is not open, so version ${version} cannot be checked`)
-        if (openDocuments.get(uri) !== version) refuse('version', `${uri} is at version ${openDocuments.get(uri)}, the edit is for ${version}`)
+        const key = keyOf(uri)
+        if (!openDocuments.has(key)) refuse('version', `${uri} is not open, so version ${version} cannot be checked`)
+        if (openDocuments.get(key) !== version) refuse('version', `${uri} is at version ${openDocuments.get(key)}, the edit is for ${version}`)
       }
       const text = virtual.read(path)
       if (text === null) refuse('missing', `${uri} does not exist`)
       const next = applyTextEdits(text, operation.edits.map((e) => ({ range: e.range, newText: e.newText })))
       virtual.files.set(path, next)
-      actions.push({ type: 'write', path, content: next })
+      actions.push({ type: 'write', path, content: next, changed: next !== text })
     } else {
       refuse('unknown-operation', `unknown workspace edit operation ${JSON.stringify(operation).slice(0, 80)}`)
     }
@@ -170,6 +177,8 @@ export function applyWorkspaceEdit(edit, options) {
   executeActions(actions)
   return actions
 }
+
+export const hasEffect = (actions) => actions.some((action) => action.type !== 'write' || action.changed)
 
 export function changedPaths(actions) {
   const paths = new Set()

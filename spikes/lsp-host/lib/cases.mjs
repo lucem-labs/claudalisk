@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { operationsOf, pathOf } from './edits.mjs'
+import { hasEffect, keyOf, operationsOf, pathOf } from './edits.mjs'
 import { locate } from './session.mjs'
 import { sleep, Unsupported } from './runner.mjs'
 import { verifyBuild } from './fixture.mjs'
@@ -74,7 +74,7 @@ async function replaceText(ctx, file, needle, newText, options) {
   const end = locate(session.text(file), needle, { ...options, within: needle.length })
   session.open(file)
   const uri = session.uri(file)
-  return session.apply({ documentChanges: [{ textDocument: { uri, version: session.versions.get(uri) }, edits: [{ range: { start, end }, newText }] }] })
+  return session.apply({ documentChanges: [{ textDocument: { uri, version: session.versionOf(uri) }, edits: [{ range: { start, end }, newText }] }] })
 }
 
 function symbolNamed(symbols, name, kinds = SYMBOL_METHOD) {
@@ -102,7 +102,7 @@ async function bodyReplace(ctx, file, symbolName, newText, expectInFile) {
   const symbol = symbolNamed(symbols, symbolName)
   const original = textAt(session.text(file), symbol.range)
   const uri = session.uri(file)
-  const actions = session.apply({ documentChanges: [{ textDocument: { uri, version: session.versions.get(uri) }, edits: [{ range: symbol.range, newText }] }] })
+  const actions = session.apply({ documentChanges: [{ textDocument: { uri, version: session.versionOf(uri) }, edits: [{ range: symbol.range, newText }] }] })
   present(ctx, file, expectInFile)
   ctx.verify()
   return { replacedStartsWith: original.slice(0, 40), replacedEndsWith: original.slice(-20), resultKind: Array.isArray(symbols) ? 'hierarchical' : 'flat', actions: actions.length }
@@ -118,7 +118,7 @@ async function insertAround(ctx, file, symbolName, before, after, expected) {
   session.apply({
     documentChanges: [
       {
-        textDocument: { uri, version: session.versions.get(uri) },
+        textDocument: { uri, version: session.versionOf(uri) },
         edits: [
           { range: { start: startLine, end: startLine }, newText: before },
           { range: { start: symbol.range.end, end: symbol.range.end }, newText: after },
@@ -146,17 +146,18 @@ async function diagnosticsCase(ctx, file, needle, replacement, expectedBuildStag
   const { session, language } = ctx
   const uri = session.uri(file)
   session.open(file)
+  const pullAllowed = ctx.clientOptions?.pullDiagnostics !== false
   const baseline = session.client.notifications.length
   await replaceText(ctx, file, needle, replacement)
   const build = verifyBuild(ctx.app, language)
   must(!build.ok, 'the build passed although the edit should break it')
   const pushed = await waitFor(() => {
-    const fresh = session.client.notifications.slice(baseline).filter((n) => n.method === 'textDocument/publishDiagnostics' && n.params.uri === uri)
+    const fresh = session.client.notifications.slice(baseline).filter((n) => n.method === 'textDocument/publishDiagnostics' && keyOf(n.params.uri) === keyOf(uri))
     return fresh.map((n) => n.params).findLast((p) => p.diagnostics.some((d) => d.severity === 1))
   }, 20000)
   let pulled
   let pullError
-  if (session.capabilities.diagnosticProvider) {
+  if (pullAllowed && session.capabilities.diagnosticProvider) {
     pulled = await waitFor(async () => {
       try {
         const report = await session.client.request('textDocument/diagnostic', { textDocument: { uri } })
@@ -168,13 +169,14 @@ async function diagnosticsCase(ctx, file, needle, replacement, expectedBuildStag
     }, 20000)
   }
   const details = {
+    clientAdvertisesPull: pullAllowed,
     buildBroke: build.stage,
     pushed: pushed ? { supported: true, count: pushed.diagnostics.length, first: pushed.diagnostics[0].message.slice(0, 100) } : { supported: false },
     pullAdvertised: Boolean(session.capabilities.diagnosticProvider),
     pulled: pulled ? { supported: true, count: pulled.items.length, first: pulled.items.find((d) => d.severity === 1).message.slice(0, 100) } : { supported: false, error: pullError },
   }
   Object.assign(ctx.details, details)
-  must(pushed || pulled, `neither pushed nor pulled diagnostics reported the error (pull advertised: ${details.pullAdvertised}${pullError ? `, last error ${pullError}` : ''})`)
+  must(pullAllowed ? pushed || pulled : pushed, pullAllowed ? `neither pushed nor pulled diagnostics reported the error (pull advertised: ${details.pullAdvertised}${pullError ? `, last error ${pullError}` : ''})` : 'no pushed diagnostics reported the error when the client does not advertise textDocument.diagnostic')
   return details
 }
 
@@ -270,26 +272,29 @@ async function applyAction(ctx, action) {
     must(nested.length > 0, 'the nested code action has no children')
     const child = await session.client.request('codeAction/resolve', nested[0])
     must(child.edit, `the nested action "${nested[0].title}" has no edit after resolve`)
-    session.apply(child.edit)
-    return { via: 'nested', nested: nested.map((n) => n.title).slice(0, 4), ...summarize(child.edit, session.root) }
+    const nestedActions = session.apply(child.edit)
+    return { via: 'nested', nested: nested.map((n) => n.title).slice(0, 4), effective: hasEffect(nestedActions), ...summarize(child.edit, session.root) }
   }
   if (!resolved.edit) {
     if (resolved.command) {
       const command = typeof resolved.command === 'string' ? { command: resolved.command, arguments: resolved.arguments } : resolved.command
       const before = session.serverEdits.length
       await session.client.request('workspace/executeCommand', { command: command.command, arguments: command.arguments })
-      must(session.serverEdits.length > before, `the command ${command.command} sent no workspace/applyEdit`)
-      return { via: 'command' }
+      const outcomes = session.serverEdits.slice(before)
+      must(outcomes.length > 0, `the command ${command.command} sent no workspace/applyEdit`)
+      must(outcomes.some((o) => o.applied), `the command ${command.command} sent ${outcomes.length} workspace/applyEdit, and the client refused ${outcomes.length === 1 ? 'it' : 'all'}: ${outcomes.map((o) => o.failureReason).join('; ')}`)
+      return { via: 'command', serverEdits: outcomes.length, effective: outcomes.some((o) => o.applied && o.effective) }
     }
     throw new Error(`the action "${action.title}" carries neither an edit nor a command`)
   }
   const summary = summarize(resolved.edit, session.root)
+  let actions
   try {
-    session.apply(resolved.edit)
+    actions = session.apply(resolved.edit)
   } catch (error) {
     throw new Error(`the applier refused the edit of "${action.title}": ${error.message}`)
   }
-  return { via: 'edit', ...summary }
+  return { via: 'edit', effective: hasEffect(actions), ...summary }
 }
 
 async function applyMatching(ctx, positions, pattern, { kind } = {}) {
@@ -300,6 +305,7 @@ async function applyMatching(ctx, positions, pattern, { kind } = {}) {
     const match = actions.find((a) => (pattern.test(a.title) || (kind && a.kind?.startsWith(kind))) && !a.disabled)
     if (match) {
       const applied = await applyAction(ctx, match)
+      if (!applied.effective) throw new Unsupported(`the action "${match.title}" was applied (via ${applied.via}), but it changed no file content and made no resource operation`)
       ctx.verify()
       return { action: match.title, kind: match.kind ?? '', ...applied }
     }
@@ -499,6 +505,14 @@ export const csharpCases = [
     },
   },
   {
+    id: 'diagnostics.push-only',
+    language: 'csharp',
+    clientOptions: { pullDiagnostics: false },
+    async run(ctx) {
+      return diagnosticsCase(ctx, SAMPLE, 'Pricing.Total(quantity, unit)', 'Pricing.Totl(quantity, unit)')
+    },
+  },
+  {
     id: 'hierarchy.type',
     language: 'csharp',
     async run(ctx) {
@@ -654,6 +668,14 @@ export const typescriptCases = [
   {
     id: 'diagnostics',
     language: 'typescript',
+    async run(ctx) {
+      return diagnosticsCase(ctx, PRICE_SUMMARY, 'totalPrice(prices)', 'totalPrice(prices, 1)')
+    },
+  },
+  {
+    id: 'diagnostics.push-only',
+    language: 'typescript',
+    clientOptions: { pullDiagnostics: false },
     async run(ctx) {
       return diagnosticsCase(ctx, PRICE_SUMMARY, 'totalPrice(prices)', 'totalPrice(prices, 1)')
     },

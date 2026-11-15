@@ -1,6 +1,6 @@
-import { mkdirSync, rmSync, unlinkSync, existsSync } from 'node:fs'
+import { rmSync, unlinkSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { copyFresh, verifyBuild } from './fixture.mjs'
+import { caseFolder, copyFresh, verifyBuild } from './fixture.mjs'
 import { Session } from './session.mjs'
 import { treeMemory } from './memory.mjs'
 
@@ -23,15 +23,19 @@ export async function coldStart(session, spawnedAt, { timeoutMs = 300000 } = {})
   let firstCorrect
   let attempts = 0
   let last
+  const polls = []
   while (Date.now() < deadline) {
     attempts++
+    const requestStart = Date.now()
     try {
       const answer = locationKeys(await session.references(probe.file, probe.needle))
+      const durationMs = Date.now() - requestStart
       last = answer
       const correct = answer === expectedKey
+      polls.push({ startMs: requestStart - spawnedAt, durationMs, correct })
       if (correct) {
-        firstCorrect ??= Date.now()
-        if (previous === true) return { ms: firstCorrect - spawnedAt, attempts, count: probe.expected.length }
+        firstCorrect ??= { startMs: requestStart - spawnedAt, durationMs }
+        if (previous === true) return { ms: firstCorrect.startMs + firstCorrect.durationMs, attempts, count: probe.expected.length, firstCorrectRequest: firstCorrect, polls: polls.slice(-12) }
       } else {
         firstCorrect = undefined
       }
@@ -40,9 +44,10 @@ export async function coldStart(session, spawnedAt, { timeoutMs = 300000 } = {})
       previous = undefined
       firstCorrect = undefined
       last = error.message
+      polls.push({ startMs: requestStart - spawnedAt, durationMs: Date.now() - requestStart, error: true })
       if (session.client.exited) throw error
+      await sleep(50)
     }
-    await sleep(250)
   }
   throw new Error(`no stable correct findReferences within ${timeoutMs} ms (last answer ${last}, expected ${expectedKey}); server stderr: ${session.client.stderr.slice(-1200)}`)
 }
@@ -61,30 +66,36 @@ export function removeApp(app) {
   } catch {}
 }
 
-export function context(session, app, language) {
+export function context(session, app, language, clientOptions = {}) {
+  const verification = { runs: 0, buildMs: 0, testMs: 0, skipped: [], ran: [] }
   const verify = () => {
     const result = verifyBuild(app, language)
+    verification.runs++
+    verification.buildMs += result.buildMs ?? 0
+    verification.testMs += result.testMs ?? 0
+    verification.skipped = result.skipped ?? []
+    verification.ran = result.ran ?? []
     if (!result.ok) throw new Error(`${result.stage} failed after the edit: ${result.output.slice(-700).trim()}`)
     return true
   }
-  return { session, app, language, verify, Unsupported }
+  return { session, app, language, verify, verification, clientOptions, Unsupported }
 }
 
 export async function runCase({ server, definition, base, work, name }) {
-  const app = join(work, 'cases', name)
-  mkdirSync(join(work, 'cases'), { recursive: true })
-  copyFresh(base, app)
+  const app = copyFresh(base, caseFolder(work, name))
   const language = definition.language
   const started = Date.now()
   let session
   const record = { id: definition.id, server, status: 'fail', reason: '', phase: 'start', details: {} }
   try {
-    session = await Session.start(server, app, { log: () => {}, requestHandlers: definition.requestHandlers })
+    session = await Session.start(server, app, { log: () => {}, requestHandlers: definition.requestHandlers, clientOptions: definition.clientOptions })
     const cold = await coldStart(session, session.started.spawnedAt)
     record.coldStartMs = cold.ms
+    record.coldStart = { attempts: cold.attempts, firstCorrectRequest: cold.firstCorrectRequest }
     record.phase = 'case'
-    const ctx = context(session, app, language)
+    const ctx = context(session, app, language, definition.clientOptions)
     ctx.details = record.details
+    record.verification = ctx.verification
     const outcome = await definition.run(ctx)
     record.status = 'pass'
     if (outcome) Object.assign(record.details, outcome)

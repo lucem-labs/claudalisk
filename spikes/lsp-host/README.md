@@ -16,6 +16,10 @@ node measure.mjs
 node render-results.mjs
 ```
 
-`LSP_HOST_WORK` sets the folder for the generated app, `LSP_HOST_BASE_APP` reuses one.
+Every run generates its app in a new folder under the temporary folder. `LSP_HOST_WORK` names a folder to keep, so the generated app is reused between runs and between the test and measure steps (CI sets it); the folder is reused only when its `.lsp-host-ready` marker, which is written last, exists, and a half-built base is deleted and generated again. `LSP_HOST_BASE_APP` reuses an app generated elsewhere.
+
+A case's edits are checked with a build of the whole `backend/Proof.slnx`, then the test projects. A test project whose sources create a PostgreSQL database needs a Linux container runtime; where `docker info` does not answer `linux`, it is not run, and the result files name it under `verification.skipped`.
+
+`npm run api:types` needs a container runtime too. Where none answers, `lib/no-docker.mjs` logs it and copies `fixtures/generated/schema.d.ts` instead. Regenerate that file, by running `npm run api:types` where a container runtime answers and copying `src/shared/api/schema.d.ts`, whenever the template's backend endpoints or their contracts change.
 
 The numbers behind CLA-0089 are `RESULTS.md`, rendered from `results/<os>.json`, which CI uploads as the `lsp-host-results-<os>` artifacts.

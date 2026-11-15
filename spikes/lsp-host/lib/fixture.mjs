@@ -1,20 +1,21 @@
-process.noDeprecation = true
-import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { generateBaseApp, newWorkFolder } from './base-app.mjs'
+import { containerRuntimeAnswers } from './no-docker.mjs'
+import { spawnArguments } from '../../../tools/registry.mjs'
 
 const fixtures = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures')
 const SKIPPED = new Set(['node_modules', 'bin', 'obj', '.git'])
 
 export function run(command, args, cwd, { timeoutMs = 600000, env } = {}) {
   const started = Date.now()
-  const result = spawnSync(command, args, {
-    cwd,
+  const [file, list, spawnOptions] = spawnArguments(command, args, cwd)
+  const result = spawnSync(file, list, {
+    ...spawnOptions,
+    stdio: 'pipe',
     encoding: 'utf8',
-    shell: process.platform === 'win32' && /^(npm|npx)$/.test(command),
     windowsHide: true,
     timeout: timeoutMs,
     maxBuffer: 256 * 1024 * 1024,
@@ -40,19 +41,25 @@ export function addCases(app) {
 }
 
 export async function ensureBase() {
-  const wanted = process.env.LSP_HOST_WORK ?? join(tmpdir(), 'lsp-host-work')
-  mkdirSync(wanted, { recursive: true })
-  const work = realpathSync.native(wanted)
+  const configured = process.env.LSP_HOST_WORK
+  if (configured) mkdirSync(configured, { recursive: true })
+  const work = configured ? realpathSync.native(configured) : newWorkFolder()
   const provided = process.env.LSP_HOST_BASE_APP
   const base = provided && existsSync(provided) ? realpathSync.native(provided) : join(work, 'base')
   const ready = join(base, '.lsp-host-ready')
   if (!existsSync(ready)) {
+    if (base === join(work, 'base')) rmSync(base, { recursive: true, force: true })
     if (!existsSync(base)) await generateBaseApp(work)
     if (!existsSync(join(base, 'backend', 'Proof.LspCases'))) addCases(base)
     await warmBase(base)
     writeFileSync(ready, '')
   }
   return { work, base }
+}
+
+export function caseFolder(work, name) {
+  mkdirSync(join(work, 'cases'), { recursive: true })
+  return mkdtempSync(join(work, 'cases', `${name}-`))
 }
 
 export function copyFresh(base, destination) {
@@ -73,11 +80,47 @@ export function cleanFrontend(app) {
 }
 
 export function buildBackend(app) {
-  return run('dotnet', ['build', join('backend', 'Proof.LspCases.Tests'), '--nologo', '-v', 'q'], app)
+  return run('dotnet', ['build', join('backend', 'Proof.slnx'), '--nologo', '-v', 'q'], app)
 }
 
-export function testBackend(app) {
-  return run('dotnet', [join('backend', 'Proof.LspCases.Tests', 'bin', 'Debug', 'net10.0', 'Proof.LspCases.Tests.dll')], app)
+export const needsContainer = (source) => /PostgresServer.Create(Migrated)?DatabaseAsync/.test(source)
+
+function sourcesOf(folder) {
+  const found = []
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    if (SKIPPED.has(entry.name)) continue
+    const path = join(folder, entry.name)
+    if (entry.isDirectory()) found.push(...sourcesOf(path))
+    else if (entry.name.endsWith('.cs')) found.push(path)
+  }
+  return found
+}
+
+export function testProjects(app) {
+  const backend = join(app, 'backend')
+  return readdirSync(backend, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name.endsWith('Tests') && existsSync(join(backend, entry.name, `${entry.name}.csproj`)))
+    .map((entry) => ({ name: entry.name, needsContainer: sourcesOf(join(backend, entry.name)).some((file) => needsContainer(readFileSync(file, 'utf8'))) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+let containers
+export const containersAvailable = () => (containers ??= containerRuntimeAnswers())
+
+export function testBackend(app, { available = containersAvailable() } = {}) {
+  const ran = []
+  const skipped = []
+  const started = Date.now()
+  for (const project of testProjects(app)) {
+    if (project.needsContainer && !available) {
+      skipped.push(project.name)
+      continue
+    }
+    const result = run('dotnet', [join('backend', project.name, 'bin', 'Debug', 'net10.0', `${project.name}.dll`)], app)
+    ran.push(project.name)
+    if (!result.ok) return { ok: false, output: `${project.name}: ${result.output}`, ran, skipped, ms: Date.now() - started }
+  }
+  return { ok: true, output: '', ran, skipped, ms: Date.now() - started }
 }
 
 export function buildFrontend(app) {
@@ -91,10 +134,11 @@ export function testFrontend(app) {
 
 export function verifyBuild(app, language) {
   const build = language === 'csharp' ? buildBackend(app) : buildFrontend(app)
-  if (!build.ok) return { ok: false, stage: 'build', output: build.output.slice(-1500) }
+  if (!build.ok) return { ok: false, stage: 'build', output: build.output.slice(-1500), buildMs: build.ms }
   const tests = language === 'csharp' ? testBackend(app) : testFrontend(app)
-  if (!tests.ok) return { ok: false, stage: 'test', output: tests.output.slice(-1500) }
-  return { ok: true }
+  const timings = { buildMs: build.ms, testMs: tests.ms, ran: tests.ran ?? [], skipped: tests.skipped ?? [] }
+  if (!tests.ok) return { ok: false, stage: 'test', output: tests.output.slice(-1500), ...timings }
+  return { ok: true, ...timings }
 }
 
 export async function warmBase(base) {

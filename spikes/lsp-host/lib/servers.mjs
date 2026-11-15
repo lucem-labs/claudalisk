@@ -69,13 +69,14 @@ export const SERVERS = {
   },
 }
 
-export async function startServer(name, root, { log = () => {}, requestHandlers = {} } = {}) {
+export async function startServer(name, root, { log = () => {}, requestHandlers = {}, onClient, clientOptions } = {}) {
   const definition = SERVERS[name]
   const prepared = definition.prepare(root, log)
   const spawnedAt = Date.now()
   const client = new LspClient({ ...prepared.spec, requestHandlers })
+  onClient?.(client)
   client.start()
-  const initialize = await client.request('initialize', initializeParams(root), { timeoutMs: 180000 })
+  const initialize = await client.request('initialize', initializeParams(root, clientOptions), { timeoutMs: 180000 })
   client.notify('initialized', {})
   await definition.afterInitialize(client, prepared)
   return { name, definition, client, prepared, initialize, spawnedAt, root }
