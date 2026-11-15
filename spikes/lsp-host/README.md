@@ -17,3 +17,5 @@ node render-results.mjs
 ```
 
 `LSP_HOST_WORK` sets the folder for the generated app, `LSP_HOST_BASE_APP` reuses one.
+
+The numbers behind CLA-0089 are `RESULTS.md`, rendered from `results/<os>.json`, which CI uploads as the `lsp-host-results-<os>` artifacts.
