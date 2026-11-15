@@ -1,31 +1,32 @@
 {
   "arm": "baseline",
-  "task": "T3",
-  "repeat": 1,
-  "at": "2026-11-15T20:47:34.428Z",
+  "task": "T1",
+  "repeat": 2,
+  "at": "2026-11-15T20:54:30.174Z",
   "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
   "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
   "model": "claude-sonnet-5-5",
-  "totalCostUsd": 0.11318742000000002,
+  "settingSources": "project,local",
+  "totalCostUsd": 0.11235550000000001,
   "models": {
     "claude-haiku-5-5": {
-      "input": 1512,
-      "output": 2851,
-      "cacheRead": 18577,
-      "cacheCreation": 5538,
-      "costUsd": 0.00245472
+      "input": 1454,
+      "output": 3211,
+      "cacheRead": 43365,
+      "cacheCreation": 11038,
+      "costUsd": 0.0035643000000000003
     },
     "claude-sonnet-5-5": {
       "input": 12,
-      "output": 1776,
-      "cacheRead": 170607,
-      "cacheCreation": 18972,
-      "costUsd": 0.1107327
+      "output": 1864,
+      "cacheRead": 169672,
+      "cacheCreation": 18290,
+      "costUsd": 0.1087912
     }
   },
   "turns": 3,
   "subagents": 1,
-  "wallMs": 54573,
+  "wallMs": 63319,
   "isError": false,
   "subtype": "success",
   "completed": true,
@@ -36,7 +37,17 @@
       "exitCode": 0
     },
     {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
       "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
       "passed": true,
       "exitCode": 0
     }

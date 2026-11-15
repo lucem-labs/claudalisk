@@ -5,169 +5,190 @@
   "runs": [
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T1",
       "repeat": 1,
-      "file": "baseline/20261115T204320Z-T1-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T204320Z-T1-1.json",
       "costUsd": 0.132804,
       "at": "2026-11-15T20:43:20.270Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T2",
       "repeat": 1,
-      "file": "baseline/20261115T204545Z-T2-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T204545Z-T2-1.json",
       "costUsd": 0.158525,
       "at": "2026-11-15T20:45:45.487Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T3",
       "repeat": 1,
-      "file": "baseline/20261115T204734Z-T3-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T204734Z-T3-1.json",
       "costUsd": 0.113187,
       "at": "2026-11-15T20:47:34.428Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T4",
       "repeat": 1,
-      "file": "baseline/20261115T204909Z-T4-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T204909Z-T4-1.json",
       "costUsd": 0.098406,
       "at": "2026-11-15T20:49:09.024Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T5",
       "repeat": 1,
-      "file": "baseline/20261115T205032Z-T5-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205032Z-T5-1.json",
       "costUsd": 0.095581,
       "at": "2026-11-15T20:50:32.542Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T6",
       "repeat": 1,
-      "file": "baseline/20261115T205132Z-T6-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205132Z-T6-1.json",
       "costUsd": 0.0918,
       "at": "2026-11-15T20:51:32.649Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T7",
       "repeat": 1,
-      "file": "baseline/20261115T205245Z-T7-1.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205245Z-T7-1.json",
       "costUsd": 0.077735,
       "at": "2026-11-15T20:52:45.346Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T1",
       "repeat": 2,
-      "file": "baseline/20261115T205430Z-T1-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205430Z-T1-2.json",
       "costUsd": 0.112356,
       "at": "2026-11-15T20:54:30.174Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T2",
       "repeat": 2,
-      "file": "baseline/20261115T205636Z-T2-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205636Z-T2-2.json",
       "costUsd": 0.164289,
       "at": "2026-11-15T20:56:36.557Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T3",
       "repeat": 2,
-      "file": "baseline/20261115T205818Z-T3-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205818Z-T3-2.json",
       "costUsd": 0.116916,
       "at": "2026-11-15T20:58:18.856Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T4",
       "repeat": 2,
-      "file": "baseline/20261115T205944Z-T4-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T205944Z-T4-2.json",
       "costUsd": 0.095401,
       "at": "2026-11-15T20:59:44.055Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T5",
       "repeat": 2,
-      "file": "baseline/20261115T210100Z-T5-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210100Z-T5-2.json",
       "costUsd": 0.094429,
       "at": "2026-11-15T21:01:00.365Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T6",
       "repeat": 2,
-      "file": "baseline/20261115T210157Z-T6-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210157Z-T6-2.json",
       "costUsd": 0.080219,
       "at": "2026-11-15T21:01:57.179Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T7",
       "repeat": 2,
-      "file": "baseline/20261115T210309Z-T7-2.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210309Z-T7-2.json",
       "costUsd": 0.084112,
       "at": "2026-11-15T21:03:09.457Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T1",
       "repeat": 3,
-      "file": "baseline/20261115T210448Z-T1-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210448Z-T1-3.json",
       "costUsd": 0.128294,
       "at": "2026-11-15T21:04:48.294Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T2",
       "repeat": 3,
-      "file": "baseline/20261115T210652Z-T2-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210652Z-T2-3.json",
       "costUsd": 0.139511,
       "at": "2026-11-15T21:06:52.479Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T3",
       "repeat": 3,
-      "file": "baseline/20261115T210831Z-T3-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210831Z-T3-3.json",
       "costUsd": 0.109452,
       "at": "2026-11-15T21:08:31.133Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T4",
       "repeat": 3,
-      "file": "baseline/20261115T210955Z-T4-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T210955Z-T4-3.json",
       "costUsd": 0.097509,
       "at": "2026-11-15T21:09:55.811Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T5",
       "repeat": 3,
-      "file": "baseline/20261115T211111Z-T5-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T211111Z-T5-3.json",
       "costUsd": 0.114935,
       "at": "2026-11-15T21:11:11.285Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T6",
       "repeat": 3,
-      "file": "baseline/20261115T211215Z-T6-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T211215Z-T6-3.json",
       "costUsd": 0.100303,
       "at": "2026-11-15T21:12:15.494Z"
     },
     {
       "arm": "baseline",
+      "model": "claude-sonnet-5-5",
       "task": "T7",
       "repeat": 3,
-      "file": "baseline/20261115T211327Z-T7-3.json",
+      "file": "baseline/claude-sonnet-5-5/20261115T211327Z-T7-3.json",
       "costUsd": 0.077478,
       "at": "2026-11-15T21:13:27.194Z"
     }

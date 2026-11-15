@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { claudeArguments, isLeftOut, loadArm, stagePlugin } from './arms.mjs'
+import { armForModel, claudeArguments, isLeftOut, loadArm, stagePlugin } from './arms.mjs'
 
 function write(file, text = 'x') {
   mkdirSync(join(file, '..'), { recursive: true })
@@ -48,7 +48,11 @@ test('an arm resolves its plugin directory and settings next to its arm.json', (
 
     const arm = loadArm('trial', base)
 
-    assert.equal(arm.model, 'm1')
+    assert.deepEqual(arm.models, ['m1'])
+    write(join(base, 'many', 'arm.json'), JSON.stringify({ pluginDir: '../plugin', settings: 'settings.json', models: ['m1', 'm2'] }))
+    assert.deepEqual(loadArm('many', base).models, ['m1', 'm2'])
+    write(join(base, 'none', 'arm.json'), JSON.stringify({ pluginDir: '.', settings: 's.json', models: [] }))
+    assert.throws(() => loadArm('none', base), /no models/)
     assert.equal(arm.pluginDir, join(base, 'plugin'))
     assert.equal(arm.settings, join(base, 'trial', 'settings.json'))
     assert.throws(() => loadArm('missing', base), /no arm missing/)
@@ -59,8 +63,17 @@ test('an arm resolves its plugin directory and settings next to its arm.json', (
   }
 })
 
-test('the baseline arm is this repository plugin', () => {
+test('an arm is narrowed to one of its models', () => {
+  const arm = { name: 'a', models: ['m1', 'm2'] }
+
+  assert.equal(armForModel(arm, 'm2').model, 'm2')
+  assert.throws(() => armForModel(arm, 'm3'), /no model m3/)
+})
+
+test('the baseline arm is this repository plugin, on both models', () => {
   const arm = loadArm('baseline')
+
+  assert.deepEqual(arm.models, ['claude-sonnet-5-5', 'claude-opus-5-5'])
 
   assert.equal(existsSync(join(arm.pluginDir, '.claude-plugin', 'plugin.json')), true)
   assert.notEqual(JSON.parse(readFileSync(arm.settings, 'utf8')), null)

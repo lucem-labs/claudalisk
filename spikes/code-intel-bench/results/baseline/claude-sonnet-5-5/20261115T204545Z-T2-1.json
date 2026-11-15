@@ -1,31 +1,32 @@
 {
   "arm": "baseline",
-  "task": "T1",
-  "repeat": 2,
-  "at": "2026-11-15T20:54:30.174Z",
+  "task": "T2",
+  "repeat": 1,
+  "at": "2026-11-15T20:45:45.487Z",
   "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
   "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
   "model": "claude-sonnet-5-5",
-  "totalCostUsd": 0.11235550000000001,
+  "settingSources": "project,local",
+  "totalCostUsd": 0.15852539999999998,
   "models": {
     "claude-haiku-5-5": {
-      "input": 1454,
-      "output": 3211,
-      "cacheRead": 43365,
-      "cacheCreation": 11038,
-      "costUsd": 0.0035643000000000003
+      "input": 1519,
+      "output": 3331,
+      "cacheRead": 32075,
+      "cacheCreation": 15030,
+      "costUsd": 0.0040169
     },
     "claude-sonnet-5-5": {
-      "input": 12,
-      "output": 1864,
-      "cacheRead": 169672,
-      "cacheCreation": 18290,
-      "costUsd": 0.1087912
+      "input": 18,
+      "output": 3609,
+      "cacheRead": 282585,
+      "cacheCreation": 22531,
+      "costUsd": 0.1545085
     }
   },
-  "turns": 3,
+  "turns": 18,
   "subagents": 1,
-  "wallMs": 63319,
+  "wallMs": 80602,
   "isError": false,
   "subtype": "success",
   "completed": true,
@@ -36,17 +37,22 @@
       "exitCode": 0
     },
     {
-      "name": "the old names are gone",
+      "name": "schema.d.ts and the other schemas",
       "passed": true,
       "exitCode": 0
     },
     {
-      "name": "hidden tests",
+      "name": "hidden backend tests",
       "passed": true,
       "exitCode": 0
     },
     {
-      "name": "architecture tests",
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
       "passed": true,
       "exitCode": 0
     }

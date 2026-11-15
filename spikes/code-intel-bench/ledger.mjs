@@ -32,11 +32,11 @@ export function assertRoom(ledger, runCap = RUN_CAP_USD) {
   }
 }
 
-export function addRun(ledger, { arm, task, repeat, file, costUsd, at }) {
+export function addRun(ledger, { arm, model, task, repeat, file, costUsd, at }) {
   return {
     ...ledger,
     spentUsd: round(ledger.spentUsd + costUsd),
-    runs: [...ledger.runs, { arm, task, repeat, file, costUsd: round(costUsd), at }],
+    runs: [...ledger.runs, { arm, model, task, repeat, file, costUsd: round(costUsd), at }],
   }
 }
 

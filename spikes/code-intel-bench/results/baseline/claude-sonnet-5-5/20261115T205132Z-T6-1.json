@@ -1,31 +1,32 @@
 {
   "arm": "baseline",
   "task": "T6",
-  "repeat": 2,
-  "at": "2026-11-15T21:01:57.179Z",
+  "repeat": 1,
+  "at": "2026-11-15T20:51:32.649Z",
   "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
   "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
   "model": "claude-sonnet-5-5",
-  "totalCostUsd": 0.0802188,
+  "settingSources": "project,local",
+  "totalCostUsd": 0.091799555,
   "models": {
     "claude-haiku-5-5": {
-      "input": 1530,
-      "output": 293,
-      "cacheRead": 0,
-      "cacheCreation": 0,
-      "costUsd": 0.0002995
+      "input": 1534,
+      "output": 1376,
+      "cacheRead": 10278,
+      "cacheCreation": 3055,
+      "costUsd": 0.001326055
     },
     "claude-sonnet-5-5": {
-      "input": 10,
-      "output": 1032,
-      "cacheRead": 134873,
-      "cacheCreation": 14023,
-      "costUsd": 0.0799193
+      "input": 12,
+      "output": 1170,
+      "cacheRead": 166575,
+      "cacheCreation": 15523,
+      "costUsd": 0.09047350000000001
     }
   },
-  "turns": 6,
-  "subagents": 0,
-  "wallMs": 21502,
+  "turns": 1,
+  "subagents": 1,
+  "wallMs": 24093,
   "isError": false,
   "subtype": "success",
   "completed": true,

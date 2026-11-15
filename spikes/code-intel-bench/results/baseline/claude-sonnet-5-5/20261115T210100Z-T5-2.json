@@ -6,6 +6,7 @@
   "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
   "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
   "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
   "totalCostUsd": 0.094429125,
   "models": {
     "claude-haiku-5-5": {

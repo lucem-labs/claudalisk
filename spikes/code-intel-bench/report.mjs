@@ -89,8 +89,8 @@ export function renderVerdict(armName, baselineName, arm, baseline) {
   return { text: lines.join('\n'), result }
 }
 
-export function renderReport({ armName, records, tasks, against, baselineRecords }) {
-  const parts = [renderArm(armName, records, tasks)]
+export function renderReport({ armName, model, records, tasks, against, baselineRecords }) {
+  const parts = [`# ${model}`, renderArm(armName, records, tasks)]
   if (against) {
     parts.push(renderArm(against, baselineRecords, tasks))
     parts.push(renderVerdict(armName, against, repeatsOf(records, tasks), repeatsOf(baselineRecords, tasks)).text)

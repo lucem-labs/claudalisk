@@ -7,7 +7,7 @@ import { after, before, beforeEach, test } from 'node:test'
 import { benchRoot } from './lib.mjs'
 import { cloneFixture } from './fixture-repo.mjs'
 import { emptyLedger, readLedger, writeLedger } from './ledger.mjs'
-import { pluginCommit, plan, runAll, runOnce } from './runner.mjs'
+import { pluginCommit, plan, readResults, runAll, runOnce } from './runner.mjs'
 import { loadTask } from './tasks.mjs'
 
 const identity = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com' }
@@ -102,10 +102,15 @@ test('an accepted run records its cost, usage, subagents, turns, wall time and e
   assert.equal(typeof record.wallMs, 'number')
   assert.equal(record.claudaliskCommit, 'abc123')
   assert.equal(record.fixtureHead, fixture.head)
+  assert.equal(record.model, 'm1')
+  assert.equal(record.settingSources, 'project,local')
+  const sources = record.claudeArguments.indexOf('--setting-sources')
+  assert.deepEqual(record.claudeArguments.slice(sources, sources + 2), ['--setting-sources', 'project,local'])
+  assert.equal(record.claudeArguments[record.claudeArguments.indexOf('--model') + 1], 'm1')
   assert.deepEqual(record.checks.map(({ name, passed }) => ({ name, passed })), [{ name: 'the answer exists', passed: true }])
-  const [file] = readdirSync(join(resultsDir, 'fake'))
+  const [file] = readdirSync(join(resultsDir, 'fake', 'm1'))
   assert.match(file, /^\d{8}T\d{6}Z-T1-1\.json$/)
-  assert.equal(JSON.parse(readFileSync(join(resultsDir, 'fake', file), 'utf8')).accepted, true)
+  assert.equal(JSON.parse(readFileSync(join(resultsDir, 'fake', 'm1', file), 'utf8')).accepted, true)
 })
 
 test('the hidden tests are copied in after the agent finishes, and a failing check rejects the run', async () => {
@@ -174,8 +179,8 @@ test('repeats are numbered after the ones already recorded, one pass over the ta
 
   const numbers = readLedger(ledgerPath).runs.map((entry) => `${entry.task}-${entry.repeat}`)
   assert.deepEqual(numbers, ['T1-1', 'T2-1', 'T1-2', 'T2-2', 'T1-3'])
-  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake' }), [{ task: 'T2', repeat: 3 }])
-  assert.deepEqual(plan({ tasks: ['T2', 'T1'], runs: 2, resultsDir, arm: 'fake' }), [
+  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake', model: 'm1' }), [{ task: 'T2', repeat: 3 }])
+  assert.deepEqual(plan({ tasks: ['T2', 'T1'], runs: 2, resultsDir, arm: 'fake', model: 'm1' }), [
     { task: 'T2', repeat: 3 },
     { task: 'T2', repeat: 4 },
     { task: 'T1', repeat: 4 },
@@ -184,12 +189,12 @@ test('repeats are numbered after the ones already recorded, one pass over the ta
 
 test('a re-run of one task fills the lowest repeat that lacks it', async () => {
   await runAll({ arm, tasks: ['T1', 'T2'], runs: 3, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
-  for (const name of readdirSync(join(resultsDir, 'fake'))) {
-    if (/-T2-2.json$/.test(name)) rmSync(join(resultsDir, 'fake', name))
+  for (const name of readdirSync(join(resultsDir, 'fake', 'm1'))) {
+    if (/-T2-2.json$/.test(name)) rmSync(join(resultsDir, 'fake', 'm1', name))
   }
 
-  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake' }), [{ task: 'T2', repeat: 2 }])
-  assert.deepEqual(plan({ tasks: ['T1', 'T2'], runs: 2, resultsDir, arm: 'fake' }), [
+  assert.deepEqual(plan({ tasks: ['T2'], runs: 1, resultsDir, arm: 'fake', model: 'm1' }), [{ task: 'T2', repeat: 2 }])
+  assert.deepEqual(plan({ tasks: ['T1', 'T2'], runs: 2, resultsDir, arm: 'fake', model: 'm1' }), [
     { task: 'T2', repeat: 2 },
     { task: 'T1', repeat: 4 },
     { task: 'T2', repeat: 4 },
@@ -202,8 +207,8 @@ test('the cost reaches the ledger and a partial record before the hidden checks 
   await assert.rejects(once({ checkRun }), /interrupted/)
 
   assert.equal(readLedger(ledgerPath).spentUsd, 0.5)
-  const [file] = readdirSync(join(resultsDir, 'fake'))
-  const saved = JSON.parse(readFileSync(join(resultsDir, 'fake', file), 'utf8'))
+  const [file] = readdirSync(join(resultsDir, 'fake', 'm1'))
+  const saved = JSON.parse(readFileSync(join(resultsDir, 'fake', 'm1', file), 'utf8'))
   assert.equal(saved.totalCostUsd, 0.5)
   assert.equal(saved.checksPending, true)
   assert.equal(saved.accepted, false)
@@ -242,4 +247,17 @@ test('a copy of the fixture is refused when its HEAD is not the pinned one', asy
 
   await assert.rejects(cloneFixture(destination, { fixture: { ...fixture, head: '0'.repeat(40) } }), /not the pinned/)
 
+})
+
+test('results, ledger entries and repeat numbers are per arm and model', async () => {
+  const other = { ...arm, model: 'm2' }
+  await runAll({ arm, tasks: ['T1'], runs: 2, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
+  await runAll({ arm: other, tasks: ['T1'], runs: 1, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
+
+  assert.equal(readdirSync(join(resultsDir, 'fake', 'm1')).length, 2)
+  assert.equal(readdirSync(join(resultsDir, 'fake', 'm2')).length, 1)
+  const entries = readLedger(ledgerPath).runs.map((entry) => [entry.model, entry.repeat, entry.file.split('/').slice(0, 2).join('/')])
+  assert.deepEqual(entries, [['m1', 1, 'fake/m1'], ['m1', 2, 'fake/m1'], ['m2', 1, 'fake/m2']])
+  assert.equal(readResults(resultsDir, 'fake', 'm2')[0].model, 'm2')
+  assert.deepEqual(plan({ tasks: ['T1'], runs: 1, resultsDir, arm: 'fake', model: 'm2' }), [{ task: 'T1', repeat: 2 }])
 })

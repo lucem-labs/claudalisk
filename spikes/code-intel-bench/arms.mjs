@@ -10,10 +10,17 @@ export function loadArm(name, root = armsRoot) {
   const file = join(folder, 'arm.json')
   if (!existsSync(file)) throw new Error(`There is no arm ${name} in ${root}`)
   const arm = JSON.parse(readFileSync(file, 'utf8'))
-  for (const key of ['pluginDir', 'settings', 'model']) {
+  for (const key of ['pluginDir', 'settings']) {
     if (!arm[key]) throw new Error(`${file} has no ${key}`)
   }
-  return { name, folder, model: arm.model, pluginDir: resolve(folder, arm.pluginDir), settings: resolve(folder, arm.settings) }
+  const models = arm.models ?? (arm.model ? [arm.model] : [])
+  if (!Array.isArray(models) || !models.length || models.some((model) => typeof model !== 'string' || !model)) throw new Error(`${file} has no models`)
+  return { name, folder, models, pluginDir: resolve(folder, arm.pluginDir), settings: resolve(folder, arm.settings) }
+}
+
+export function armForModel(arm, model) {
+  if (!arm.models.includes(model)) throw new Error(`Arm ${arm.name} has no model ${model}; it has ${arm.models.join(', ')}`)
+  return { ...arm, model }
 }
 
 export function isLeftOut(source, pluginDir) {
@@ -26,13 +33,15 @@ export function stagePlugin(pluginDir, destination) {
   return destination
 }
 
+export const SETTING_SOURCES = 'project,local'
+
 export function claudeArguments({ arm, plugin, budget }) {
   return [
     '-p',
     '--output-format', 'stream-json',
     '--verbose',
     '--plugin-dir', plugin,
-    '--setting-sources', 'project,local',
+    '--setting-sources', SETTING_SOURCES,
     '--settings', arm.settings,
     '--model', arm.model,
     '--max-budget-usd', String(budget),

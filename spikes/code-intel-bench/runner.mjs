@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { claudeArguments, stagePlugin } from './arms.mjs'
+import { SETTING_SOURCES, armForModel, claudeArguments, stagePlugin } from './arms.mjs'
 import { cloneFixture, readFixture } from './fixture-repo.mjs'
 import { git, ledgerFile, runCaptured } from './lib.mjs'
 import { RUN_CAP_USD, addRun, assertRoom, readLedger, room, writeLedger } from './ledger.mjs'
@@ -18,17 +18,17 @@ export function stamp(date) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
 }
 
-export function repeatsDone(resultsDir, arm) {
+export function repeatsDone(resultsDir, arm, model) {
   const done = {}
-  for (const record of readResults(resultsDir, arm)) {
+  for (const record of readResults(resultsDir, arm, model)) {
     const repeat = record.repeat ?? record.run
     ;(done[record.task] ??= new Set()).add(repeat)
   }
   return done
 }
 
-export function plan({ tasks, runs, resultsDir, arm }) {
-  const done = repeatsDone(resultsDir, arm)
+export function plan({ tasks, runs, resultsDir, arm, model }) {
+  const done = repeatsDone(resultsDir, arm, model)
   const steps = []
   let repeat = 0
   for (let pass = 0; pass < runs; pass += 1) {
@@ -42,7 +42,7 @@ export function plan({ tasks, runs, resultsDir, arm }) {
 export function describePlan({ arm, steps, ledger }) {
   const worst = steps.length * RUN_CAP_USD
   const lines = [
-    `Arm ${arm.name}: model ${arm.model}, plugin ${arm.pluginDir}, settings ${arm.settings}`,
+    `Arm ${arm.name} on ${arm.model}: plugin ${arm.pluginDir}, settings ${arm.settings}`,
     `${steps.length} runs, each capped at $${RUN_CAP_USD.toFixed(2)}, so at most $${worst.toFixed(2)}:`,
     ...steps.map((step) => `  ${step.task} repeat ${step.repeat}`),
     `Ledger: $${ledger.spentUsd.toFixed(2)} spent of $${ledger.capUsd.toFixed(2)} over ${ledger.runs.length} runs; $${Math.max(0, room(ledger, 0)).toFixed(2)} left.`,
@@ -79,7 +79,8 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
     await cloneFixture(copy, { fixture })
     copyDependencies(fixture.path, copy)
     const started = Date.now()
-    const outcome = await exec(claudeBinary(), claudeArguments({ arm, plugin, budget: RUN_CAP_USD }), { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
+    const args = claudeArguments({ arm, plugin, budget: RUN_CAP_USD })
+    const outcome = await exec(claudeBinary(), args, { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
     const wallMs = Date.now() - started
     const summary = summarizeRun(parseStream(outcome.stdout), wallMs, outcome)
     const at = now()
@@ -91,6 +92,8 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
       claudaliskCommit: claudeCommit,
       fixtureHead: fixture.head,
       model: arm.model,
+      settingSources: SETTING_SOURCES,
+      claudeArguments: args,
       totalCostUsd: summary.costUsd,
       ...(summary.costEstimated ? { costEstimated: true } : {}),
       models: summary.models,
@@ -105,13 +108,13 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
       accepted: false,
       ...(outcome.code === 0 ? {} : { exitCode: outcome.code, stderr: outcome.stderr.slice(-1500) }),
     }
-    const folder = join(resultsDir, arm.name)
+    const folder = join(resultsDir, arm.name, arm.model)
     mkdirSync(folder, { recursive: true })
     const file = `${stamp(at)}-${task.id}-${repeat}.json`
     const save = () => writeFileSync(join(folder, file), `${JSON.stringify(record, null, 2)}
 `)
     save()
-    writeLedger(ledgerPath, addRun(readLedger(ledgerPath), { arm: arm.name, task: task.id, repeat, file: `${arm.name}/${file}`, costUsd: summary.costUsd, at: record.at }))
+    writeLedger(ledgerPath, addRun(readLedger(ledgerPath), { arm: arm.name, model: arm.model, task: task.id, repeat, file: `${arm.name}/${arm.model}/${file}`, costUsd: summary.costUsd, at: record.at }))
     installHidden(task, copy)
     const checks = await runChecks(task, copy, checkRun)
     const { checksPending, ...rest } = record
@@ -125,14 +128,14 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
 }
 
 export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = ledgerFile, keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder }) {
-  const steps = plan({ tasks, runs, resultsDir, arm: arm.name })
+  const steps = plan({ tasks, runs, resultsDir, arm: arm.name, model: arm.model })
   const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'))
   const claudeCommit = await pluginCommit(arm.pluginDir)
   const records = []
   try {
     for (const step of steps) {
       const task = loadTask(step.task, tasksFolder)
-      log(`${arm.name} ${step.task} repeat ${step.repeat}`)
+      log(`${arm.name} ${arm.model} ${step.task} repeat ${step.repeat}`)
       const record = await runOnce({ arm, task, repeat: step.repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
       records.push(record)
       log(`  ${record.accepted ? 'accepted' : 'rejected'} (${record.subtype}), $${record.totalCostUsd.toFixed(2)}, ${record.turns} turns, ${record.subagents} subagents`)
@@ -143,8 +146,8 @@ export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = ledger
   return records
 }
 
-export function readResults(resultsDir, arm) {
-  const folder = join(resultsDir, arm)
+export function readResults(resultsDir, arm, model) {
+  const folder = join(resultsDir, arm, model)
   if (!existsSync(folder)) return []
   return readdirSync(folder)
     .filter((name) => name.endsWith('.json'))

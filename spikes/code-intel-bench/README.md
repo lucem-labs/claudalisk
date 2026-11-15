@@ -18,7 +18,7 @@ Seven tasks run against one pinned fixture app. Each run is a fresh `claude -p` 
 | T6 | Replace one method body in a 250-line file | E4 |
 | T7 | A control feature that needs no symbol work | none |
 
-For every run it records, into `results/<arm>/<timestamp>-<task>-<repeat>.json`: the arm, the task, the repeat number, the claudalisk commit and the fixture HEAD, `total_cost_usd`, the usage of every model (input, output, cache read and cache creation tokens, subagents included), turns, the number of subagents, wall time, `is_error` and the result subtype, and the result of each hidden check.
+For every run it records, into `results/<arm>/<model>/<timestamp>-<task>-<repeat>.json`: the arm, the model, the run settings (`settingSources` and the exact `claude` argument list), the task, the repeat number (numbered per arm and model), the claudalisk commit and the fixture HEAD, `total_cost_usd`, the usage of every model (input, output, cache read and cache creation tokens, subagents included), turns, the number of subagents, wall time, `is_error` and the result subtype, and the result of each hidden check.
 
 `bench.mjs` runs `claude` with `--output-format stream-json --verbose`, not `--output-format json`. The final `result` event of the stream carries the same fields as the single JSON result (`total_cost_usd`, `modelUsage`, `num_turns`, `is_error`, `subtype`), and the stream also shows every `Agent` or `Task` tool use, which is how subagents are counted. `--bare` is never used, because it skips hooks, and the plugin's hooks are part of what is measured. The prompt goes to `claude` on stdin, so it needs no shell quoting on any system.
 
@@ -45,11 +45,17 @@ node spikes/code-intel-bench/bench.mjs report --arm baseline
 
 `--tasks T1,T2` runs a subset. Runs go one pass over the tasks at a time, so an interrupted run leaves complete repeats. Every step in one pass has the same repeat number, and each record stores it as `repeat`. A pass takes the lowest repeat number that at least one of the selected tasks lacks in `results/<arm>/`, and runs only the tasks that lack it, so `--tasks T5` re-runs T5 into the lowest repeat it is missing from, and a full run continues after the last repeat. The ledger entry and a partial record (`checksPending: true`) are written as soon as `claude` ends, before the hidden checks, and the record is completed after them. A run with no result event (timeout, crash, kill) is charged the run cap and its record has `costEstimated: true`, so the budget guard never under-counts.
 
-The baseline arm is `arms/baseline/arm.json`: this repository's plugin at its current commit, `settings.json` and a model. To test a change, add `arms/<name>/arm.json` with the plugin directory (a path relative to the arm folder), a settings file and a model, and run it the same way. The runner does not change. The plugin directory is staged into a temporary copy that leaves out `spikes/` and `.git`, so the agent can never read the hidden tests or the reference solutions.
+The baseline arm is `arms/baseline/arm.json`: this repository's plugin at its current commit, `settings.json` and the models `claude-sonnet-5-5` and `claude-opus-5-5`. To test a change, add `arms/<name>/arm.json` with the plugin directory (a path relative to the arm folder), a settings file and a model, and run it the same way. The runner does not change. The plugin directory is staged into a temporary copy that leaves out `spikes/` and `.git`, so the agent can never read the hidden tests or the reference solutions.
 
 `CLAUDE_BIN` names the `claude` executable (default `claude`); a path ending in `.mjs` runs with Node, which is how the tests use `test/fake-claude.mjs`.
 
-The agent has to be logged in on the machine that runs the benchmark. Runs pass `--setting-sources project,local`, so the user's own settings and plugins never reach a measured run; only the fixture's project settings, the arm's `--settings` file and its `--plugin-dir` apply. Managed settings of the machine still apply, so run every arm on the same machine.
+The agent has to be logged in on the machine that runs the benchmark. Runs pass `--setting-sources project,local`, so that the user's own settings and plugins (the user source) never reach a measured run and two machines or two users measure the same thing; every record stores `settingSources` and the exact argument list; only the fixture's project settings, the arm's `--settings` file and its `--plugin-dir` apply. Managed settings of the machine still apply, so run every arm on the same machine.
+
+## Models
+
+The model is a dimension of the arm: `arm.json` lists `models` (a single `model` is read as a one-item list), and the baseline has both `claude-sonnet-5-5` and `claude-opus-5-5`. `bench.mjs run --arm <name>` runs every model of the arm, one after the other; `--model <id>` runs only that one, and the id must be one of the arm's models. The plan, the dry run and the worst case are per model. Results go to `results/<arm>/<model>/`, repeats are numbered per arm and model, and ledger entries carry the model.
+
+Arms are judged per model and never pooled: `report --arm <name> [--model <id>] [--against baseline]` prints one section per model, and each verdict compares the arm with the baseline on the same model only.
 
 ## Cost
 

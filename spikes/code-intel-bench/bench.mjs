@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { loadArm } from './arms.mjs'
+import { armForModel, loadArm } from './arms.mjs'
 import { benchRoot, ledgerFile } from './lib.mjs'
 import { readLedger } from './ledger.mjs'
 import { renderReport } from './report.mjs'
@@ -12,8 +12,8 @@ import { parseTaskList, taskIds } from './tasks.mjs'
 
 export const resultsRoot = join(benchRoot, 'results')
 
-const USAGE = `Usage: node bench.mjs run --arm <name> [--tasks T1,T2] [--runs 3] [--dry-run] [--keep]
-       node bench.mjs report --arm <name> [--against baseline]`
+const USAGE = `Usage: node bench.mjs run --arm <name> [--tasks T1,T2] [--model <id>] [--runs 3] [--dry-run] [--keep]
+       node bench.mjs report --arm <name> [--model <id>] [--against baseline]`
 
 export function parseCommand(argv) {
   const [command, ...rest] = argv
@@ -21,6 +21,7 @@ export function parseCommand(argv) {
     args: rest,
     options: {
       arm: { type: 'string' },
+      model: { type: 'string' },
       tasks: { type: 'string' },
       runs: { type: 'string', default: '3' },
       against: { type: 'string' },
@@ -31,24 +32,31 @@ export function parseCommand(argv) {
   if (!['run', 'report'].includes(command) || !values.arm) throw new Error(USAGE)
   const runs = Number(values.runs)
   if (!Number.isInteger(runs) || runs < 1) throw new Error('--runs needs a whole number of at least 1')
-  return { command, arm: values.arm, tasks: values.tasks, runs, against: values.against, dryRun: values['dry-run'], keep: values.keep }
+  return { command, arm: values.arm, model: values.model, tasks: values.tasks, runs, against: values.against, dryRun: values['dry-run'], keep: values.keep }
 }
 
 export async function main(argv, { resultsDir = resultsRoot, ledgerPath = ledgerFile, log = console.log, exec, checkRun, fixture } = {}) {
   const options = parseCommand(argv)
   const arm = loadArm(options.arm)
+  const models = options.model ? [armForModel(arm, options.model).model] : arm.models
   if (options.command === 'report') {
     const tasks = taskIds()
-    const baselineRecords = options.against ? readResults(resultsDir, options.against) : []
-    log(renderReport({ armName: arm.name, records: readResults(resultsDir, arm.name), tasks, against: options.against, baselineRecords }))
+    const sections = models.map((model) => {
+      const baselineRecords = options.against ? readResults(resultsDir, options.against, model) : []
+      return renderReport({ armName: arm.name, model, records: readResults(resultsDir, arm.name, model), tasks, against: options.against, baselineRecords })
+    })
+    log(sections.join('\n\n'))
     return
   }
   const tasks = parseTaskList(options.tasks)
-  if (options.dryRun) {
-    log(describePlan({ arm, steps: plan({ tasks, runs: options.runs, resultsDir, arm: arm.name }), ledger: readLedger(ledgerPath) }))
-    return
+  for (const model of models) {
+    const perModel = armForModel(arm, model)
+    if (options.dryRun) {
+      log(describePlan({ arm: perModel, steps: plan({ tasks, runs: options.runs, resultsDir, arm: arm.name, model }), ledger: readLedger(ledgerPath) }))
+      continue
+    }
+    await runAll({ arm: perModel, tasks, runs: options.runs, resultsDir, ledgerPath, keep: options.keep, exec, checkRun, log, ...(fixture ? { fixture } : {}) })
   }
-  await runAll({ arm, tasks, runs: options.runs, resultsDir, ledgerPath, keep: options.keep, exec, checkRun, log, ...(fixture ? { fixture } : {}) })
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

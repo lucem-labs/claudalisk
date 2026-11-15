@@ -1,5 +1,8 @@
 {
   "pluginDir": "../../../..",
   "settings": "settings.json",
-  "model": "claude-sonnet-5-5"
+  "models": [
+    "claude-sonnet-5-5",
+    "claude-opus-5-5"
+  ]
 }
