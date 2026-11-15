@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** workflow
-- **Enforced by:** `implementer` and `scout` agents; workflow and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`; in the main thread, the plugin's `scout-gate` hook (CLA-0080) for whole-file reads of large files and shell reads. No hook for repeat reads (see Decision).
-- **Issue:** #97
+- **Enforced by:** `implementer` and `scout` agents; workflow and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`; in the main thread, the plugin's `scout-gate` hook (CLA-0080) for whole-file reads of large files and shell reads. No hook for repeat reads, and no hook for shell reads in subagents (see Decision).
+- **Issue:** #97, #218
 
 ## Context
 
@@ -25,10 +25,16 @@ Claude Code already tracks what each agent has read. A `Read` of a file that has
   - **Warn, do not block.** After compaction or `/rewind`, the earlier read is gone from the context, but a modification-time check cannot know that. A block would then leave the agent unable to read a file it needs. Any future guard allows the read and adds a warning.
   - **A later repeat-read guard goes in the plugin's hooks.** If the logs still show repeat reads once this rule is in place, a guard there would keep its state per agent and outside the checkout (CLA-0066), and it would be written in Node.js (CLA-0027).
 - **In the main thread, a hook denies a whole-file read of a large file and a shell read of a project file** (CLA-0080). It needs no state, and a ranged `Read` or the scout is always a way through, so it blocks instead of warning.
+- **No claudalisk hook for shell reads in subagents.** `scout-gate` allows every call that carries an `agent_id`, and it stays that way. The #218 spike measured the subagent runs since 2026-11-04 in the #212 sample, with each tool call counted once:
+  - **The volume is real.** Shell reads (`sed -n`, `cat`, `head`, `tail`, `awk` on a file) are 34.4% of the implementer's tool output, about 25 calls a run, and shell searches over files are another 15.9%, about 22 calls a run, over 146 runs. In 228 general-purpose runs they are 25.2% and 14.6%. The scout and the reviewer have no shell and read only through `Read` and `Grep`.
+  - **Steering would not shrink it.** The implementer's `sed -n` reads are already ranged. The part of its output that a ranged `Read` or `Grep`'s line cap would cut, whole-file `cat` past 300 lines, ranges past 300 lines and searches past 250 lines, is 0.06% of its output. Identical shell reads with no edit or other shell command between are 0.08%. Repeated `Read` calls of the same file and range in subagents returned the full content again (43 repeats, no "unchanged" stub), so moving reads to `Read` does not make repeats cheaper either.
+  - **`Read` is larger for the same lines.** Line-number prefixes are 6.3% of subagents' `Read` output, so a `sed -n` moved to `Read` grows by about 7%.
+  - **A deny costs a request.** Each denied call is a model request that sends the whole context again, and the agent then makes the same read through another tool. With about 47 shell reads and searches in an implementer run, even a few denials a run cost more than the 0.1% a gate could save.
+  - **Revisit with a later ADR** if a spike with the same method finds the part a ranged `Read` or `Grep` would cut, or repeat reads of unchanged files, above 5% of the implementer's tool output, or if the #202 benchmark shows a lower cost per accepted task with such a gate. Such a hook would reuse `hooks/shell.mjs`, deny only reads and searches of project files, and leave pipes over command output, `git` and `node` scripts alone, so the build, test and fix loop is never blocked.
 
 ## Consequences
 
 - A file usually costs its relevant lines once per agent, not its whole length on every read.
 - A subagent reads only what its brief points it to, so it adds a few hundred lines to its context, not every file it opens.
-- In subagents the rule is prompt only for range reads and Bash reads. Claude Code's stub covers whole-file repeats with `Read`; in the main thread the `scout-gate` hook (CLA-0080) also stops a whole-file read of a large file and a `cat` of a source file.
+- In subagents the rule is prompt only for range reads and Bash reads, on purpose (#218). Their shell reads cost about what the same reads through `Read` would, and the code-intelligence tools in #200 target what they cost. Claude Code's stub covers whole-file repeats with `Read`; in the main thread the `scout-gate` hook (CLA-0080) also stops a whole-file read of a large file and a `cat` of a source file.
 - An agent that compacts mid-task may need to read a file again. That read is allowed, and compacting at milestones (CLA-0075) makes it rare.
