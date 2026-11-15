@@ -22,7 +22,7 @@ The spike in #212 measured every transcript still on the owner's machine:
 
 | Group | Results | Median chars | p95 chars | Share of context | Share of cost | Truncated | Truncated, then followed up |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| File reads (`Read`, and `sed`, `cat`, `head`, `tail`, `awk`) | 18,911 | 2,023 | 19,290 | 23.43% | 19.12% | 601 | 135 |
+| File reads (`Read`, and `sed`, `cat`, `head`, `tail`, `awk`, `cut`, `less`, `more`, `nl`, `type`, `Get-Content`) | 18,911 | 2,023 | 19,290 | 23.43% | 19.12% | 601 | 135 |
 | Scripts and other shell (`python`, `node -e`, loops) | 15,158 | 577 | 7,182 | 8.98% | 7.05% | 224 | 70 |
 | Search and listing (`Grep`, `Glob`, `grep`, `ls`) | 11,080 | 1,132 | 8,009 | 7.75% | 6.14% | 226 | 34 |
 | Git and GitHub (`git`, `gh issue`, `gh pr`, `gh api`) | 5,201 | 545 | 10,272 | 3.21% | 2.60% | 252 | 82 |
