@@ -69,6 +69,6 @@ test('the baseline arm is this repository plugin', () => {
 test('the command line has a fresh session, stream-json, the plugin, the settings, the model and the budget, and never --bare', () => {
   const args = claudeArguments({ arm: { settings: '/s.json', model: 'm1' }, plugin: '/stage', budget: 3 })
 
-  assert.deepEqual(args, ['-p', '--output-format', 'stream-json', '--verbose', '--plugin-dir', '/stage', '--settings', '/s.json', '--model', 'm1', '--max-budget-usd', '3', '--permission-mode', 'bypassPermissions'])
+  assert.deepEqual(args, ['-p', '--output-format', 'stream-json', '--verbose', '--plugin-dir', '/stage', '--setting-sources', 'project,local', '--settings', '/s.json', '--model', 'm1', '--max-budget-usd', '3', '--permission-mode', 'bypassPermissions'])
   assert.equal(args.includes('--bare'), false)
 })

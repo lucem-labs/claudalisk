@@ -32,6 +32,7 @@ export function claudeArguments({ arm, plugin, budget }) {
     '--output-format', 'stream-json',
     '--verbose',
     '--plugin-dir', plugin,
+    '--setting-sources', 'project,local',
     '--settings', arm.settings,
     '--model', arm.model,
     '--max-budget-usd', String(budget),

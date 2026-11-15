@@ -49,7 +49,7 @@ The baseline arm is `arms/baseline/arm.json`: this repository's plugin at its cu
 
 `CLAUDE_BIN` names the `claude` executable (default `claude`); a path ending in `.mjs` runs with Node, which is how the tests use `test/fake-claude.mjs`.
 
-The agent has to be logged in on the machine that runs the benchmark. Settings of the user and of the machine still apply to a run, so run it on a machine with the same user plugins and settings for every arm.
+The agent has to be logged in on the machine that runs the benchmark. Runs pass `--setting-sources project,local`, so the user's own settings and plugins never reach a measured run; only the fixture's project settings, the arm's `--settings` file and its `--plugin-dir` apply. Managed settings of the machine still apply, so run every arm on the same machine.
 
 ## Cost
 
