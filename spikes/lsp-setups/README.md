@@ -34,4 +34,4 @@ node render-results.mjs
 
 The plugins set-up uses the globally installed servers when they exist (`dotnet tool install --global csharp-ls`, `npm install -g typescript@7`, `npm install -g yaml-language-server`), as the wrapper plugins do, and the pinned ones otherwise; the results name which. `LSP_HOST_WORK` names a folder to keep the generated app between parts, as in `lsp-host`. A part that records an `error` exits with 1 after it writes its result.
 
-CI runs the `lsp-setups` job on Linux, macOS and Windows and uploads `lsp-setups-results-<os>`.
+Spikes have no CI job. The measurement in `RESULTS.md` came from a CI run that has since been removed; to measure again, run the steps by hand on each OS.

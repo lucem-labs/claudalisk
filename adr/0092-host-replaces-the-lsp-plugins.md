@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-16
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); `spikes/lsp-setups` tests and measurement on ubuntu, windows and macos; from #209 on, the app template's `.claude/settings.json` and its tests
+- **Enforced by:** reviewer (CLA-0023); `spikes/lsp-setups` tests and measurement, run locally since spikes have no CI job; from #209 on, the app template's `.claude/settings.json` and its tests
 - **Issue:** #207, #200
 
 ## Context

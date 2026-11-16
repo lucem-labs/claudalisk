@@ -1,0 +1,34 @@
+{
+  "pluginDir": "../../../..",
+  "settings": "settings.json",
+  "models": [
+    "claude-sonnet-5-5",
+    "claude-opus-5-5"
+  ],
+  "include": [
+    "spikes/code-intel",
+    "spikes/lsp-host"
+  ],
+  "overlay": "overlay",
+  "toolPattern": "spikes/code-intel/c/cli.mjs",
+  "agents": {
+    "scout": {
+      "addTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    "implementer": {
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  },
+  "hooks": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/spikes/code-intel/c/cli.mjs"
+      ]
+    }
+  ]
+}

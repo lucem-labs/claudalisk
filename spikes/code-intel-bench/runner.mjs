@@ -1,14 +1,24 @@
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SETTING_SOURCES, armForModel, claudeArguments, stagePlugin } from './arms.mjs'
+import { SETTING_SOURCES, applyAgents, applyHooks, armForModel, claudeArguments, stagePlugin } from './arms.mjs'
+import { scoutBashDecisions } from './hooklog.mjs'
 import { cloneFixture, readFixture } from './fixture-repo.mjs'
 import { git, runCaptured } from './lib.mjs'
 import { RUN_CAP_USD, defaultLedgerPath, reserveRun, room, settleRun } from './ledger.mjs'
 import { accepted, installHidden, loadTask, runChecks } from './tasks.mjs'
+import { HIDDEN_CHECK_ENV, createWatcher, sweep } from './processes.mjs'
 import { completed, parseStream, summarizeRun } from './usage.mjs'
 
 export const RUN_TIMEOUT_MS = 60 * 60 * 1000
+
+function realpathOrSelf(path) {
+  try {
+    return realpathSync(path)
+  } catch {
+    return path
+  }
+}
 
 export function claudeBinary(env = process.env) {
   return env.CLAUDE_BIN || 'claude'
@@ -73,19 +83,45 @@ export async function pluginCommit(pluginDir) {
   }
 }
 
-export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+export function portablePaths(value, { folders = [[tmpdir(), '<tmp>'], [homedir(), '<home>']], platform = process.platform } = {}) {
+  const patterns = folders
+    .flatMap(([folder, label]) => [folder, folder.replaceAll('\\', '/')].map((form) => [form, label]))
+    .filter(([form]) => form)
+    .sort((a, b) => b[0].length - a[0].length)
+    .map(([form, label]) => [new RegExp(escapeRegExp(form), platform === 'win32' ? 'gi' : 'g'), label])
+  const scrub = (item) => {
+    if (typeof item === 'string') return patterns.reduce((text, [pattern, label]) => text.replace(pattern, label), item)
+    if (Array.isArray(item)) return item.map(scrub)
+    if (item && typeof item === 'object') return Object.fromEntries(Object.entries(item).map(([key, inner]) => [key, scrub(inner)]))
+    return item
+  }
+  return scrub(value)
+}
+
+export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, agentChanges = [], hookChanges = [], fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
   const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, ...(pack ? { pack } : {}), task: task.id, repeat, at: now().toISOString() })
   const base = mkdtempSync(join(tmpdir(), 'claudalisk-bench-run-'))
   const copy = join(base, 'app')
+  const watcher = createWatcher()
+  let leftoverProcesses
+  const clean = () => sweep({ watcher, folders: [copy, realpathOrSelf(copy)] })
   try {
+    watcher.start()
     await cloneFixture(copy, { fixture })
     copyDependencies(fixture.path, copy, fixture.dependencies)
     const started = Date.now()
     const args = claudeArguments({ arm, plugin, budget: RUN_CAP_USD })
-    const outcome = await exec(claudeBinary(), args, { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
+    const hookLog = hookChanges.length ? join(base, 'hook-decisions.jsonl') : undefined
+    const outcome = await exec(claudeBinary(), args, { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS, onSpawn: (pid) => watcher.track(pid), ...(hookLog ? { env: { CODE_INTEL_BENCH_HOOK_LOG: hookLog } } : {}) })
     const wallMs = Date.now() - started
-    const summary = summarizeRun(parseStream(outcome.stdout), wallMs, outcome)
+    const summary = summarizeRun(parseStream(outcome.stdout, arm.toolPattern), wallMs, outcome)
     const at = now()
+    const folder = join(resultsDir, arm.name, arm.model)
+    mkdirSync(folder, { recursive: true })
+    const streamFile = `${stamp(at)}-${task.id}-${repeat}.stream.jsonl`
+    writeFileSync(join(folder, streamFile), outcome.stdout ?? '')
     let record = {
       arm: arm.name,
       task: task.id,
@@ -95,12 +131,16 @@ export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, f
       fixtureHead: fixture.head,
       model: arm.model,
       settingSources: SETTING_SOURCES,
-      claudeArguments: args,
+      claudeArguments: portablePaths(args),
+      ...(agentChanges.length ? { agentChanges: portablePaths(agentChanges) } : {}),
+      ...(hookChanges.length ? { hookChanges: portablePaths(hookChanges), scoutBashDecisions: scoutBashDecisions(hookLog) } : {}),
+      stream: `${arm.name}/${arm.model}/${streamFile}`,
       totalCostUsd: summary.costUsd,
       ...(summary.costEstimated ? { costEstimated: true } : {}),
       models: summary.models,
       turns: summary.turns,
       subagents: summary.subagents,
+      ...(summary.codeIntelCalls === undefined ? {} : { codeIntelCalls: summary.codeIntelCalls }),
       wallMs: summary.wallMs,
       isError: summary.isError,
       subtype: summary.subtype,
@@ -110,20 +150,20 @@ export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, f
       accepted: false,
       ...(outcome.code === 0 ? {} : { exitCode: outcome.code, stderr: outcome.stderr.slice(-1500) }),
     }
-    const folder = join(resultsDir, arm.name, arm.model)
-    mkdirSync(folder, { recursive: true })
     const file = `${stamp(at)}-${task.id}-${repeat}.json`
     const save = () => writeFileSync(join(folder, file), `${JSON.stringify(record, null, 2)}
 `)
     save()
     settleRun(ledgerPath, reservation, { file: `${arm.name}/${arm.model}/${file}`, costUsd: summary.costUsd, at: record.at })
     installHidden(task, copy)
-    const checks = await runChecks(task, copy, checkRun)
+    const checks = await runChecks(task, copy, checkRun, { env: HIDDEN_CHECK_ENV, onSpawn: (pid) => watcher.track(pid) })
+    leftoverProcesses = clean()
     const { checksPending, ...rest } = record
-    record = { ...rest, checks, accepted: completed(summary) && accepted(checks) }
+    record = { ...rest, checks, leftoverProcesses, accepted: completed(summary) && accepted(checks) }
     save()
     return record
   } finally {
+    if (!leftoverProcesses) clean()
     if (!keep) rmSync(base, { recursive: true, force: true })
     else console.log(`Kept ${base}`)
   }
@@ -131,14 +171,16 @@ export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, f
 
 export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder, pack }) {
   const steps = plan({ tasks, runs, resultsDir, arm: arm.name, model: arm.model })
-  const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'))
+  const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'), { include: arm.include, overlay: arm.overlay })
+  const agentChanges = await applyAgents(plugin, arm.agents)
+  const hookChanges = applyHooks(plugin, arm.hooks)
   const claudeCommit = await pluginCommit(arm.pluginDir)
   const records = []
   try {
     for (const step of steps) {
       const task = loadTask(step.task, tasksFolder)
       log(`${arm.name} ${arm.model} ${step.task} repeat ${step.repeat}`)
-      const record = await runOnce({ arm, task, repeat: step.repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
+      const record = await runOnce({ arm, task, repeat: step.repeat, pack, plugin, claudeCommit, agentChanges, hookChanges, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
       records.push(record)
       log(`  ${record.accepted ? 'accepted' : 'rejected'} (${record.subtype}), $${record.totalCostUsd.toFixed(2)}, ${record.turns} turns, ${record.subagents} subagents`)
     }

@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** architecture tests (EF Core only in persistence projects; entities map to their own context's schema; no foreign keys across schemas), reviewer; proven by `spikes/unit-of-work`
+- **Enforced by:** architecture tests (EF Core only in persistence projects; entities map to their own context's schema; no foreign keys across schemas), reviewer; proven by `spikes/unit-of-work`, run locally since spikes have no CI job
 
 ## Context
 

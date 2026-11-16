@@ -46,7 +46,7 @@ export const SERVERS = {
     extensions: ['.cs'],
     prepare(root, log) {
       const solution = pickSolution(root, log)
-      const logs = join(root, '..', 'roslyn-logs')
+      const logs = process.env.LSP_HOST_LOG_DIR ?? join(root, '..', 'roslyn-logs')
       mkdirSync(logs, { recursive: true })
       return { solution, spec: tool('roslyn-language-server', ['--stdio', '--telemetryLevel', 'off', '--logLevel', 'Information', '--extensionLogDirectory', logs]) }
     },

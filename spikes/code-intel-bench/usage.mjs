@@ -2,7 +2,12 @@ import { RUN_CAP_USD } from './ledger.mjs'
 
 const SUBAGENT_TOOLS = new Set(['Agent', 'Task'])
 
-export function parseStream(text) {
+function matchesTool(pattern, block) {
+  if (block.name === 'Bash' || block.name === 'PowerShell') return pattern.test(String(block.input?.command ?? ''))
+  return pattern.test(block.name ?? '')
+}
+
+export function parseStream(text, toolPattern) {
   const events = []
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim()
@@ -14,14 +19,18 @@ export function parseStream(text) {
     }
   }
   const subagents = new Set()
+  const pattern = toolPattern ? new RegExp(toolPattern) : undefined
+  const intelCalls = new Set()
   for (const event of events) {
     if (event.type !== 'assistant') continue
     for (const block of event.message?.content ?? []) {
-      if (block.type === 'tool_use' && SUBAGENT_TOOLS.has(block.name)) subagents.add(block.id ?? `${subagents.size}`)
+      if (block.type !== 'tool_use') continue
+      if (SUBAGENT_TOOLS.has(block.name)) subagents.add(block.id ?? `${subagents.size}`)
+      if (pattern && matchesTool(pattern, block)) intelCalls.add(block.id ?? `${intelCalls.size}`)
     }
   }
   const result = events.findLast((event) => event.type === 'result')
-  return { events: events.length, result, subagents: subagents.size }
+  return { events: events.length, result, subagents: subagents.size, ...(pattern ? { codeIntelCalls: intelCalls.size } : {}) }
 }
 
 export function modelUsage(result) {
@@ -46,10 +55,12 @@ export function sumUsage(usage) {
   return total
 }
 
+const intel = (parsed) => (parsed.codeIntelCalls === undefined ? {} : { codeIntelCalls: parsed.codeIntelCalls })
+
 export function summarizeRun(parsed, wallMs, exit) {
   const { result } = parsed
   if (!result) {
-    return { isError: true, subtype: exit?.timedOut ? 'timeout' : 'no_result', costUsd: RUN_CAP_USD, costEstimated: true, turns: 0, subagents: parsed.subagents, wallMs, models: {} }
+    return { isError: true, subtype: exit?.timedOut ? 'timeout' : 'no_result', costUsd: RUN_CAP_USD, costEstimated: true, turns: 0, subagents: parsed.subagents, ...intel(parsed), wallMs, models: {} }
   }
   return {
     isError: Boolean(result.is_error),
@@ -57,6 +68,7 @@ export function summarizeRun(parsed, wallMs, exit) {
     costUsd: result.total_cost_usd ?? 0,
     turns: result.num_turns ?? 0,
     subagents: parsed.subagents,
+    ...intel(parsed),
     wallMs,
     models: modelUsage(result),
   }

@@ -1,0 +1,74 @@
+{
+  "arm": "b-mcp-idle",
+  "task": "T4",
+  "repeat": 1,
+  "at": "2026-11-16T10:21:40.595Z",
+  "claudaliskCommit": "c36047f069f91877e3e51346ce1370da632a8566",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-pvL0DJ\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\b-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "totalCostUsd": 0.1021945,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 10,
+      "output": 1104,
+      "cacheRead": 201751,
+      "cacheCreation": 17277,
+      "costUsd": 0.10034309999999999
+    },
+    "claude-haiku-5-5": {
+      "input": 6,
+      "output": 2198,
+      "cacheRead": 18280,
+      "cacheCreation": 4552,
+      "costUsd": 0.0018514
+    }
+  },
+  "turns": 2,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 52866,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "no calculateTotal is left",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

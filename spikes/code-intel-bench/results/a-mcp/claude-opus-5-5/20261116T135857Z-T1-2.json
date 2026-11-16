@@ -1,0 +1,123 @@
+{
+  "arm": "a-mcp",
+  "task": "T1",
+  "repeat": 2,
+  "at": "2026-11-16T13:58:57.377Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-dTB4Wr\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\a-mcp\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-a__definition",
+        "mcp__plugin_claudalisk_code-intel-a__references",
+        "mcp__plugin_claudalisk_code-intel-a__implementations",
+        "mcp__plugin_claudalisk_code-intel-a__callers",
+        "mcp__plugin_claudalisk_code-intel-a__callees",
+        "mcp__plugin_claudalisk_code-intel-a__diagnostics",
+        "mcp__plugin_claudalisk_code-intel-a__symbols"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-a__definition",
+        "mcp__plugin_claudalisk_code-intel-a__references",
+        "mcp__plugin_claudalisk_code-intel-a__implementations",
+        "mcp__plugin_claudalisk_code-intel-a__callers",
+        "mcp__plugin_claudalisk_code-intel-a__callees",
+        "mcp__plugin_claudalisk_code-intel-a__rename",
+        "mcp__plugin_claudalisk_code-intel-a__diagnostics",
+        "mcp__plugin_claudalisk_code-intel-a__symbols"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "a-mcp/claude-opus-5-5/20261116T135857Z-T1-2.stream.jsonl",
+  "totalCostUsd": 0.329912655,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 14,
+      "output": 2767,
+      "cacheRead": 316516,
+      "cacheCreation": 25862,
+      "costUsd": 0.3255952
+    },
+    "claude-haiku-5-5": {
+      "input": 8,
+      "output": 4006,
+      "cacheRead": 32253,
+      "cacheCreation": 15929,
+      "costUsd": 0.0043174549999999996
+    }
+  },
+  "turns": 7,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 199463,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 13,
+    "names": [
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "vbcscompiler"
+    ]
+  }
+}

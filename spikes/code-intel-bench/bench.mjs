@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,10 +48,10 @@ export async function main(argv, { resultsDir = resultsRoot, ledgerPath = defaul
     log(`Ledger ${ledgerPath}: ${ledger.spentUsd.toFixed(2)} spent of ${ledger.capUsd.toFixed(2)} over ${ledger.runs.length} runs.`)
     return
   }
-  const arm = loadArm(options.arm, armsDir)
-  const models = options.model ? [armForModel(arm, options.model).model] : arm.models
   const pack = options.pack ? loadPack(options.pack) : null
   const results = pack ? pack.resultsFolder : resultsDir
+  const arm = options.command === 'report' && !existsSync(join(armsDir, options.arm, 'arm.json')) && existsSync(join(results, options.arm)) ? { name: options.arm, models: readdirSync(join(results, options.arm)) } : loadArm(options.arm, armsDir)
+  const models = options.model ? [armForModel(arm, options.model).model] : arm.models
   const tasksFolder = pack ? pack.tasksFolder : undefined
   if (options.command === 'report') {
     const tasks = taskIds(tasksFolder)

@@ -13,7 +13,7 @@
     "stream-json",
     "--verbose",
     "--plugin-dir",
-    "C:\\Users\\KACPER~1\\AppData\\Local\\Temp\\claudalisk-bench-plugin-Dy9cMb\\plugin",
+    "<tmp>\\claudalisk-bench-plugin-Dy9cMb\\plugin",
     "--setting-sources",
     "project,local",
     "--settings",

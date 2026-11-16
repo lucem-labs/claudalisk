@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); `spikes/lsp-host` tests on ubuntu, windows and macos, including the edit-applier rules and the capability probe
+- **Enforced by:** reviewer (CLA-0023); `spikes/lsp-host` tests, run locally since spikes have no CI job, including the edit-applier rules and the capability probe
 - **Issue:** #203, #200
 
 ## Context

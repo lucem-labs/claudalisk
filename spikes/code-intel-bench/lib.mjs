@@ -27,10 +27,11 @@ export function killTree(child, platform = process.platform) {
   }
 }
 
-export function runCaptured(command, args, { cwd, env, input, timeoutMs, graceMs = KILL_GRACE_MS } = {}) {
+export function runCaptured(command, args, { cwd, env, input, timeoutMs, graceMs = KILL_GRACE_MS, onSpawn } = {}) {
   return new Promise((done) => {
     const [file, list, extra] = commandLine(command, args)
     const child = spawn(file, list, { cwd, env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32', ...extra })
+    if (onSpawn && child.pid) onSpawn(child.pid)
     let stdout = ''
     let stderr = ''
     let timedOut = false

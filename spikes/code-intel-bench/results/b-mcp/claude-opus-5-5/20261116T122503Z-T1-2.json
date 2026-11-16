@@ -1,0 +1,110 @@
+{
+  "arm": "b-mcp",
+  "task": "T1",
+  "repeat": 2,
+  "at": "2026-11-16T12:25:03.302Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-EyheiO\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\b-mcp\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-b__find",
+        "mcp__plugin_claudalisk_code-intel-b__definition",
+        "mcp__plugin_claudalisk_code-intel-b__implementations",
+        "mcp__plugin_claudalisk_code-intel-b__callers",
+        "mcp__plugin_claudalisk_code-intel-b__callees",
+        "mcp__plugin_claudalisk_code-intel-b__references",
+        "mcp__plugin_claudalisk_code-intel-b__diagnostics"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-b__find",
+        "mcp__plugin_claudalisk_code-intel-b__definition",
+        "mcp__plugin_claudalisk_code-intel-b__implementations",
+        "mcp__plugin_claudalisk_code-intel-b__callers",
+        "mcp__plugin_claudalisk_code-intel-b__callees",
+        "mcp__plugin_claudalisk_code-intel-b__references",
+        "mcp__plugin_claudalisk_code-intel-b__rename",
+        "mcp__plugin_claudalisk_code-intel-b__replaceBody",
+        "mcp__plugin_claudalisk_code-intel-b__diagnostics"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "b-mcp/claude-opus-5-5/20261116T122503Z-T1-2.stream.jsonl",
+  "totalCostUsd": 0.327629225,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 18,
+      "output": 2977,
+      "cacheRead": 402245,
+      "cacheCreation": 22896,
+      "costUsd": 0.32322900000000004
+    },
+    "claude-haiku-5-5": {
+      "input": 10,
+      "output": 4331,
+      "cacheRead": 58410,
+      "cacheCreation": 13197,
+      "costUsd": 0.004400225000000001
+    }
+  },
+  "turns": 9,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 152691,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

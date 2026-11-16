@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "shadcn@4.23.0",
+        "mcp"
+      ]
+    },
+    "code-intel-c": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/spikes/code-intel/c/mcp.mjs"
+      ]
+    },
+    "code-intel-c-read": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/spikes/code-intel/c/mcp.mjs",
+        "--read-only"
+      ]
+    }
+  }
+}

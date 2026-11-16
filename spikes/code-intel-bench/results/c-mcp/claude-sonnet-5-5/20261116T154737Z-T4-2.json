@@ -1,0 +1,91 @@
+{
+  "arm": "c-mcp",
+  "task": "T4",
+  "repeat": 2,
+  "at": "2026-11-16T15:47:37.071Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-feOuYG\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\c-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c-read__run"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c__run"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "c-mcp/claude-sonnet-5-5/20261116T154737Z-T4-2.stream.jsonl",
+  "totalCostUsd": 0.115374305,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 14,
+      "output": 1367,
+      "cacheRead": 292305,
+      "cacheCreation": 17764,
+      "costUsd": 0.1139845
+    },
+    "claude-haiku-5-5": {
+      "input": 4,
+      "output": 1667,
+      "cacheRead": 11403,
+      "cacheCreation": 3535,
+      "costUsd": 0.001389805
+    }
+  },
+  "turns": 4,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 73056,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "no calculateTotal is left",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

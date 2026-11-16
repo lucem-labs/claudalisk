@@ -1,0 +1,103 @@
+{
+  "arm": "a-cli",
+  "task": "T4",
+  "repeat": 2,
+  "at": "2026-11-16T15:16:24.747Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-BYsz58\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\a-cli\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [],
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  ],
+  "hookChanges": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "<tmp>/claudalisk-bench-plugin-BYsz58/plugin/spikes/code-intel/a/cli.mjs"
+      ]
+    }
+  ],
+  "scoutBashDecisions": {
+    "allowed": 0,
+    "denied": 0,
+    "unknownAgent": 0
+  },
+  "stream": "a-cli/claude-opus-5-5/20261116T151624Z-T4-2.stream.jsonl",
+  "totalCostUsd": 0.22440680000000002,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 12,
+      "output": 1651,
+      "cacheRead": 247131,
+      "cacheCreation": 17481,
+      "costUsd": 0.2223422
+    },
+    "claude-haiku-5-5": {
+      "input": 6,
+      "output": 2235,
+      "cacheRead": 23625,
+      "cacheCreation": 5682,
+      "costUsd": 0.0020645999999999998
+    }
+  },
+  "turns": 6,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 95755,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "no calculateTotal is left",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

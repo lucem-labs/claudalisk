@@ -7,7 +7,7 @@ import { after, before, beforeEach, test } from 'node:test'
 import { benchRoot } from './lib.mjs'
 import { cloneFixture } from './fixture-repo.mjs'
 import { emptyLedger, readLedger, writeLedger } from './ledger.mjs'
-import { pluginCommit, plan, readResults, runAll, runOnce } from './runner.mjs'
+import { pluginCommit, plan, portablePaths, readResults, runAll, runOnce } from './runner.mjs'
 import { loadTask } from './tasks.mjs'
 
 const identity = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@example.com', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@example.com' }
@@ -111,6 +111,38 @@ test('an accepted run records its cost, usage, subagents, turns, wall time and e
   const [file] = readdirSync(join(resultsDir, 'fake', 'm1'))
   assert.match(file, /^\d{8}T\d{6}Z-T1-1\.json$/)
   assert.equal(JSON.parse(readFileSync(join(resultsDir, 'fake', 'm1', file), 'utf8')).accepted, true)
+})
+
+test('the raw stream is kept next to the record, which points at it, and the agent changes are recorded', async () => {
+  const record = await once({ agentChanges: [{ agent: 'scout', addedTools: ['Bash'] }] })
+
+  assert.equal(record.stream.startsWith('fake/m1/'), true)
+  assert.match(record.stream, /-T1-1\.stream\.jsonl$/)
+  assert.equal(readFileSync(join(resultsDir, record.stream), 'utf8').includes('"type":"result"'), true)
+  assert.deepEqual(record.agentChanges, [{ agent: 'scout', addedTools: ['Bash'] }])
+  assert.equal(readResults(resultsDir, 'fake', 'm1').length, 1)
+})
+
+test('the hidden checks run with build servers disabled, the claude session does not, and leftovers are recorded', async () => {
+  const claudeOptions = []
+  const checkOptions = []
+  const exec = async (command, args, options) => {
+    claudeOptions.push(options)
+    return { code: 0, stdout: '', stderr: '', timedOut: false }
+  }
+  const checkRun = async (command, args, options) => {
+    checkOptions.push(options)
+    return { code: 0, stdout: '', stderr: '' }
+  }
+
+  const record = await once({ exec, checkRun })
+
+  assert.equal(claudeOptions[0].env, undefined)
+  assert.equal(checkOptions[0].env.MSBUILDDISABLENODEREUSE, '1')
+  assert.equal(checkOptions[0].env.DOTNET_CLI_USE_MSBUILD_SERVER, '0')
+  assert.equal(checkOptions[0].env.UseSharedCompilation, 'false')
+  assert.equal(typeof record.leftoverProcesses.killed, 'number')
+  assert.ok(Array.isArray(record.leftoverProcesses.names))
 })
 
 test('the hidden tests are copied in after the agent finishes, and a failing check rejects the run', async () => {
@@ -272,10 +304,43 @@ test('results, ledger entries and repeat numbers are per arm and model', async (
   await runAll({ arm, tasks: ['T1'], runs: 2, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
   await runAll({ arm: other, tasks: ['T1'], runs: 1, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
 
-  assert.equal(readdirSync(join(resultsDir, 'fake', 'm1')).length, 2)
-  assert.equal(readdirSync(join(resultsDir, 'fake', 'm2')).length, 1)
+  assert.equal(readdirSync(join(resultsDir, 'fake', 'm1')).filter((name) => name.endsWith('.json')).length, 2)
+  assert.equal(readdirSync(join(resultsDir, 'fake', 'm2')).filter((name) => name.endsWith('.json')).length, 1)
   const entries = readLedger(ledgerPath).runs.map((entry) => [entry.model, entry.repeat, entry.file.split('/').slice(0, 2).join('/')])
   assert.deepEqual(entries, [['m1', 1, 'fake/m1'], ['m1', 2, 'fake/m1'], ['m2', 1, 'fake/m2']])
   assert.equal(readResults(resultsDir, 'fake', 'm2')[0].model, 'm2')
   assert.deepEqual(plan({ tasks: ['T1'], runs: 1, resultsDir, arm: 'fake', model: 'm2' }), [{ task: 'T1', repeat: 2 }])
+})
+
+test('an arm with hooks gets a decision log in the run folder, and the record counts the scout shell decisions', async () => {
+  let logPath
+  const exec = async (command, args, options) => {
+    logPath = options.env.CODE_INTEL_BENCH_HOOK_LOG
+    writeFileSync(logPath, ['allowed', 'allowed', 'denied', 'unknownAgent'].map((decision) => `${JSON.stringify({ decision })}\n`).join(''))
+    return { code: 0, stdout: '', stderr: '', timedOut: false }
+  }
+  const hookChanges = [{ script: 'cli-only.mjs', matcher: 'Bash|PowerShell', args: ['/stage/cli.mjs'] }]
+
+  const record = await once({ exec, checkRun: async () => ({ code: 0, stdout: '', stderr: '' }), hookChanges })
+
+  assert.equal(typeof logPath, 'string')
+  assert.equal(logPath.endsWith('hook-decisions.jsonl'), true)
+  assert.equal(existsSync(logPath), false)
+  assert.deepEqual(record.hookChanges, hookChanges)
+  assert.deepEqual(record.scoutBashDecisions, { allowed: 2, denied: 1, unknownAgent: 1 })
+  assert.deepEqual(readResults(resultsDir, 'fake', 'm1')[0].scoutBashDecisions, record.scoutBashDecisions)
+})
+
+test('an arm without hooks records no decisions', async () => {
+  const record = await once({})
+
+  assert.equal('scoutBashDecisions' in record, false)
+  assert.equal('hookChanges' in record, false)
+})
+
+test('recorded arguments carry no temp or home folder, in either slash form', () => {
+  const folders = [[String.raw`C:\Users\Someone\AppData\Local\Temp`, '<tmp>'], [String.raw`C:\Users\Someone`, '<home>']]
+  const value = { args: ['--plugin-dir', String.raw`C:\Users\Someone\AppData\Local\Temp\x\plugin`, 'c:/users/someone/repo/cli.mjs'], keep: 3 }
+  assert.deepEqual(portablePaths(value, { folders, platform: 'win32' }), { args: ['--plugin-dir', String.raw`<tmp>\x\plugin`, '<home>/repo/cli.mjs'], keep: 3 })
+  assert.deepEqual(portablePaths(['/tmp/a', '/TMP/b'], { folders: [['/tmp', '<tmp>']], platform: 'linux' }), ['<tmp>/a', '/TMP/b'])
 })

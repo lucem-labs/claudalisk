@@ -1,0 +1,103 @@
+{
+  "arm": "c-cli",
+  "task": "T3",
+  "repeat": 1,
+  "at": "2026-11-16T16:46:09.747Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-jrCK6w\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\c-cli\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [],
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  ],
+  "hookChanges": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "<tmp>/claudalisk-bench-plugin-jrCK6w/plugin/spikes/code-intel/c/cli.mjs"
+      ]
+    }
+  ],
+  "scoutBashDecisions": {
+    "allowed": 1,
+    "denied": 0,
+    "unknownAgent": 0
+  },
+  "stream": "c-cli/claude-sonnet-5-5/20261116T164609Z-T3-1.stream.jsonl",
+  "totalCostUsd": 0.12445627000000002,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 12,
+      "output": 1687,
+      "cacheRead": 248643,
+      "cacheCreation": 19968,
+      "costUsd": 0.12163030000000001
+    },
+    "claude-haiku-5-5": {
+      "input": 8,
+      "output": 3361,
+      "cacheRead": 35042,
+      "cacheCreation": 6354,
+      "costUsd": 0.00282597
+    }
+  },
+  "turns": 3,
+  "subagents": 1,
+  "codeIntelCalls": 1,
+  "wallMs": 91142,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 4,
+    "names": [
+      "dotnet",
+      "dotnet",
+      "dotnet",
+      "dotnet"
+    ]
+  }
+}
