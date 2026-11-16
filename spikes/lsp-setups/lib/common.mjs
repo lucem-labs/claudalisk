@@ -8,7 +8,10 @@ export const OS = { win32: 'windows', linux: 'linux', darwin: 'macos' }[process.
 export const MAX_WAIT_MS = 300000
 export const boundedMs = (value, fallback) => {
   const ms = Number(value)
-  return Number.isFinite(ms) ? Math.min(Math.max(ms, 0), MAX_WAIT_MS) : fallback
+  if (!Number.isFinite(ms)) return fallback
+  if (ms > MAX_WAIT_MS) return MAX_WAIT_MS
+  if (ms < 0) return 0
+  return ms
 }
 export const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms))
 export const log = (line) => process.stderr.write(`${line}\n`)
