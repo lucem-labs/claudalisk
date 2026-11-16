@@ -41,7 +41,7 @@ What the evidence in #200 shows:
   - **An arm is compared with the baseline on the same model.** The rules below give one verdict per model.
   - **An arm lowers cost only when both hold.** Separation: every one of its 3 repeats costs less per accepted task than every one of the baseline's 3. With no real difference all 6 orderings are equally likely, so full separation happens by chance 1 time in 20, a 5% false-positive rate that assumes no distribution. Size: its mean cost per accepted task is at least 10% below the baseline's.
   - **An arm holds cost while correctness rises** when its mean cost per accepted task is not above the baseline's highest repeat, it passes at least 2 more of the 21 runs, and no task passes fewer runs than in the baseline.
-  - **Anything else is no effect, and the change is not accepted.** The harness stops starting runs when the next run's cap would take the total spend past $150.
+  - **Anything else is no effect, and the change is not accepted.** The harness stops starting runs when the next run's cap would take the total spend past $150. The spend is kept in one ledger per machine, outside any checkout, so every worktree and session shares the cap, and each run reserves its cap before it starts, so a run that never ends stays charged.
 - **The catalogue below lists what code intelligence means here, with a decision for each feature.** Ids are stable: a later ADR amends a row by its id, and an id is never renumbered or reused. A new feature takes the next free number in its letter's group. "Build" means build it and keep it if it passes the benchmark. "Spike" means a code experiment decides first. The savings it targets are:
   - **turns:** fewer model round trips;
   - **reads:** less file content in context;

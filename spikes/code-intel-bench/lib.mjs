@@ -6,7 +6,6 @@ import { quoteForWindowsShell } from '../../tools/registry.mjs'
 export const benchRoot = dirname(fileURLToPath(import.meta.url))
 export const repositoryRoot = resolve(benchRoot, '..', '..')
 export const fixtureFile = join(benchRoot, 'fixture.json')
-export const ledgerFile = join(benchRoot, 'results', 'ledger.json')
 export const TASK_IDS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
 export function commandLine(command, args, platform = process.platform) {

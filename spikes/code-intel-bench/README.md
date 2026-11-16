@@ -43,7 +43,7 @@ node spikes/code-intel-bench/bench.mjs run --arm baseline --runs 3
 node spikes/code-intel-bench/bench.mjs report --arm baseline
 ```
 
-`--tasks T1,T2` runs a subset. Runs go one pass over the tasks at a time, so an interrupted run leaves complete repeats. Every step in one pass has the same repeat number, and each record stores it as `repeat`. A pass takes the lowest repeat number that at least one of the selected tasks lacks in `results/<arm>/`, and runs only the tasks that lack it, so `--tasks T5` re-runs T5 into the lowest repeat it is missing from, and a full run continues after the last repeat. The ledger entry and a partial record (`checksPending: true`) are written as soon as `claude` ends, before the hidden checks, and the record is completed after them. A run with no result event (timeout, crash, kill) is charged the run cap and its record has `costEstimated: true`, so the budget guard never under-counts.
+`--tasks T1,T2` runs a subset. Runs go one pass over the tasks at a time, so an interrupted run leaves complete repeats. Every step in one pass has the same repeat number, and each record stores it as `repeat`. A pass takes the lowest repeat number that at least one of the selected tasks lacks in `results/<arm>/`, and runs only the tasks that lack it, so `--tasks T5` re-runs T5 into the lowest repeat it is missing from, and a full run continues after the last repeat. The ledger entry is settled and a partial record (`checksPending: true`) is written as soon as `claude` ends, before the hidden checks, and the record is completed after them. A run with no result event (timeout, crash, kill) is charged the run cap and its record has `costEstimated: true`, so the budget guard never under-counts.
 
 The baseline arm is `arms/baseline/arm.json`: this repository's plugin at its current commit, `settings.json` and the models `claude-sonnet-5-5` and `claude-opus-5-5`. To test a change, add `arms/<name>/arm.json` with the plugin directory (a path relative to the arm folder), a settings file and a model, and run it the same way. The runner does not change. The plugin directory is staged into a temporary copy that leaves out `spikes/` and `.git`, so the agent can never read the hidden tests or the reference solutions.
 
@@ -59,7 +59,11 @@ Arms are judged per model and never pooled: `report --arm <name> [--model <id>] 
 
 ## Cost
 
-Every run has `--max-budget-usd 3`. `results/ledger.json` is committed and holds the cumulative spend of every run of every arm. Before a run the runner refuses when `spent + 3 > 150`; after a run it adds the run's cost and writes the ledger before the next run starts. `--dry-run` prints the plan, the worst-case spend and the ledger without calling `claude`.
+Every run has `--max-budget-usd 3`. The ledger holds the cumulative spend of every run of every arm, model and pack on the machine. There is one per machine, at `~/.claudalisk/code-intel-bench/ledger.json`, outside any checkout, so every worktree and every session that runs the benchmark charges the same $150. `CODE_INTEL_BENCH_LEDGER` names another file; the tests use it, a measurement never should.
+
+Before `claude` starts, the runner reserves the run cap in the ledger, and refuses when `spent + 3 > 150`. As soon as `claude` ends, it replaces the reservation with the run's cost. A run that never settles (a killed process, a machine restart) stays charged the $3 cap, so the guard never under-counts. Every change to the ledger holds a lock file beside it, so two runs at the same time cannot both take the last $3. `--dry-run` prints the plan, the worst-case spend and the ledger without calling `claude`.
+
+`node bench.mjs ledger` prints the ledger. `node bench.mjs ledger --merge <a.json>,<b.json>` adds the entries of other ledgers, such as the `results/ledger.json` that each worktree kept before the ledger moved, and counts each run once.
 
 ## The noise rule
 

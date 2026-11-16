@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { SETTING_SOURCES, armForModel, claudeArguments, stagePlugin } from './arms.mjs'
 import { cloneFixture, readFixture } from './fixture-repo.mjs'
-import { git, ledgerFile, runCaptured } from './lib.mjs'
-import { RUN_CAP_USD, addRun, assertRoom, readLedger, room, writeLedger } from './ledger.mjs'
+import { git, runCaptured } from './lib.mjs'
+import { RUN_CAP_USD, defaultLedgerPath, reserveRun, room, settleRun } from './ledger.mjs'
 import { accepted, installHidden, loadTask, runChecks } from './tasks.mjs'
 import { completed, parseStream, summarizeRun } from './usage.mjs'
 
@@ -71,8 +71,7 @@ export async function pluginCommit(pluginDir) {
 }
 
 export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
-  const ledger = readLedger(ledgerPath)
-  assertRoom(ledger)
+  const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, task: task.id, repeat, at: now().toISOString() })
   const base = mkdtempSync(join(tmpdir(), 'claudalisk-bench-run-'))
   const copy = join(base, 'app')
   try {
@@ -114,7 +113,7 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
     const save = () => writeFileSync(join(folder, file), `${JSON.stringify(record, null, 2)}
 `)
     save()
-    writeLedger(ledgerPath, addRun(readLedger(ledgerPath), { arm: arm.name, model: arm.model, task: task.id, repeat, file: `${arm.name}/${arm.model}/${file}`, costUsd: summary.costUsd, at: record.at }))
+    settleRun(ledgerPath, reservation, { file: `${arm.name}/${arm.model}/${file}`, costUsd: summary.costUsd, at: record.at })
     installHidden(task, copy)
     const checks = await runChecks(task, copy, checkRun)
     const { checksPending, ...rest } = record
@@ -127,7 +126,7 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
   }
 }
 
-export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = ledgerFile, keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder }) {
+export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder }) {
   const steps = plan({ tasks, runs, resultsDir, arm: arm.name, model: arm.model })
   const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'))
   const claudeCommit = await pluginCommit(arm.pluginDir)

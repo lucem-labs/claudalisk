@@ -4,8 +4,8 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { armForModel, loadArm } from './arms.mjs'
-import { benchRoot, ledgerFile } from './lib.mjs'
-import { readLedger } from './ledger.mjs'
+import { benchRoot } from './lib.mjs'
+import { defaultLedgerPath, mergeLedgers, readLedger, withLock } from './ledger.mjs'
 import { renderReport } from './report.mjs'
 import { describePlan, plan, readResults, runAll } from './runner.mjs'
 import { parseTaskList, taskIds } from './tasks.mjs'
@@ -13,7 +13,8 @@ import { parseTaskList, taskIds } from './tasks.mjs'
 export const resultsRoot = join(benchRoot, 'results')
 
 const USAGE = `Usage: node bench.mjs run --arm <name> [--tasks T1,T2] [--model <id>] [--runs 3] [--dry-run] [--keep]
-       node bench.mjs report --arm <name> [--model <id>] [--against baseline]`
+       node bench.mjs report --arm <name> [--model <id>] [--against baseline]
+       node bench.mjs ledger [--merge <ledger.json>,<ledger.json>]`
 
 export function parseCommand(argv) {
   const [command, ...rest] = argv
@@ -25,18 +26,25 @@ export function parseCommand(argv) {
       tasks: { type: 'string' },
       runs: { type: 'string', default: '3' },
       against: { type: 'string' },
+      merge: { type: 'string' },
       'dry-run': { type: 'boolean', default: false },
       keep: { type: 'boolean', default: false },
     },
   })
+  if (command === 'ledger') return { command, merge: values.merge ? values.merge.split(',').filter(Boolean) : [] }
   if (!['run', 'report'].includes(command) || !values.arm) throw new Error(USAGE)
   const runs = Number(values.runs)
   if (!Number.isInteger(runs) || runs < 1) throw new Error('--runs needs a whole number of at least 1')
   return { command, arm: values.arm, model: values.model, tasks: values.tasks, runs, against: values.against, dryRun: values['dry-run'], keep: values.keep }
 }
 
-export async function main(argv, { resultsDir = resultsRoot, ledgerPath = ledgerFile, log = console.log, exec, checkRun, fixture } = {}) {
+export async function main(argv, { resultsDir = resultsRoot, ledgerPath = defaultLedgerPath(), log = console.log, exec, checkRun, fixture } = {}) {
   const options = parseCommand(argv)
+  if (options.command === 'ledger') {
+    const ledger = options.merge.length ? withLock(ledgerPath, (current) => mergeLedgers(current, options.merge.map(readLedger))) : readLedger(ledgerPath)
+    log(`Ledger ${ledgerPath}: ${ledger.spentUsd.toFixed(2)} spent of ${ledger.capUsd.toFixed(2)} over ${ledger.runs.length} runs.`)
+    return
+  }
   const arm = loadArm(options.arm)
   const models = options.model ? [armForModel(arm, options.model).model] : arm.models
   if (options.command === 'report') {

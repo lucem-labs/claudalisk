@@ -173,6 +173,24 @@ test('the ledger is written after each run, so the next run sees it', async () =
   assert.equal(calls().length, 2)
 })
 
+test('two worktrees with their own results share one ledger, and the budget holds across both', async () => {
+  const shared = join(base, `shared-${Math.random().toString(36).slice(2)}`, 'ledger.json')
+  const first = join(resultsDir, 'worktree-a')
+  const second = join(resultsDir, 'worktree-b')
+  writeLedger(shared, { ...emptyLedger(), spentUsd: 146.5 })
+
+  await runAll({ arm, tasks: ['T1'], runs: 1, resultsDir: first, ledgerPath: shared, fixture, tasksFolder, log: () => {} })
+  await assert.rejects(
+    runAll({ arm, tasks: ['T1', 'T2'], runs: 1, resultsDir: second, ledgerPath: shared, fixture, tasksFolder, log: () => {} }),
+    /Refusing to start a run/,
+  )
+
+  const ledger = readLedger(shared)
+  assert.deepEqual(ledger.runs.map((entry) => entry.task), ['T1', 'T1'])
+  assert.equal(ledger.runs.some((entry) => entry.reserved), false)
+  assert.equal(calls().length, 2)
+})
+
 test('repeats are numbered after the ones already recorded, one pass over the tasks at a time', async () => {
   await runAll({ arm, tasks: ['T1', 'T2'], runs: 2, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
   await runAll({ arm, tasks: ['T1'], runs: 1, resultsDir, ledgerPath, fixture, tasksFolder, log: () => {} })
