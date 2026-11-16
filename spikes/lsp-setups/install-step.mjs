@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnArguments } from '../../tools/registry.mjs'
 import { spikeDirectory } from './lib/common.mjs'
 
 export const installLog = () => process.env.LSP_SETUPS_INSTALL_LOG ?? join(spikeDirectory, 'results', 'parts', 'install.json')
@@ -12,7 +13,8 @@ export function readInstallLog(path = installLog()) {
 
 export function runStep(setup, command, args, { cwd = process.cwd(), path = installLog() } = {}) {
   const started = performance.now()
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit', shell: process.platform === 'win32', windowsHide: true })
+  const [file, fileArgs, options] = spawnArguments(command, args, cwd)
+  const result = spawnSync(file, fileArgs, { ...options, windowsHide: true })
   const seconds = Math.round(((performance.now() - started) / 1000) * 10) / 10
   const entries = readInstallLog(path)
   entries.push({ setup, command: [command, ...args].join(' '), cwd: resolve(cwd), seconds, ok: result.status === 0 })
