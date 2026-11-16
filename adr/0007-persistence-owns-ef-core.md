@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** data-and-migrations
-- **Enforced by:** architecture tests (EF Core only in persistence projects; entities map to their own context's schema; no foreign keys across schemas), reviewer; proven by `spikes/unit-of-work`, run locally since spikes have no CI job
+- **Enforced by:** architecture tests (EF Core only in persistence projects; entities map to their own context's schema; no foreign keys across schemas), reviewer; proven by a spike
 
 ## Context
 
@@ -68,7 +68,7 @@ Modules call each other through claudalisk's in-process dispatcher, a mediator-s
 
 ## Proof
 
-`spikes/unit-of-work` has two module persistence projects, each with its own schema and migrations, plus the shared persistence infrastructure. Its Testcontainers tests show that:
+The spike has two module persistence projects, each with its own schema and migrations, plus the shared persistence infrastructure. Its Testcontainers tests show that:
 
 - work from two modules commits together;
 - a database error in the second module, or an exception after both saves, rolls back both;

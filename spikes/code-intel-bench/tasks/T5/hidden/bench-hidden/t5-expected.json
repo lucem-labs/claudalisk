@@ -1,9 +1,0 @@
-[
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/InvoicePosting.cs", "line": 7, "text": "ledger.Record(account, amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/LedgerExtensions.cs", "line": 9, "text": "ledger.Record(account, amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/PostingBatch.cs", "line": 13, "text": "context.Ledger.Record(account, amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/PostingBatch.cs", "line": 25, "text": "target.Record(account, amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/RefundPosting.cs", "line": 7, "text": "resolve().Record(account, -amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/RefundPosting.cs", "line": 13, "text": "deferred.Value.Record(account, -amount);" },
-  { "path": "backend/Bench.Modules.Billing/Shared/Ledger/RefundPosting.cs", "line": 14, "text": "optional?.Record(account, -amount);" }
-]
