@@ -1,0 +1,98 @@
+{
+  "arm": "b-cli",
+  "task": "T6",
+  "repeat": 2,
+  "at": "2026-11-16T13:06:26.689Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-PoqHu1\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\b-cli\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [],
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  ],
+  "hookChanges": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "<tmp>/claudalisk-bench-plugin-PoqHu1/plugin/spikes/code-intel/b/cli.mjs"
+      ]
+    }
+  ],
+  "scoutBashDecisions": {
+    "allowed": 0,
+    "denied": 0,
+    "unknownAgent": 0
+  },
+  "stream": "b-cli/claude-opus-5-5/20261116T130626Z-T6-2.stream.jsonl",
+  "totalCostUsd": 0.279289645,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 18,
+      "output": 2272,
+      "cacheRead": 385456,
+      "cacheCreation": 19394,
+      "costUsd": 0.2777552
+    },
+    "claude-haiku-5-5": {
+      "input": 6,
+      "output": 1220,
+      "cacheRead": 24722,
+      "cacheCreation": 5413,
+      "costUsd": 0.0015344450000000002
+    }
+  },
+  "turns": 10,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 89602,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

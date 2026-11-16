@@ -1,0 +1,99 @@
+{
+  "arm": "a-mcp",
+  "task": "T3",
+  "repeat": 1,
+  "at": "2026-11-16T13:12:28.042Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-f8X2sj\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\a-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-a__definition",
+        "mcp__plugin_claudalisk_code-intel-a__references",
+        "mcp__plugin_claudalisk_code-intel-a__implementations",
+        "mcp__plugin_claudalisk_code-intel-a__callers",
+        "mcp__plugin_claudalisk_code-intel-a__callees",
+        "mcp__plugin_claudalisk_code-intel-a__diagnostics",
+        "mcp__plugin_claudalisk_code-intel-a__symbols"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-a__definition",
+        "mcp__plugin_claudalisk_code-intel-a__references",
+        "mcp__plugin_claudalisk_code-intel-a__implementations",
+        "mcp__plugin_claudalisk_code-intel-a__callers",
+        "mcp__plugin_claudalisk_code-intel-a__callees",
+        "mcp__plugin_claudalisk_code-intel-a__rename",
+        "mcp__plugin_claudalisk_code-intel-a__diagnostics",
+        "mcp__plugin_claudalisk_code-intel-a__symbols"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "a-mcp/claude-sonnet-5-5/20261116T131228Z-T3-1.stream.jsonl",
+  "totalCostUsd": 0.12676354499999998,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 12,
+      "output": 1812,
+      "cacheRead": 250648,
+      "cacheCreation": 19996,
+      "costUsd": 0.12319279999999999
+    },
+    "claude-haiku-5-5": {
+      "input": 10,
+      "output": 4024,
+      "cacheRead": 49387,
+      "cacheCreation": 8511,
+      "costUsd": 0.003570745
+    }
+  },
+  "turns": 3,
+  "subagents": 1,
+  "codeIntelCalls": 5,
+  "wallMs": 72091,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "arm": "b-mcp-scoutedit",
+  "task": "T1",
+  "repeat": 1,
+  "at": "2026-11-16T10:44:20.790Z",
+  "claudaliskCommit": "9ed600a92fc7234ef37458cbdc6a9769a3f1edd3",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-CMlmrt\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\b-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-b__find",
+        "mcp__plugin_claudalisk_code-intel-b__definition",
+        "mcp__plugin_claudalisk_code-intel-b__implementations",
+        "mcp__plugin_claudalisk_code-intel-b__callers",
+        "mcp__plugin_claudalisk_code-intel-b__callees",
+        "mcp__plugin_claudalisk_code-intel-b__references",
+        "mcp__plugin_claudalisk_code-intel-b__rename",
+        "mcp__plugin_claudalisk_code-intel-b__replaceBody",
+        "mcp__plugin_claudalisk_code-intel-b__diagnostics"
+      ],
+      "note": "agent-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-b__find",
+        "mcp__plugin_claudalisk_code-intel-b__definition",
+        "mcp__plugin_claudalisk_code-intel-b__implementations",
+        "mcp__plugin_claudalisk_code-intel-b__callers",
+        "mcp__plugin_claudalisk_code-intel-b__callees",
+        "mcp__plugin_claudalisk_code-intel-b__references",
+        "mcp__plugin_claudalisk_code-intel-b__rename",
+        "mcp__plugin_claudalisk_code-intel-b__replaceBody",
+        "mcp__plugin_claudalisk_code-intel-b__diagnostics"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "b-mcp/claude-sonnet-5-5/20261116T104420Z-T1-1.stream.jsonl",
+  "totalCostUsd": 0.139796675,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 14,
+      "output": 2124,
+      "cacheRead": 300704,
+      "cacheCreation": 21457,
+      "costUsd": 0.1371664
+    },
+    "claude-haiku-5-5": {
+      "input": 4,
+      "output": 2310,
+      "cacheRead": 7875,
+      "cacheCreation": 11169,
+      "costUsd": 0.002630275
+    }
+  },
+  "turns": 4,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 136065,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

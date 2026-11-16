@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos; the benchmark in `spikes/code-intel-bench/`, whose own CI job runs its tests on the same three
+- **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos; the benchmark in `spikes/code-intel-bench/`, whose tests run locally, since spikes have no CI job
 - **Issue:** #201, #200, #202
 
 ## Context

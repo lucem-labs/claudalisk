@@ -1,0 +1,108 @@
+{
+  "arm": "a-cli",
+  "task": "T1",
+  "repeat": 2,
+  "at": "2026-11-16T15:05:34.877Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-BYsz58\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\a-cli\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [],
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  ],
+  "hookChanges": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "<tmp>/claudalisk-bench-plugin-BYsz58/plugin/spikes/code-intel/a/cli.mjs"
+      ]
+    }
+  ],
+  "scoutBashDecisions": {
+    "allowed": 0,
+    "denied": 1,
+    "unknownAgent": 0
+  },
+  "stream": "a-cli/claude-opus-5-5/20261116T150534Z-T1-2.stream.jsonl",
+  "totalCostUsd": 0.41113578500000003,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 22,
+      "output": 4302,
+      "cacheRead": 517084,
+      "cacheCreation": 26808,
+      "costUsd": 0.40400880000000006
+    },
+    "claude-haiku-5-5": {
+      "input": 16,
+      "output": 6296,
+      "cacheRead": 79426,
+      "cacheCreation": 25465,
+      "costUsd": 0.007126985000000001
+    }
+  },
+  "turns": 14,
+  "subagents": 2,
+  "codeIntelCalls": 0,
+  "wallMs": 179881,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

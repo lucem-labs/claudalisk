@@ -35,7 +35,12 @@ const spread = (values, format) => {
   return `${format(mean)} (${format(min)} to ${format(max)})`
 }
 
-function row(label, records) {
+const guardTotals = (records) => {
+  const sum = (key) => records.reduce((total, record) => total + (record.scoutBashDecisions?.[key] ?? 0), 0)
+  return `${sum('allowed')} / ${sum('denied')} / ${sum('unknownAgent')}`
+}
+
+function row(label, records, withIntel, withGuard = false) {
   const passed = records.filter((record) => record.accepted).length
   return [
     label,
@@ -47,13 +52,17 @@ function row(label, records) {
     spread(records.map(cacheRead), whole),
     spread(records.map((record) => record.subagents), (value) => value.toFixed(1)),
     spread(records.map((record) => record.wallMs / 1000), whole),
+    ...(withIntel ? [spread(records.map((record) => record.codeIntelCalls ?? 0), (value) => value.toFixed(1))] : []),
+    ...(withGuard ? [guardTotals(records)] : []),
   ]
 }
 
 export function table(records, tasks) {
-  const header = ['Task', 'Runs', 'Passed', 'Pass rate', 'Cost mean (min to max)', 'Turns', 'Cache read tokens', 'Subagents', 'Wall seconds']
-  const body = tasks.map((task) => row(task, records.filter((record) => record.task === task)))
-  body.push(row('Suite', records))
+  const withIntel = records.some((record) => record.codeIntelCalls !== undefined)
+  const withGuard = records.some((record) => record.scoutBashDecisions !== undefined)
+  const header = ['Task', 'Runs', 'Passed', 'Pass rate', 'Cost mean (min to max)', 'Turns', 'Cache read tokens', 'Subagents', 'Wall seconds', ...(withIntel ? ['Code-intel calls'] : []), ...(withGuard ? ['Scout Bash allowed / denied / unknown agent'] : [])]
+  const body = tasks.map((task) => row(task, records.filter((record) => record.task === task), withIntel, withGuard))
+  body.push(row('Suite', records, withIntel, withGuard))
   return [header, header.map(() => '---'), ...body].map((cells) => `| ${cells.join(' | ')} |`).join('\n')
 }
 
@@ -68,6 +77,8 @@ export function renderArm(name, records, tasks) {
     lines.push('Cost per accepted task, one value per repeat (the repeat\'s total cost divided by its runs that passed):')
     for (const repeat of repeats) lines.push(`- repeat ${repeat.repeat}: ${usd(repeat.costUsd)} over ${repeat.passed} of ${repeat.runs} runs passed, ${perAccepted(costPerAccepted(repeat))} per accepted task`)
   }
+  const unknown = records.reduce((total, record) => total + (record.scoutBashDecisions?.unknownAgent ?? 0), 0)
+  if (unknown > 0) lines.push('', `Warning: ${unknown} shell calls came from an agent whose agent_type was missing, so the CLI-only guard did not apply to them.`)
   return lines.join('\n')
 }
 

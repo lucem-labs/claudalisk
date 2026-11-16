@@ -1,0 +1,97 @@
+{
+  "arm": "c-cli",
+  "task": "T5",
+  "repeat": 2,
+  "at": "2026-11-16T17:06:28.084Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-jrCK6w\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\c-cli\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "Bash"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [],
+      "note": "overlay/skills/code-intel/SKILL.md"
+    }
+  ],
+  "hookChanges": [
+    {
+      "script": "../../arm-hooks/cli-only.mjs",
+      "matcher": "Bash|PowerShell",
+      "args": [
+        "<tmp>/claudalisk-bench-plugin-jrCK6w/plugin/spikes/code-intel/c/cli.mjs"
+      ]
+    }
+  ],
+  "scoutBashDecisions": {
+    "allowed": 0,
+    "denied": 0,
+    "unknownAgent": 0
+  },
+  "stream": "c-cli/claude-sonnet-5-5/20261116T170628Z-T5-2.stream.jsonl",
+  "totalCostUsd": 0.112667365,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 12,
+      "output": 1449,
+      "cacheRead": 247872,
+      "cacheCreation": 17352,
+      "costUsd": 0.1087092
+    },
+    "claude-haiku-5-5": {
+      "input": 12,
+      "output": 4246,
+      "cacheRead": 67084,
+      "cacheCreation": 9305,
+      "costUsd": 0.003958165
+    }
+  },
+  "turns": 3,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 69989,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the answer lists exactly the calls",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 3,
+    "names": [
+      "dotnet",
+      "dotnet",
+      "dotnet"
+    ]
+  }
+}

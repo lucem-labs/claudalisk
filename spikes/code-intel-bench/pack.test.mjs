@@ -190,7 +190,7 @@ test('run --pack writes records into the pack per model and a ledger entry with 
   await bench(['run', '--arm', 'baseline', '--pack', packFolder, '--tasks', 'P1', '--runs', '1'], { armsDir, ledgerPath, log: () => {} })
 
   assert.deepEqual(readdirSync(join(packFolder, 'results', 'baseline')).sort(), ['m1', 'm2'])
-  const records = readdirSync(join(packFolder, 'results', 'baseline', 'm1'))
+  const records = readdirSync(join(packFolder, 'results', 'baseline', 'm1')).filter((name) => name.endsWith('.json'))
   assert.equal(records.length, 1)
   assert.match(records[0], /-P1-1.json$/)
   assert.equal(JSON.parse(readFileSync(join(packFolder, 'results', 'baseline', 'm1', records[0]), 'utf8')).accepted, true)

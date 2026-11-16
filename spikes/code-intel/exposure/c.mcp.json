@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "code-intel-c": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/spikes/code-intel/c/mcp.mjs"]
+    }
+  }
+}

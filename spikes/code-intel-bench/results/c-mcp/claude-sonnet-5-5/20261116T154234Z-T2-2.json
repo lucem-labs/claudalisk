@@ -1,0 +1,101 @@
+{
+  "arm": "c-mcp",
+  "task": "T2",
+  "repeat": 2,
+  "at": "2026-11-16T15:42:34.683Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-feOuYG\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\c-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c-read__run"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c__run"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "c-mcp/claude-sonnet-5-5/20261116T154234Z-T2-2.stream.jsonl",
+  "totalCostUsd": 0.16023902499999998,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 14,
+      "output": 3376,
+      "cacheRead": 300752,
+      "cacheCreation": 22749,
+      "costUsd": 0.15485919999999997
+    },
+    "claude-haiku-5-5": {
+      "input": 12,
+      "output": 4409,
+      "cacheRead": 75425,
+      "cacheCreation": 19359,
+      "costUsd": 0.0053798249999999995
+    }
+  },
+  "turns": 17,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 85149,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "schema.d.ts and the other schemas",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden backend tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

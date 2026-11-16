@@ -47,11 +47,11 @@ export function installHidden(task, destination) {
   if (existsSync(hidden)) cpSync(hidden, destination, { recursive: true, force: true })
 }
 
-export async function runChecks(task, directory, run = runCaptured) {
+export async function runChecks(task, directory, run = runCaptured, extra = {}) {
   const results = []
   for (const check of task.checks) {
     const [command, ...args] = check.command
-    const outcome = await run(command, args, { cwd: join(directory, check.cwd ?? '.'), timeoutMs: CHECK_TIMEOUT_MS })
+    const outcome = await run(command, args, { cwd: join(directory, check.cwd ?? '.'), timeoutMs: CHECK_TIMEOUT_MS, ...extra })
     const passed = outcome.code === 0
     results.push({
       name: check.name,

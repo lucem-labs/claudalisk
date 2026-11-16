@@ -2,7 +2,7 @@
 
 The measuring instrument of CLA-0088. It answers one question: does a change to claudalisk's plugin lower the **cost per accepted task** of a coding session on a claudalisk app, or hold it while correctness rises?
 
-It is plain Node.js (`.mjs`, no dependencies) and runs on Windows, Linux and macOS. Its unit tests need no login, no dotnet and no network; the `code-intel-bench` CI job runs them on all three systems.
+It is plain Node.js (`.mjs`, no dependencies) and runs on Windows, Linux and macOS. Its unit tests need no login, no dotnet and no network; run them locally, since spikes have no CI job.
 
 ## What it measures
 
@@ -47,6 +47,18 @@ node spikes/code-intel-bench/bench.mjs report --arm baseline
 
 The baseline arm is `arms/baseline/arm.json`: this repository's plugin at its current commit, `settings.json` and the models `claude-sonnet-5-5` and `claude-opus-5-5`. To test a change, add `arms/<name>/arm.json` with the plugin directory (a path relative to the arm folder), a settings file and a model, and run it the same way. The runner does not change. The plugin directory is staged into a temporary copy that leaves out `spikes/` and `.git`, so the agent can never read the hidden tests or the reference solutions.
 
+An arm may add five optional fields to `arm.json`:
+
+- `include`: paths relative to `pluginDir` that are staged although they sit under a left-out folder, for example `spikes/code-intel` and `spikes/lsp-host`. `spikes/code-intel-bench` and `.git` stay out whatever `include` says, so the hidden tests and the references are never staged.
+- `overlay`: a folder relative to the arm folder. Its files are copied over the staged plugin after staging, so an arm can replace `.mcp.json` or add `skills/<name>/SKILL.md`. In the overlay's `.md` files the token `${CLAUDE_PLUGIN_ROOT}` is replaced by the absolute path of the staged plugin (forward slashes), so a skill's command line works from the fixture's folder without relying on Claude Code to substitute the token in skill text. Other overlay files, such as `.mcp.json`, keep the token, which Claude Code resolves for MCP servers.
+- `toolPattern`: a regular expression. The run record gains `codeIntelCalls`, the number of distinct `tool_use` blocks whose tool name matches it, or, for `Bash`, whose command matches it. The report shows a `Code-intel calls` column when any record has the count.
+- `agents`: changes to the plugin's own agent files, applied to the staged copy so the arm tracks the plugin: `{ "scout": { "addTools": [...], "note": "<file>" } }`. `addTools` appends to the `tools:` line of `agents/<name>.md`; the entry `${mcpTools}` expands to the MCP tools of the staged interface, named `mcp__plugin_<plugin name>_<server name>__<tool>` from `.claude-plugin/plugin.json`, `.mcp.json` and the interface's `tools.mjs`. `note` is a file relative to the arm folder, without its frontmatter, appended to the agent as a `## Code intelligence` section, with `${CLAUDE_PLUGIN_ROOT}` replaced by the staged path and `${mcpTools}` by the tool names. Every change is listed in the record as `agentChanges`. The `*-mcp` arms give both agents the MCP tools and a note; the `*-cli` arms append the CLI skill text to both agents and give the scout `Bash`, which the baseline scout (`Read, Grep, Glob, LSP`) does not have, so a cli arm's scout is also able to run commands.
+- `hooks`: a list of `{ "script": "<file>", "matcher": "<tool regex>", "args": [...] }`. Each script (a path relative to the arm folder) is copied to `hooks/arm/` in the staged plugin and appended to the `PreToolUse` array of the staged `hooks/hooks.json` as `node "${CLAUDE_PLUGIN_ROOT}/hooks/arm/<script>" <args>`; `${CLAUDE_PLUGIN_ROOT}` inside `args` is replaced by the staged path. The record lists them as `hookChanges`. When an arm has hooks, the runner sets `CODE_INTEL_BENCH_HOOK_LOG` to a file in the run's temporary folder, and a hook may append one JSON line per decision to it; the record gains `scoutBashDecisions: { allowed, denied, unknownAgent }` counted from that file.
+
+`agents` and `hooks` stay generic on purpose, so #206 can reuse them with other caller sets: nothing in them names the scout or the code-intel interfaces except the arm files themselves.
+
+Every run's raw stream-json is kept in `results/<arm>/<model>/<timestamp>-<task>-<repeat>.stream.jsonl` (git-ignored); the record's `stream` points at it. `codeIntelCalls` counts calls inside subagent messages too. `report --arm <name>` also works for an arm that has records but no arm folder, such as the relabelled `b-mcp-idle`; `run` refuses it.
+
 `CLAUDE_BIN` names the `claude` executable (default `claude`); a path ending in `.mjs` runs with Node, which is how the tests use `test/fake-claude.mjs`.
 
 The agent has to be logged in on the machine that runs the benchmark. Runs pass `--setting-sources project,local`, so that the user's own settings and plugins (the user source) never reach a measured run and two machines or two users measure the same thing; every record stores `settingSources` and the exact argument list; only the fixture's project settings, the arm's `--settings` file and its `--plugin-dir` apply. Managed settings of the machine still apply, so run every arm on the same machine.
@@ -78,11 +90,23 @@ An arm **holds cost while correctness rises** when its mean cost per accepted ta
 
 Anything else is **no effect**, and the change is not accepted. `bench.mjs report --arm <name> --against baseline` prints both arms' tables and the verdict. The rule is the pure function `judge` in `noise.mjs`.
 
+## Build processes left behind
+
+`dotnet` MSBuild worker nodes and `VBCSCompiler` outlive the build that started them and can lock files in a run's copy. During each run the runner samples the process table every 3 seconds (`processes.mjs`: PowerShell `Get-CimInstance Win32_Process` on Windows, `ps` elsewhere, plus `/proc/<pid>/cwd` on Linux) and remembers every process that descends from the `claude` process or from a check command, with its start time. After the checks and before the copy is deleted, it kills the tree of each remaining dotnet, MSBuild or VBCSCompiler process that is a remembered descendant (same pid and same start time, so a reused pid is spared) or whose command line or working directory is inside the run's copy. The count and names go in the record as `leftoverProcesses`. It never uses `dotnet build-server shutdown` or kills by name machine-wide, because those would stop the owner's own servers. The `claude -p` environment is left as it was, since the baseline was measured without `MSBUILDDISABLENODEREUSE`, `DOTNET_CLI_USE_MSBUILD_SERVER` or `UseSharedCompilation`; only the hidden checks, which are not measured, run with node reuse, the MSBuild server and shared compilation turned off.
+
 ## Tasks and hidden tests
 
 `tasks/Tn/task.json` holds the id, title, prompt, the #200 features and the check commands. `tasks/preamble.md` is put in front of every prompt: work in this tree, there is no remote, no CI and no issue, do not commit, push, branch or open a pull request, local builds and tests are allowed. `tasks/Tn/hidden/` is copied over the run's copy after the agent finishes. `tasks/Tn/reference/solution.patch` is a reference solution.
 
 `node spikes/code-intel-bench/check-tasks.mjs` is the slow check (it builds the .NET solution and runs the frontend tests in 14 copies, so it is not in CI). For each task it checks that the hidden checks fail on the untouched fixture and pass once the reference solution is applied. `--tasks T1,T4` limits it, and `--build <folder>` builds the fixture first.
+
+### An arm differs from the baseline only in its interface
+
+Two things would otherwise break that.
+
+**The scout gets only read-only tools.** The scout never edits (CLA-0080), so the `*-mcp` arms must not give it `rename` or `replaceBody`. Every tool in `spikes/code-intel/{a,b,c}/tools.mjs` carries the MCP annotation `annotations: { readOnlyHint }`, and `tools/list` serves it. The placeholder `${mcpReadTools}` expands to the tools with `readOnlyHint: true`, next to `${mcpTools}` for all of them; the scout adds `${mcpReadTools}`, the implementer `${mcpTools}`, and each has its own note (`scout-note.md` names only the read operations). Interface C is one `run` tool whose `ci` object can edit, so its server takes `--read-only`: `c/mcp.mjs --read-only` serves `readTools`, a `run` tool marked `readOnlyHint: true` whose `ci` has no `rename` and no `replaceBody`. The `c-mcp` overlay `.mcp.json` starts it as `code-intel-c-read` next to `code-intel-c`; the scout gets `mcp__plugin_claudalisk_code-intel-c-read__run` and the implementer the full one. `${mcpTools}` skips servers started with `--read-only`, so the implementer never gets the read-only twin.
+
+**The CLI scout's Bash runs only the arm's CLI.** The scout's `Read, Grep, Glob, LSP` become `Bash` in the `*-cli` arms, which would let it `cat` and `grep`. Plugin agents ignore `hooks` and `permissionMode` frontmatter and runs use `bypassPermissions`, so allow rules do nothing, but a `PreToolUse` hook that denies still blocks. `arm-hooks/cli-only.mjs` is added by the `*-cli` arms with the staged CLI path. For a `Bash` or `PowerShell` call from an agent whose `agent_type` is `scout` or `<plugin>:scout` it allows exactly `node <staged cli path> <arguments>`, quoted or not, with no `; & | > <`, newline, backtick or `$(` outside quotes, and denies everything else with a reason that names the CLI. Calls from other agents and the main thread pass untouched. A shell call from a subagent whose input has `agent_id` but no `agent_type` is not treated as the scout but is counted as `unknownAgent`; a value above 0 on a real run means the guard did not work, and the report shows the column `Scout Bash allowed / denied / unknown agent` for arms that have it, with a warning. The CLI scout's note lists only the read operations, but the CLI itself still accepts `rename` and `replaceBody`, because a command line has no read-only annotation.
 
 ### Hooks in a benchmark run
 

@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import { main, parseCommand } from './bench.mjs'
 import { taskIds } from './tasks.mjs'
 import { emptyLedger, writeLedger } from './ledger.mjs'
-import { renderReport, repeatsOf, stats, table } from './report.mjs'
+import { renderArm, renderReport, repeatsOf, stats, table } from './report.mjs'
 
 const TASKS = ['T1', 'T2']
 
@@ -112,6 +112,22 @@ test('the report command reads the results of an arm', async () => {
   }
 })
 
+test('the report lists a relabelled arm that has records but no arm folder, and run refuses it', async () => {
+  const base = mkdtempSync(join(tmpdir(), 'bench-cli-'))
+  const lines = []
+  try {
+    mkdirSync(join(base, 'b-mcp-idle', 'claude-sonnet-5-5'), { recursive: true })
+    writeFileSync(join(base, 'b-mcp-idle', 'claude-sonnet-5-5', '20260101T000000Z-T1-1.json'), JSON.stringify(record('T1', 1)))
+
+    await main(['report', '--arm', 'b-mcp-idle'], { resultsDir: base, log: (line) => lines.push(line) })
+
+    assert.match(lines.join('\n'), /## b-mcp-idle[\s\S]*\| T1 \| 1 \| 1 \| 100% \|/)
+    await assert.rejects(main(['run', '--arm', 'b-mcp-idle', '--dry-run'], { resultsDir: base, log: () => {} }), /no arm b-mcp-idle/)
+  } finally {
+    rmSync(base, { recursive: true, force: true })
+  }
+})
+
 test('repeats are grouped by their repeat number, not by per-task run numbers', () => {
   const records = [
     { ...record('T1', 1), repeat: 1 },
@@ -162,4 +178,24 @@ test('the report has one section and one verdict per model, and --model limits i
   } finally {
     rmSync(base, { recursive: true, force: true })
   }
+})
+
+test('the table gains a code-intel calls column only when a record has the count', () => {
+  const record = (task, calls) => ({ task, accepted: true, totalCostUsd: 1, turns: 1, subagents: 0, wallMs: 1000, models: {}, ...(calls === undefined ? {} : { codeIntelCalls: calls }) })
+
+  assert.equal(table([record('T1')], ['T1']).split('\n')[0].includes('Code-intel calls'), false)
+  const lines = table([record('T1', 2), record('T1', 4)], ['T1']).split('\n')
+  assert.equal(lines[0].endsWith('| Code-intel calls |'), true)
+  assert.equal(lines[2].endsWith('| 3.0 (2.0 to 4.0) |'), true)
+})
+
+test('the table gains the scout shell column only for records with the guard counts, and warns about unknown agents', () => {
+  const record = (task, counts) => ({ task, accepted: true, totalCostUsd: 1, turns: 1, subagents: 0, wallMs: 1000, models: {}, ...(counts ? { scoutBashDecisions: counts } : {}) })
+
+  assert.equal(table([record('T1')], ['T1']).split('\n')[0].includes('Scout Bash'), false)
+  const lines = table([record('T1', { allowed: 3, denied: 1, unknownAgent: 0 }), record('T1', { allowed: 2, denied: 0, unknownAgent: 0 })], ['T1']).split('\n')
+  assert.equal(lines[0].endsWith('| Scout Bash allowed / denied / unknown agent |'), true)
+  assert.equal(lines[2].endsWith('| 5 / 1 / 0 |'), true)
+  assert.equal(renderArm('x', [record('T1', { allowed: 1, denied: 0, unknownAgent: 0 })], ['T1']).includes('Warning'), false)
+  assert.match(renderArm('x', [record('T1', { allowed: 1, denied: 0, unknownAgent: 2 })], ['T1']), /Warning: 2 shell calls came from an agent whose agent_type was missing/)
 })

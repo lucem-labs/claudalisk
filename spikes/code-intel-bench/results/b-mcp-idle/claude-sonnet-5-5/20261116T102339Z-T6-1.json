@@ -1,0 +1,62 @@
+{
+  "arm": "b-mcp-idle",
+  "task": "T6",
+  "repeat": 1,
+  "at": "2026-11-16T10:23:39.651Z",
+  "claudaliskCommit": "c36047f069f91877e3e51346ce1370da632a8566",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-pvL0DJ\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\b-mcp\\settings.json",
+    "--model",
+    "claude-sonnet-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "totalCostUsd": 0.0820885,
+  "models": {
+    "claude-sonnet-5-5": {
+      "input": 6,
+      "output": 929,
+      "cacheRead": 114585,
+      "cacheCreation": 15332,
+      "costUsd": 0.0820885
+    }
+  },
+  "turns": 4,
+  "subagents": 0,
+  "codeIntelCalls": 0,
+  "wallMs": 17248,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 0,
+    "names": []
+  }
+}

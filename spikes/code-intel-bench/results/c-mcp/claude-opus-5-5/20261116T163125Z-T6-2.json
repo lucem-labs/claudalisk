@@ -1,0 +1,90 @@
+{
+  "arm": "c-mcp",
+  "task": "T6",
+  "repeat": 2,
+  "at": "2026-11-16T16:31:25.575Z",
+  "claudaliskCommit": "6f785f292e5b8614c290d40b95bf7dded85e44b7",
+  "fixtureHead": "2bd390ce62803405ade5e58838399a28fd3d7ef8",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "<tmp>\\claudalisk-bench-plugin-sRQICc\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-205\\spikes\\code-intel-bench\\arms\\c-mcp\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "agentChanges": [
+    {
+      "agent": "scout",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c-read__run"
+      ],
+      "note": "scout-note.md"
+    },
+    {
+      "agent": "implementer",
+      "addedTools": [
+        "mcp__plugin_claudalisk_code-intel-c__run"
+      ],
+      "note": "agent-note.md"
+    }
+  ],
+  "stream": "c-mcp/claude-opus-5-5/20261116T163125Z-T6-2.stream.jsonl",
+  "totalCostUsd": 0.26134830500000006,
+  "models": {
+    "claude-opus-5-5": {
+      "input": 16,
+      "output": 2143,
+      "cacheRead": 336199,
+      "cacheCreation": 18560,
+      "costUsd": 0.25864380000000003
+    },
+    "claude-haiku-5-5": {
+      "input": 8,
+      "output": 2216,
+      "cacheRead": 33758,
+      "cacheCreation": 10065,
+      "costUsd": 0.0027045050000000003
+    }
+  },
+  "turns": 9,
+  "subagents": 1,
+  "codeIntelCalls": 0,
+  "wallMs": 103994,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true,
+  "leftoverProcesses": {
+    "killed": 3,
+    "names": [
+      "dotnet",
+      "dotnet",
+      "dotnet"
+    ]
+  }
+}
