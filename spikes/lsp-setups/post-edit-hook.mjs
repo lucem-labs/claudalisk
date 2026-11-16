@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { endpointFor, isAbsent, request } from './lib/daemon-protocol.mjs'
-import { languageOf, sleep } from './lib/common.mjs'
+import { boundedMs, languageOf, sleep } from './lib/common.mjs'
 
 export const DEFAULT_DEADLINE_MS = 1000
 export const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit'])
@@ -87,7 +87,7 @@ export async function diagnosticsText({ file, root }, { deadlineMs, start = star
 }
 
 export async function main({ stdin = process.stdin, stdout = process.stdout, env = process.env } = {}) {
-  const deadlineMs = Number(env.CLAUDALISK_LSP_HOOK_DEADLINE_MS) || DEFAULT_DEADLINE_MS
+  const deadlineMs = boundedMs(env.CLAUDALISK_LSP_HOOK_DEADLINE_MS, 0) || DEFAULT_DEADLINE_MS
   const chunks = []
   for await (const chunk of stdin) chunks.push(chunk)
   const target = inputOf(Buffer.concat(chunks).toString('utf8'))

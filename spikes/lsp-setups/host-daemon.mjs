@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { HostServer, normalizeDiagnostic } from './lib/host-server.mjs'
 import { endpointFor, request } from './lib/daemon-protocol.mjs'
-import { insideRoot, languageOf, sleep } from './lib/common.mjs'
+import { boundedMs, insideRoot, languageOf, sleep } from './lib/common.mjs'
 
 const option = (name) => {
   const index = process.argv.indexOf(`--${name}`)
@@ -19,7 +19,8 @@ if (!root) {
 
 const worktree = resolve(root)
 const endpoint = endpointFor(worktree)
-const idleMs = Number(option('idle-minutes') ?? 30) * 60000
+const idleMinutes = Number(option('idle-minutes') ?? 30)
+const idleMs = (Number.isFinite(idleMinutes) ? Math.min(Math.max(idleMinutes, 1), 1440) : 30) * 60000
 const launcherPath = process.env.CLAUDALISK_LSP_LAUNCHER
 const launcher = launcherPath ? (await import(pathToFileURL(resolve(launcherPath)).href)).hostLaunch : undefined
 
@@ -58,7 +59,7 @@ async function diagnostics(message) {
   const language = languageOf(file)
   if (!language || !insideRoot(worktree, file)) return { ok: true, skipped: true }
   const entry = serverFor(language)
-  const deadlineMs = Number(message.deadlineMs ?? 60000)
+  const deadlineMs = boundedMs(message.deadlineMs, 60000)
   const state = await Promise.race([entry.ready.then(() => 'ready', () => 'failed'), sleep(deadlineMs).then(() => 'pending')])
   if (state === 'failed') return { ok: false, error: entry.failed }
   if (state === 'pending') return { ok: true, pending: true }

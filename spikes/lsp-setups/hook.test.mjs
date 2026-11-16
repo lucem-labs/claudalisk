@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_DEADLINE_MS, diagnosticsText, formatDiagnostics, inputOf, notReady, outputFor, unavailable } from './post-edit-hook.mjs'
 import { endpointFor, isAbsent, request } from './lib/daemon-protocol.mjs'
-import { normalizeRoot } from './lib/common.mjs'
+import { MAX_WAIT_MS, boundedMs, normalizeRoot } from './lib/common.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const hookScript = join(here, 'post-edit-hook.mjs')
@@ -76,6 +76,14 @@ test('diagnostics are compact path:line:col lines and only errors and warnings a
   assert.equal(text, 'src/a.ts:3:7 error 2339 Property x does not exist.\nsrc/a.ts:9:2 warning careful')
   assert.equal(outputFor(''), '')
   assert.deepEqual(JSON.parse(outputFor(text)), { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } })
+})
+
+test('a requested wait is clamped to zero to five minutes and a non-number falls back', () => {
+  assert.equal(boundedMs(1e12, 7), MAX_WAIT_MS)
+  assert.equal(boundedMs(-5, 7), 0)
+  assert.equal(boundedMs('x', 7), 7)
+  assert.equal(boundedMs(undefined, 7), 7)
+  assert.equal(boundedMs(250, 7), 250)
 })
 
 test('more than twenty errors and warnings end with a count of the ones left out', () => {
