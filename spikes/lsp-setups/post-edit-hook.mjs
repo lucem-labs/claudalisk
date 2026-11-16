@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { endpointFor, isAbsent, request } from './lib/daemon-protocol.mjs'
 import { languageOf, sleep } from './lib/common.mjs'
 
-export const DEFAULT_DEADLINE_MS = 3000
+export const DEFAULT_DEADLINE_MS = 1000
 export const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit'])
 const REPORTED = new Set(['error', 'warning'])
 const MAX_LINES = 20

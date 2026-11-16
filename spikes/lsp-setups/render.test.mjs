@@ -44,13 +44,13 @@ test('the parts and the install log merge into one result with the developer ste
   assert.equal(merged.memory, null)
 })
 
-test('Roslyn launch attempts always include stdio alone and add only the load and solution flags the help lists', () => {
+test('Roslyn launch attempts always include stdio alone and the known load flag, and add the load and solution flags the help lists', () => {
   const help = ['Options:', '  --stdio  Use stdio', '  --autoLoadProjects  Load projects on start', '  --logLevel <level>  Log level', '  --solutionPath <path>  Solution to open', '  --pipe <name>  Pipe'].join('\n')
   const attempts = roslynAttempts(help, '/app/Proof.slnx')
   assert.deepEqual(attempts.map((a) => a.id), ['stdio-only', 'autoLoadProjects', 'solutionPath'])
   assert.deepEqual(attempts[1].args, ['--stdio', '--autoLoadProjects'])
   assert.deepEqual(attempts[2].args, ['--stdio', '--solutionPath', '/app/Proof.slnx'])
-  assert.deepEqual(roslynAttempts('', '/x').map((a) => a.id), ['stdio-only'])
+  assert.deepEqual(roslynAttempts('', '/x').map((a) => a.id), ['stdio-only', 'autoLoadProjects'])
 })
 
 test('latency summaries ignore missing values and report the median and p95', () => {

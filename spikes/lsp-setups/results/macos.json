@@ -1,0 +1,2498 @@
+{
+  "os": "macos",
+  "platform": "darwin",
+  "arch": "arm64",
+  "date": "2026-11-16T00:07:46.431Z",
+  "versions": {
+    "claudeCodeClient": "2.1.316",
+    "node": "v24.22.2",
+    "dotnet": "10.0.404",
+    "pinned": {
+      "csharp-ls": "0.28.0",
+      "roslyn": "5.13.0-1.26514.10",
+      "typescript": "7.0.2",
+      "yaml-language-server": "2.0.0"
+    },
+    "global": {
+      "csharp-ls": "0.28.0",
+      "typescript": "7.0.2",
+      "yaml-language-server": "2.0.0"
+    }
+  },
+  "hookDefaultDeadlineMs": 3000,
+  "setups": {
+    "plugins": {
+      "description": "the wrapper plugins of CLA-0080, driven by the Claude Code client",
+      "servers": {
+        "csharp": "csharp-ls",
+        "typescript": "typescript",
+        "yaml": "yaml"
+      },
+      "manualSteps": [
+        "claude plugin install csharp-ls-lsp@claude-toolkit",
+        "claude plugin install ts7-lsp@claude-toolkit",
+        "claude plugin install yaml-lsp@claude-toolkit",
+        "dotnet tool install --global csharp-ls",
+        "npm install -g typescript@7",
+        "npm install -g yaml-language-server"
+      ],
+      "installSteps": [
+        {
+          "setup": "plugins",
+          "command": "dotnet tool install --global csharp-ls",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk",
+          "seconds": 3.4,
+          "ok": true
+        },
+        {
+          "setup": "plugins",
+          "command": "npm install -g typescript@7",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk",
+          "seconds": 1.8,
+          "ok": true
+        },
+        {
+          "setup": "plugins",
+          "command": "npm install -g yaml-language-server",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk",
+          "seconds": 1.9,
+          "ok": true
+        }
+      ]
+    },
+    "lspjson": {
+      "description": "claudalisk's own .lsp.json, driven by the Claude Code client",
+      "servers": {
+        "csharp": "roslyn",
+        "typescript": "typescript",
+        "yaml": "yaml"
+      },
+      "manualSteps": [
+        "claude plugin install claudalisk",
+        "dotnet tool install --global roslyn-language-server --prerelease",
+        "npm install -g typescript@7",
+        "npm install -g yaml-language-server"
+      ],
+      "installSteps": [
+        {
+          "setup": "lspjson",
+          "command": "dotnet tool install --global roslyn-language-server --prerelease",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk",
+          "seconds": 3.1,
+          "ok": true
+        }
+      ]
+    },
+    "host": {
+      "description": "claudalisk's host, driven by the lsp-host client with pulled diagnostics",
+      "servers": {
+        "csharp": "roslyn",
+        "typescript": "typescript",
+        "yaml": "yaml"
+      },
+      "manualSteps": [
+        "dotnet tool restore",
+        "npm ci"
+      ],
+      "installSteps": [
+        {
+          "setup": "host",
+          "command": "dotnet tool restore",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk/spikes/lsp-setups",
+          "seconds": 3,
+          "ok": true
+        },
+        {
+          "setup": "host",
+          "command": "npm ci --ignore-scripts --no-audit --no-fund",
+          "cwd": "/Users/runner/work/claudalisk/claudalisk/spikes/lsp-setups",
+          "seconds": 1.6,
+          "ok": true
+        }
+      ]
+    }
+  },
+  "attempts": {
+    "help": "Expected either --stdio or --pipe <name>.\n",
+    "solutionExample": "found",
+    "attempts": [
+      {
+        "id": "stdio-only",
+        "args": [
+          "--stdio"
+        ],
+        "description": "no solution/open, the workspace folder comes from initialize",
+        "loaded": false,
+        "pushedDiagnostics": false,
+        "loadMs": null,
+        "lastAnswer": "Pricing.cs:13,Pricing.cs:4,Pricing.cs:6",
+        "pushMs": null,
+        "pushesSeen": 0,
+        "serverRequests": [
+          "workspace/configuration",
+          "client/registerCapability"
+        ],
+        "stderrTail": ""
+      }
+    ],
+    "chosen": {
+      "id": "stdio-only",
+      "args": [
+        "--stdio"
+      ]
+    }
+  },
+  "correctness": {
+    "plugins": {
+      "csharp": {
+        "server": "csharp-ls",
+        "source": "global",
+        "initializeMs": 3264,
+        "ready": {
+          "ms": 10898,
+          "attempts": 2
+        },
+        "capabilities": {
+          "diagnosticProvider": true,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": {
+              "includeText": true
+            }
+          }
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 5,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 274,
+            "p95Ms": 334,
+            "minMs": 145,
+            "maxMs": 334
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 267,
+            "p95Ms": 325,
+            "minMs": 79,
+            "maxMs": 325
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": 274,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": [
+                "error CS0103 The name 'unitt' does not exist in the current context"
+              ]
+            },
+            "fixed": {
+              "viaChangeMs": 79,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 1,
+              "lastPush": []
+            }
+          }
+        }
+      },
+      "typescript": {
+        "server": "typescript",
+        "source": "global",
+        "initializeMs": 579,
+        "ready": {
+          "ms": 606,
+          "attempts": 2
+        },
+        "capabilities": {
+          "diagnosticProvider": true,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": true
+          }
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 0,
+          "brokenFound": 0,
+          "fixedCleared": 0,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            },
+            "fixed": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            }
+          }
+        }
+      },
+      "yaml": {
+        "server": "yaml",
+        "source": "global",
+        "initializeMs": 661,
+        "ready": {
+          "ms": 226,
+          "attempts": 1
+        },
+        "capabilities": {
+          "diagnosticProvider": false,
+          "textDocumentSync": 2
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 5,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 213,
+            "p95Ms": 222,
+            "minMs": 115,
+            "maxMs": 222
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 215,
+            "p95Ms": 255,
+            "minMs": 211,
+            "maxMs": 255
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": 115,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": [
+                "error 0 Missing property \"runs-on\".",
+                "error 513 Property stepz is not allowed."
+              ]
+            },
+            "fixed": {
+              "viaChangeMs": 255,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 1,
+              "lastPush": []
+            }
+          }
+        }
+      }
+    },
+    "lspjson": {
+      "csharp": {
+        "server": "roslyn",
+        "source": "pinned",
+        "initializeMs": 4688,
+        "ready": {
+          "ms": null,
+          "attempts": 386,
+          "last": "Pricing.cs:13,Pricing.cs:4,Pricing.cs:6"
+        },
+        "capabilities": {
+          "diagnosticProvider": false,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": {}
+          }
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 0,
+          "brokenFound": 0,
+          "fixedCleared": 0,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            },
+            "fixed": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            }
+          }
+        }
+      },
+      "typescript": {
+        "server": "typescript",
+        "source": "pinned",
+        "initializeMs": 311,
+        "ready": {
+          "ms": 596,
+          "attempts": 2
+        },
+        "capabilities": {
+          "diagnosticProvider": true,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": true
+          }
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 0,
+          "brokenFound": 0,
+          "fixedCleared": 0,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            },
+            "fixed": {
+              "viaChangeMs": null,
+              "viaSaveMs": null,
+              "found": false,
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": []
+            }
+          }
+        }
+      },
+      "yaml": {
+        "server": "yaml",
+        "source": "pinned",
+        "initializeMs": 585,
+        "ready": {
+          "ms": 467,
+          "attempts": 1
+        },
+        "capabilities": {
+          "diagnosticProvider": false,
+          "textDocumentSync": 2
+        },
+        "result": {
+          "mode": "push",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 5,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 219,
+            "p95Ms": 259,
+            "minMs": 216,
+            "maxMs": 259
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 214,
+            "p95Ms": 225,
+            "minMs": 211,
+            "maxMs": 225
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "viaChangeMs": 259,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 0,
+              "lastPush": [
+                "error 0 Missing property \"runs-on\".",
+                "error 513 Property stepz is not allowed."
+              ]
+            },
+            "fixed": {
+              "viaChangeMs": 214,
+              "viaSaveMs": null,
+              "found": true,
+              "pushes": 1,
+              "stale": 0,
+              "empty": 1,
+              "lastPush": []
+            }
+          }
+        }
+      }
+    },
+    "host": {
+      "csharp": {
+        "server": "roslyn",
+        "source": "pinned",
+        "initializeMs": 6478,
+        "ready": {
+          "ms": 2755,
+          "attempts": 2
+        },
+        "capabilities": {
+          "diagnosticProvider": true,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": {}
+          }
+        },
+        "result": {
+          "mode": "pull",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 94,
+            "p95Ms": 1182,
+            "minMs": 87,
+            "maxMs": 1182
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 93,
+            "p95Ms": 157,
+            "minMs": 84,
+            "maxMs": 157
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "found": true,
+              "viaChangeMs": 1182,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 1182,
+              "firstAnswerCount": 2,
+              "via": "pull",
+              "lastPush": [
+                "error CS0103 The name 'unitt' does not exist in the current context",
+                "info IDE0060 Remove unused parameter 'unit' if it is not part of a shipped public API"
+              ],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            },
+            "fixed": {
+              "found": true,
+              "viaChangeMs": 111,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 111,
+              "firstAnswerCount": 0,
+              "via": "pull",
+              "lastPush": [],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            }
+          }
+        }
+      },
+      "typescript": {
+        "server": "typescript",
+        "source": "pinned",
+        "initializeMs": 491,
+        "ready": {
+          "ms": 923,
+          "attempts": 2
+        },
+        "capabilities": {
+          "diagnosticProvider": true,
+          "textDocumentSync": {
+            "openClose": true,
+            "change": 2,
+            "save": true
+          }
+        },
+        "result": {
+          "mode": "pull",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 313,
+            "p95Ms": 411,
+            "minMs": 37,
+            "maxMs": 411
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 11,
+            "p95Ms": 485,
+            "minMs": 3,
+            "maxMs": 485
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "found": true,
+              "viaChangeMs": 411,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 410,
+              "firstAnswerCount": 1,
+              "via": "pull",
+              "lastPush": [
+                "error 2551 Property 'amountt' does not exist on type 'Price'. Did you mean 'amount'?"
+              ],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            },
+            "fixed": {
+              "found": true,
+              "viaChangeMs": 8,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 8,
+              "firstAnswerCount": 0,
+              "via": "pull",
+              "lastPush": [],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            }
+          }
+        }
+      },
+      "yaml": {
+        "server": "yaml",
+        "source": "pinned",
+        "initializeMs": 597,
+        "ready": {
+          "ms": 2004,
+          "attempts": 1
+        },
+        "capabilities": {
+          "diagnosticProvider": false,
+          "textDocumentSync": 2
+        },
+        "result": {
+          "mode": "push-fallback",
+          "repeats": 5,
+          "correct": 5,
+          "brokenFound": 5,
+          "fixedCleared": 5,
+          "brokenNeededSave": 0,
+          "fixedNeededSave": 0,
+          "stalePushes": 0,
+          "emptyPushes": 0,
+          "brokenLatency": {
+            "runs": 5,
+            "medianMs": 229,
+            "p95Ms": 296,
+            "minMs": 225,
+            "maxMs": 296
+          },
+          "fixedLatency": {
+            "runs": 5,
+            "medianMs": 225,
+            "p95Ms": 227,
+            "minMs": 216,
+            "maxMs": 227
+          },
+          "brokenViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "fixedViaSaveLatency": {
+            "runs": 0,
+            "medianMs": null,
+            "p95Ms": null,
+            "minMs": null,
+            "maxMs": null
+          },
+          "sample": {
+            "broken": {
+              "found": true,
+              "viaChangeMs": 296,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 296,
+              "firstAnswerCount": 2,
+              "via": "push",
+              "lastPush": [
+                "error 0 Missing property \"runs-on\".",
+                "error 513 Property stepz is not allowed."
+              ],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            },
+            "fixed": {
+              "found": true,
+              "viaChangeMs": 226,
+              "viaSaveMs": null,
+              "polls": 1,
+              "firstAnswerMs": 226,
+              "firstAnswerCount": 0,
+              "via": "push",
+              "lastPush": [],
+              "pushes": 0,
+              "stale": 0,
+              "empty": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "worktrees": {
+    "layout": {
+      "A": "the generated app",
+      "B": "A/.claude/worktrees/B",
+      "C": "a sibling folder of A"
+    },
+    "setups": {
+      "plugins": {
+        "csharp": [
+          {
+            "root": "A",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 6097,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "csharp-ls: Loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx\"...",
+              "csharp-ls: Finished loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx\""
+            ]
+          },
+          {
+            "root": "B",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 5549,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "csharp-ls: Loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx\"...",
+              "csharp-ls: Finished loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx\""
+            ]
+          },
+          {
+            "root": "C",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 5619,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "csharp-ls: Loading solution \"/Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx\"...",
+              "csharp-ls: Finished loading solution \"/Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx\""
+            ]
+          }
+        ],
+        "typescript": [
+          {
+            "root": "A",
+            "readyMs": 484,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "B",
+            "readyMs": 364,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "C",
+            "readyMs": 388,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          }
+        ],
+        "yaml": [
+          {
+            "root": "A",
+            "readyMs": 223,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          },
+          {
+            "root": "B",
+            "readyMs": 430,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          },
+          {
+            "root": "C",
+            "readyMs": 421,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/worktree-C/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          }
+        ]
+      },
+      "lspjson": {
+        "csharp": [
+          {
+            "root": "A",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": null,
+            "referenceCount": 3,
+            "outside": [],
+            "correct": false,
+            "logLines": []
+          },
+          {
+            "root": "B",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": null,
+            "referenceCount": 3,
+            "outside": [],
+            "correct": false,
+            "logLines": []
+          },
+          {
+            "root": "C",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": null,
+            "referenceCount": 3,
+            "outside": [],
+            "correct": false,
+            "logLines": []
+          }
+        ],
+        "typescript": [
+          {
+            "root": "A",
+            "readyMs": 590,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "B",
+            "readyMs": 609,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "C",
+            "readyMs": 488,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          }
+        ],
+        "yaml": [
+          {
+            "root": "A",
+            "readyMs": 515,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          },
+          {
+            "root": "B",
+            "readyMs": 404,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          },
+          {
+            "root": "C",
+            "readyMs": 407,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/worktree-C/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "correct": true
+          }
+        ]
+      },
+      "host": {
+        "csharp": [
+          {
+            "root": "A",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 3485,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "[solution/open] [LanguageServerProjectSystem] Loading /Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx...",
+              "[solution/open] [Microsoft.CodeAnalysis.LanguageServer.HostWorkspace.FileWatching.DelegatingFileChangeWatcher] We are unable to use LSP file watching; falling back to our in-process watcher.",
+              "[solution/open] [Microsoft.CodeAnalysis.MSBuild.BuildHostProcessManager] .NET BuildHost started from /Users/runner/.nuget/packages/roslyn-language-server.osx-arm64/5.13.0-1.26514.10/tools/net10.0/osx-arm64/Microsoft.CodeAnalysis.LanguageServer reloading to start from /Users/runner/.dotnet/dotnet to ",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.Api.Tests/Proof.Api.Tests.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.LspCases/Proof.LspCases.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.Api/Proof.Api.csproj"
+            ]
+          },
+          {
+            "root": "B",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 3290,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "[solution/open] [LanguageServerProjectSystem] Loading /Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx...",
+              "[solution/open] [Microsoft.CodeAnalysis.LanguageServer.HostWorkspace.FileWatching.DelegatingFileChangeWatcher] We are unable to use LSP file watching; falling back to our in-process watcher.",
+              "[solution/open] [Microsoft.CodeAnalysis.MSBuild.BuildHostProcessManager] .NET BuildHost started from /Users/runner/.nuget/packages/roslyn-language-server.osx-arm64/5.13.0-1.26514.10/tools/net10.0/osx-arm64/Microsoft.CodeAnalysis.LanguageServer reloading to start from /Users/runner/.dotnet/dotnet to ",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.Api.Tests/Proof.Api.Tests.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.LspCases/Proof.LspCases.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.Api/Proof.Api.csproj"
+            ]
+          },
+          {
+            "root": "C",
+            "solution": "/Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx",
+            "solutionInsideRoot": true,
+            "readyMs": 3740,
+            "referenceCount": 4,
+            "outside": [],
+            "correct": true,
+            "logLines": [
+              "[solution/open] [LanguageServerProjectSystem] Loading /Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.slnx...",
+              "[solution/open] [Microsoft.CodeAnalysis.LanguageServer.HostWorkspace.FileWatching.DelegatingFileChangeWatcher] We are unable to use LSP file watching; falling back to our in-process watcher.",
+              "[solution/open] [Microsoft.CodeAnalysis.MSBuild.BuildHostProcessManager] .NET BuildHost started from /Users/runner/.nuget/packages/roslyn-language-server.osx-arm64/5.13.0-1.26514.10/tools/net10.0/osx-arm64/Microsoft.CodeAnalysis.LanguageServer reloading to start from /Users/runner/.dotnet/dotnet to ",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.Api.Tests/Proof.Api.Tests.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.Modules.Ordering.Domain/Proof.Modules.Ordering.Domain.csproj",
+              "[solution/open] [LanguageServerProjectSystem] Successfully completed load of /Users/runner/work/_temp/lsp-setups-work/worktree-C/backend/Proof.Api/Proof.Api.csproj"
+            ]
+          }
+        ],
+        "typescript": [
+          {
+            "root": "A",
+            "readyMs": 453,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "B",
+            "readyMs": 516,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          },
+          {
+            "root": "C",
+            "readyMs": 499,
+            "referenceCount": 6,
+            "outside": [],
+            "correct": true,
+            "logLines": []
+          }
+        ],
+        "yaml": [
+          {
+            "root": "A",
+            "readyMs": 2001,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "via": "push",
+            "correct": true
+          },
+          {
+            "root": "B",
+            "readyMs": 2005,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "via": "push",
+            "correct": true
+          },
+          {
+            "root": "C",
+            "readyMs": 2006,
+            "pushedUris": [
+              "file:///Users/runner/work/_temp/lsp-setups-work/worktree-C/.github/workflows/lsp-case.yml"
+            ],
+            "outside": [],
+            "via": "push",
+            "correct": true
+          }
+        ]
+      }
+    },
+    "control": [
+      {
+        "root": "A",
+        "server": "csharp-ls started with no --solution",
+        "solutionsUnderRoot": [
+          ".claude/worktrees/B/backend/Proof.slnx",
+          "backend/Proof.slnx"
+        ],
+        "attempts": 1,
+        "referenceCount": 4,
+        "correct": true,
+        "outside": [],
+        "logLines": [
+          "csharp-ls: attempting to find and load solution on path \"/Users/runner/work/_temp/lsp-setups-work/base\"..",
+          "csharp-ls: 2 solution(s) found: [/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx, /Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx]",
+          "csharp-ls: Loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx\"...",
+          "csharp-ls: Finished loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/backend/Proof.slnx\""
+        ],
+        "waitedMs": 8642
+      },
+      {
+        "root": "B",
+        "server": "csharp-ls started with no --solution",
+        "solutionsUnderRoot": [
+          "backend/Proof.slnx"
+        ],
+        "attempts": 1,
+        "referenceCount": 4,
+        "correct": true,
+        "outside": [],
+        "logLines": [
+          "csharp-ls: attempting to find and load solution on path \"/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B\"..",
+          "csharp-ls: 1 solution(s) found: [/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx]",
+          "csharp-ls: Loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx\"...",
+          "csharp-ls: Finished loading solution \"/Users/runner/work/_temp/lsp-setups-work/base/.claude/worktrees/B/backend/Proof.slnx\""
+        ],
+        "waitedMs": 7750
+      }
+    ]
+  },
+  "memory": [
+    {
+      "combination": "plugins",
+      "worktrees": 1,
+      "loadMs": 13993,
+      "workload": [
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 68903,
+              "processes": 1,
+              "megabytes": 350
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 68920,
+              "processes": 1,
+              "megabytes": 207
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 68921,
+              "processes": 1,
+              "megabytes": 145
+            }
+          ],
+          "processes": 3,
+          "megabytes": 702
+        }
+      ],
+      "processes": 3,
+      "megabytes": 702,
+      "servers": 3
+    },
+    {
+      "combination": "plugins",
+      "worktrees": 2,
+      "loadMs": 24141,
+      "workload": [
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 71164,
+              "processes": 1,
+              "megabytes": 350
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 71380,
+              "processes": 1,
+              "megabytes": 207
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 71382,
+              "processes": 1,
+              "megabytes": 107
+            }
+          ],
+          "processes": 3,
+          "megabytes": 664
+        },
+        {
+          "root": 1,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 71434,
+              "processes": 1,
+              "megabytes": 354
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 71730,
+              "processes": 1,
+              "megabytes": 206
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 71731,
+              "processes": 1,
+              "megabytes": 108
+            }
+          ],
+          "processes": 3,
+          "megabytes": 668
+        }
+      ],
+      "processes": 6,
+      "megabytes": 1332,
+      "servers": 6
+    },
+    {
+      "combination": "lspjson",
+      "worktrees": 1,
+      "loadMs": 305517,
+      "workload": [
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 75988,
+              "processes": 3,
+              "megabytes": 545
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 82799,
+              "processes": 1,
+              "megabytes": 211
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 82800,
+              "processes": 1,
+              "megabytes": 105
+            }
+          ],
+          "processes": 5,
+          "megabytes": 861
+        }
+      ],
+      "processes": 5,
+      "megabytes": 861,
+      "servers": 3
+    },
+    {
+      "combination": "lspjson",
+      "worktrees": 2,
+      "loadMs": 611383,
+      "workload": [
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 86911,
+              "processes": 3,
+              "megabytes": 550
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 93803,
+              "processes": 1,
+              "megabytes": 205
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 93806,
+              "processes": 1,
+              "megabytes": 108
+            }
+          ],
+          "processes": 5,
+          "megabytes": 863
+        },
+        {
+          "root": 1,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 93971,
+              "processes": 3,
+              "megabytes": 543
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 1832,
+              "processes": 1,
+              "megabytes": 209
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 1833,
+              "processes": 1,
+              "megabytes": 107
+            }
+          ],
+          "processes": 5,
+          "megabytes": 859
+        }
+      ],
+      "processes": 10,
+      "megabytes": 1722,
+      "servers": 6
+    },
+    {
+      "combination": "host",
+      "worktrees": 1,
+      "loadMs": 10103,
+      "workload": [
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 9773,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 9794,
+              "processes": 3,
+              "megabytes": 619
+            },
+            {
+              "name": "typescript",
+              "pid": 10083,
+              "processes": 1,
+              "megabytes": 356
+            },
+            {
+              "name": "yaml",
+              "pid": 10086,
+              "processes": 1,
+              "megabytes": 145
+            },
+            {
+              "name": "daemon",
+              "pid": 9773,
+              "processes": 1,
+              "megabytes": 59
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1179
+        }
+      ],
+      "processes": 6,
+      "megabytes": 1179,
+      "servers": 3
+    },
+    {
+      "combination": "host",
+      "worktrees": 2,
+      "loadMs": 17984,
+      "workload": [
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 10118,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 10133,
+              "processes": 3,
+              "megabytes": 504
+            },
+            {
+              "name": "typescript",
+              "pid": 10419,
+              "processes": 1,
+              "megabytes": 352
+            },
+            {
+              "name": "yaml",
+              "pid": 10420,
+              "processes": 1,
+              "megabytes": 117
+            },
+            {
+              "name": "daemon",
+              "pid": 10118,
+              "processes": 1,
+              "megabytes": 59
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1032
+        },
+        {
+          "root": 1,
+          "member": "host",
+          "daemonPid": 10421,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 10431,
+              "processes": 3,
+              "megabytes": 533
+            },
+            {
+              "name": "typescript",
+              "pid": 10736,
+              "processes": 1,
+              "megabytes": 348
+            },
+            {
+              "name": "yaml",
+              "pid": 10738,
+              "processes": 1,
+              "megabytes": 140
+            },
+            {
+              "name": "daemon",
+              "pid": 10421,
+              "processes": 1,
+              "megabytes": 55
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1076
+        }
+      ],
+      "processes": 12,
+      "megabytes": 2108,
+      "servers": 6
+    },
+    {
+      "combination": "plugins+host",
+      "worktrees": 1,
+      "loadMs": 18131,
+      "workload": [
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 11036,
+              "processes": 1,
+              "megabytes": 362
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 11050,
+              "processes": 1,
+              "megabytes": 206
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 11052,
+              "processes": 1,
+              "megabytes": 137
+            }
+          ],
+          "processes": 3,
+          "megabytes": 705
+        },
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 11053,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 11311,
+              "processes": 3,
+              "megabytes": 629
+            },
+            {
+              "name": "typescript",
+              "pid": 11419,
+              "processes": 1,
+              "megabytes": 344
+            },
+            {
+              "name": "yaml",
+              "pid": 11420,
+              "processes": 1,
+              "megabytes": 140
+            },
+            {
+              "name": "daemon",
+              "pid": 11053,
+              "processes": 1,
+              "megabytes": 59
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1172
+        }
+      ],
+      "processes": 9,
+      "megabytes": 1877,
+      "servers": 6
+    },
+    {
+      "combination": "plugins+host",
+      "worktrees": 2,
+      "loadMs": 60851,
+      "workload": [
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "plugins",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 13666,
+              "processes": 1,
+              "megabytes": 251
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 13930,
+              "processes": 1,
+              "megabytes": 187
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 13931,
+              "processes": 1,
+              "megabytes": 95
+            }
+          ],
+          "processes": 3,
+          "megabytes": 533
+        },
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 13934,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 13944,
+              "processes": 3,
+              "megabytes": 391
+            },
+            {
+              "name": "typescript",
+              "pid": 14246,
+              "processes": 1,
+              "megabytes": 335
+            },
+            {
+              "name": "yaml",
+              "pid": 14247,
+              "processes": 1,
+              "megabytes": 92
+            },
+            {
+              "name": "daemon",
+              "pid": 13934,
+              "processes": 1,
+              "megabytes": 54
+            }
+          ],
+          "processes": 6,
+          "megabytes": 872
+        },
+        {
+          "root": 1,
+          "member": "plugins",
+          "servers": [
+            {
+              "name": "csharp:csharp-ls",
+              "pid": 14461,
+              "processes": 1,
+              "megabytes": 247
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 14814,
+              "processes": 1,
+              "megabytes": 202
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 14819,
+              "processes": 1,
+              "megabytes": 99
+            }
+          ],
+          "processes": 3,
+          "megabytes": 548
+        },
+        {
+          "root": 1,
+          "member": "host",
+          "daemonPid": 14824,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 14842,
+              "processes": 3,
+              "megabytes": 512
+            },
+            {
+              "name": "typescript",
+              "pid": 15252,
+              "processes": 1,
+              "megabytes": 339
+            },
+            {
+              "name": "yaml",
+              "pid": 15258,
+              "processes": 1,
+              "megabytes": 107
+            },
+            {
+              "name": "daemon",
+              "pid": 14824,
+              "processes": 1,
+              "megabytes": 55
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1013
+        }
+      ],
+      "processes": 18,
+      "megabytes": 2966,
+      "servers": 12
+    },
+    {
+      "combination": "lspjson+host",
+      "worktrees": 1,
+      "loadMs": 324367,
+      "workload": [
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 20018,
+              "processes": 3,
+              "megabytes": 550
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 26897,
+              "processes": 1,
+              "megabytes": 207
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 26900,
+              "processes": 1,
+              "megabytes": 105
+            }
+          ],
+          "processes": 5,
+          "megabytes": 862
+        },
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 26903,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 27143,
+              "processes": 3,
+              "megabytes": 630
+            },
+            {
+              "name": "typescript",
+              "pid": 27519,
+              "processes": 1,
+              "megabytes": 343
+            },
+            {
+              "name": "yaml",
+              "pid": 27520,
+              "processes": 1,
+              "megabytes": 105
+            },
+            {
+              "name": "daemon",
+              "pid": 26903,
+              "processes": 1,
+              "megabytes": 60
+            }
+          ],
+          "processes": 6,
+          "megabytes": 1138
+        }
+      ],
+      "processes": 11,
+      "megabytes": 2000,
+      "servers": 6
+    },
+    {
+      "combination": "lspjson+host",
+      "worktrees": 2,
+      "loadMs": 640293,
+      "workload": [
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "lspjson",
+          "csharp": {
+            "found": false,
+            "cleared": false
+          },
+          "typescript": {
+            "found": false,
+            "cleared": false
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        },
+        {
+          "member": "host",
+          "csharp": {
+            "found": true,
+            "cleared": true
+          },
+          "typescript": {
+            "found": true,
+            "cleared": true
+          },
+          "yaml": {
+            "found": true,
+            "cleared": true
+          }
+        }
+      ],
+      "samples": [
+        {
+          "root": 0,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 31415,
+              "processes": 3,
+              "megabytes": 274
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 38250,
+              "processes": 1,
+              "megabytes": 183
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 38273,
+              "processes": 1,
+              "megabytes": 84
+            }
+          ],
+          "processes": 5,
+          "megabytes": 541
+        },
+        {
+          "root": 0,
+          "member": "host",
+          "daemonPid": 38276,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 38286,
+              "processes": 3,
+              "megabytes": 390
+            },
+            {
+              "name": "typescript",
+              "pid": 38593,
+              "processes": 1,
+              "megabytes": 341
+            },
+            {
+              "name": "yaml",
+              "pid": 38597,
+              "processes": 1,
+              "megabytes": 89
+            },
+            {
+              "name": "daemon",
+              "pid": 38276,
+              "processes": 1,
+              "megabytes": 54
+            }
+          ],
+          "processes": 6,
+          "megabytes": 874
+        },
+        {
+          "root": 1,
+          "member": "lspjson",
+          "servers": [
+            {
+              "name": "csharp:roslyn",
+              "pid": 38687,
+              "processes": 3,
+              "megabytes": 315
+            },
+            {
+              "name": "typescript:typescript",
+              "pid": 46403,
+              "processes": 1,
+              "megabytes": 189
+            },
+            {
+              "name": "yaml:yaml",
+              "pid": 46408,
+              "processes": 1,
+              "megabytes": 99
+            }
+          ],
+          "processes": 5,
+          "megabytes": 603
+        },
+        {
+          "root": 1,
+          "member": "host",
+          "daemonPid": 46410,
+          "servers": [
+            {
+              "name": "csharp",
+              "pid": 46428,
+              "processes": 3,
+              "megabytes": 407
+            },
+            {
+              "name": "typescript",
+              "pid": 46735,
+              "processes": 1,
+              "megabytes": 343
+            },
+            {
+              "name": "yaml",
+              "pid": 46739,
+              "processes": 1,
+              "megabytes": 97
+            },
+            {
+              "name": "daemon",
+              "pid": 46410,
+              "processes": 1,
+              "megabytes": 54
+            }
+          ],
+          "processes": 6,
+          "megabytes": 901
+        }
+      ],
+      "processes": 22,
+      "megabytes": 2919,
+      "servers": 12
+    }
+  ],
+  "hook": {
+    "defaultDeadlineMs": 3000,
+    "languages": {
+      "csharp": {
+        "cold": [
+          {
+            "fullWaitMs": 13799,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 3,
+            "runsUntilFirstOutput": 4,
+            "firstOutputMs": 11025
+          },
+          {
+            "fullWaitMs": 10179,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 3,
+            "runsUntilFirstOutput": 4,
+            "firstOutputMs": 10916
+          },
+          {
+            "fullWaitMs": 10963,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 3,
+            "runsUntilFirstOutput": 4,
+            "firstOutputMs": 12061
+          }
+        ],
+        "warm": {
+          "runs": [
+            {
+              "broken": true,
+              "wallMs": 219,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 261,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 179,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 160,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 203,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 175,
+              "printed": false,
+              "right": true
+            }
+          ],
+          "medianMs": 160.2,
+          "p95Ms": 260.9,
+          "minMs": 140.3,
+          "maxMs": 260.9,
+          "correct": 14,
+          "count": 14,
+          "recommendedDeadlineMs": 600
+        },
+        "primeWallMs": 10775,
+        "coldMissRate": 1
+      },
+      "typescript": {
+        "cold": [
+          {
+            "fullWaitMs": 990,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 0,
+            "runsUntilFirstOutput": 1,
+            "firstOutputMs": 669
+          },
+          {
+            "fullWaitMs": 704,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 0,
+            "runsUntilFirstOutput": 1,
+            "firstOutputMs": 575
+          },
+          {
+            "fullWaitMs": 626,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 0,
+            "runsUntilFirstOutput": 1,
+            "firstOutputMs": 573
+          }
+        ],
+        "warm": {
+          "runs": [
+            {
+              "broken": true,
+              "wallMs": 55,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 60,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 164,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 97,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 301,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 241,
+              "printed": false,
+              "right": true
+            }
+          ],
+          "medianMs": 150.7,
+          "p95Ms": 354.3,
+          "minMs": 55,
+          "maxMs": 354.3,
+          "correct": 14,
+          "count": 14,
+          "recommendedDeadlineMs": 800
+        },
+        "primeWallMs": 466,
+        "coldMissRate": 0
+      },
+      "yaml": {
+        "cold": [
+          {
+            "fullWaitMs": 1329,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 0,
+            "runsUntilFirstOutput": 1,
+            "firstOutputMs": 891
+          },
+          {
+            "fullWaitMs": 933,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 0,
+            "runsUntilFirstOutput": 1,
+            "firstOutputMs": 940
+          },
+          {
+            "fullWaitMs": 1054,
+            "fullCorrect": true,
+            "defaultDeadlineMs": 3000,
+            "missesBeforeFirstOutput": 16,
+            "runsUntilFirstOutput": 17,
+            "firstOutputMs": 1836
+          }
+        ],
+        "warm": {
+          "runs": [
+            {
+              "broken": true,
+              "wallMs": 68,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 356,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 290,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 300,
+              "printed": false,
+              "right": true
+            },
+            {
+              "broken": true,
+              "wallMs": 299,
+              "printed": true,
+              "right": true
+            },
+            {
+              "broken": false,
+              "wallMs": 303,
+              "printed": false,
+              "right": true
+            }
+          ],
+          "medianMs": 300,
+          "p95Ms": 355.7,
+          "minMs": 67.7,
+          "maxMs": 355.7,
+          "correct": 14,
+          "count": 14,
+          "recommendedDeadlineMs": 800
+        },
+        "primeWallMs": 985,
+        "coldMissRate": 0.3333333333333333
+      }
+    }
+  }
+}

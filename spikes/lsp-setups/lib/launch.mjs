@@ -103,6 +103,8 @@ export function roslynHelp() {
   return `${result.stdout ?? ''}${result.stderr ?? ''}`
 }
 
+export const KNOWN_LOAD_FLAGS = ['--autoLoadProjects']
+
 export function roslynAttempts(helpText, solutionPath) {
   const attempts = [{ id: 'stdio-only', args: ['--stdio'], description: 'no solution/open, the workspace folder comes from initialize' }]
   const lines = helpText.split(/\r?\n/)
@@ -118,6 +120,10 @@ export function roslynAttempts(helpText, solutionPath) {
       args: valued ? ['--stdio', flag, solutionPath] : ['--stdio', flag],
       description: `${flag}${valued ? ' with the solution path' : ''}: ${line.trim().slice(0, 160)}`,
     })
+  }
+  for (const flag of KNOWN_LOAD_FLAGS) {
+    if (seen.has(flag)) continue
+    attempts.push({ id: flag.slice(2), args: ['--stdio', flag], description: `${flag}: a load flag the server may support, tried although --help does not list it` })
   }
   return attempts
 }
