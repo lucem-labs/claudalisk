@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-16
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); `spikes/lsp-setups` tests and measurement, run locally since spikes have no CI job; from #209 on, the app template's `.claude/settings.json` and its tests
+- **Enforced by:** reviewer (CLA-0023); from #209 on, the app template's `.claude/settings.json` and its tests
 - **Issue:** #207, #200
 
 ## Context
@@ -14,7 +14,7 @@ CLA-0080 has each developer install three LSP plugins from another marketplace, 
 2. **lspjson + host:** claudalisk ships the servers in its own `.lsp.json`, and the plugins go.
 3. **host only:** Claude Code's `LSP` tool goes unused, and a PostToolUse hook on Edit and Write asks the host for the edited file's diagnostics and returns them as `additionalContext`.
 
-Claude Code 2.1.316's LSP client, read from its bundled code, starts one set of servers per session, rooted at the project folder. It advertises `publishDiagnostics` and no `textDocument.diagnostic`, so it never pulls diagnostics and gets only what a server pushes. It sends only standard messages, so it cannot send Roslyn's `solution/open`. `spikes/lsp-setups` emulates that client exactly, with the capabilities in `fixtures/claude-code-client.json`. It runs the three set-ups on the app that `spikes/lsp-host` and #202 use, and adds a minimal per-worktree host daemon and the PostToolUse hook. CI run https://github.com/lucem-labs/claudalisk/actions/runs/43778870263 at `3982983`, with csharp-ls 0.28.0, `roslyn-language-server` 5.13.0-1.26514.10, TypeScript 7.0.2 and `yaml-language-server` 2.0.0. The tables are in `spikes/lsp-setups/RESULTS.md`.
+Claude Code 2.1.316's LSP client, read from its bundled code, starts one set of servers per session, rooted at the project folder. It advertises `publishDiagnostics` and no `textDocument.diagnostic`, so it never pulls diagnostics and gets only what a server pushes. It sends only standard messages, so it cannot send Roslyn's `solution/open`. The spike emulates that client exactly, with its recorded capabilities. It runs the three set-ups on the app that CLA-0089 and #202 use, and adds a minimal per-worktree host daemon and the PostToolUse hook. CI run https://github.com/lucem-labs/claudalisk/actions/runs/43778870263 at `3982983`, with csharp-ls 0.28.0, `roslyn-language-server` 5.13.0-1.26514.10, TypeScript 7.0.2 and `yaml-language-server` 2.0.0.
 
 - **Diagnostics after an edit.** Each case ran 5 times: a broken edit must produce the expected error, and the fixing edit must clear it. The push set-ups waited 20 s after `didChange`, then sent `didSave` and waited 20 s more. The results were the same on all three OSes.
 
@@ -62,7 +62,7 @@ Claude Code 2.1.316's LSP client, read from its bundled code, starts one set of 
 
 - TypeScript edits get diagnostics before the build for the first time. Until #209 they get none, and the build catches type errors.
 - The host alone uses about 0.3 to 0.5 GB more per worktree than the plugins alone did, mostly for Roslyn and the host's TypeScript server.
-- Claudalisk carries the hook, the daemon and its socket naming, and their tests on three OSes. A Claude Code release that starts pulling diagnostics would reopen the `.lsp.json` option; `fixtures/claude-code-client.json` records the client this was measured against.
+- Claudalisk carries the hook, the daemon and its socket naming, and their tests on three OSes. A Claude Code release that starts pulling diagnostics would reopen the `.lsp.json` option; the spike recorded the client this was measured against.
 - An edit made in the first seconds of a cold session can get no C# diagnostics. The build still checks it (CLA-0076).
-- `spikes/lsp-setups` stays as the harness to re-measure after a server or Claude Code upgrade.
+- The spike stays available to re-measure after a server or Claude Code upgrade.
 - CLA-0080's plugin section names this ADR, and it is rewritten when #209 lands.
