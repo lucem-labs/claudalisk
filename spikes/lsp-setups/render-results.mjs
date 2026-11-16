@@ -54,7 +54,7 @@ function installSection(results) {
 function attemptsSection(results) {
   const out = ['## lspjson: Roslyn launches without a custom notification', '']
   const first = results.find((r) => r.attempts)
-  if (first?.attempts?.help) out.push('`roslyn-language-server --help` options considered: those whose name mentions load, solution or project; `--stdio` alone is always tried.', '')
+  if (first?.attempts?.help !== undefined) out.push(`The help of the pinned server printed only: ${JSON.stringify(first.attempts.help.trim().split(/\r?\n/)[0] ?? '')}. The attempts are --stdio alone, every option of the help whose name mentions load, solution or project, and --autoLoadProjects, which the server may support although its help does not list it.`, '')
   const rows = []
   for (const r of results) {
     for (const attempt of r.attempts?.attempts ?? []) rows.push([r.os, attempt.id, `\`${attempt.args.join(' ')}\``, yesNo(attempt.loaded), attempt.loadMs, yesNo(attempt.pushedDiagnostics), attempt.pushMs, attempt.error])
