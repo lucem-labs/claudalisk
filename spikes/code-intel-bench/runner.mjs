@@ -39,9 +39,10 @@ export function plan({ tasks, runs, resultsDir, arm, model }) {
   return steps
 }
 
-export function describePlan({ arm, steps, ledger }) {
+export function describePlan({ arm, steps, ledger, pack }) {
   const worst = steps.length * RUN_CAP_USD
   const lines = [
+    ...(pack ? [`Pack ${pack}`] : []),
     `Arm ${arm.name} on ${arm.model}: plugin ${arm.pluginDir}, settings ${arm.settings}`,
     `${steps.length} runs, each capped at $${RUN_CAP_USD.toFixed(2)}, so at most $${worst.toFixed(2)}:`,
     ...steps.map((step) => `  ${step.task} repeat ${step.repeat}`),
@@ -54,10 +55,12 @@ export function describePlan({ arm, steps, ledger }) {
   return lines.join('\n')
 }
 
-export function copyDependencies(source, copy) {
-  const from = join(source, 'frontend', 'node_modules')
-  const to = join(copy, 'frontend', 'node_modules')
-  if (existsSync(from) && !existsSync(to)) cpSync(from, to, { recursive: true, verbatimSymlinks: true })
+export function copyDependencies(source, copy, dependencies = ['frontend/node_modules']) {
+  for (const folder of dependencies) {
+    const from = join(source, ...folder.split('/'))
+    const to = join(copy, ...folder.split('/'))
+    if (existsSync(from) && !existsSync(to)) cpSync(from, to, { recursive: true, verbatimSymlinks: true })
+  }
 }
 
 export async function pluginCommit(pluginDir) {
@@ -70,13 +73,13 @@ export async function pluginCommit(pluginDir) {
   }
 }
 
-export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
-  const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, task: task.id, repeat, at: now().toISOString() })
+export async function runOnce({ arm, task, repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep = false, exec = runCaptured, now = () => new Date(), checkRun }) {
+  const reservation = reserveRun(ledgerPath, { arm: arm.name, model: arm.model, ...(pack ? { pack } : {}), task: task.id, repeat, at: now().toISOString() })
   const base = mkdtempSync(join(tmpdir(), 'claudalisk-bench-run-'))
   const copy = join(base, 'app')
   try {
     await cloneFixture(copy, { fixture })
-    copyDependencies(fixture.path, copy)
+    copyDependencies(fixture.path, copy, fixture.dependencies)
     const started = Date.now()
     const args = claudeArguments({ arm, plugin, budget: RUN_CAP_USD })
     const outcome = await exec(claudeBinary(), args, { cwd: copy, input: task.prompt, timeoutMs: RUN_TIMEOUT_MS })
@@ -126,7 +129,7 @@ export async function runOnce({ arm, task, repeat, plugin, claudeCommit, fixture
   }
 }
 
-export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder }) {
+export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaultLedgerPath(), keep = false, exec, checkRun, log = console.log, fixture = readFixture(), tasksFolder, pack }) {
   const steps = plan({ tasks, runs, resultsDir, arm: arm.name, model: arm.model })
   const plugin = stagePlugin(arm.pluginDir, join(mkdtempSync(join(tmpdir(), 'claudalisk-bench-plugin-')), 'plugin'))
   const claudeCommit = await pluginCommit(arm.pluginDir)
@@ -135,7 +138,7 @@ export async function runAll({ arm, tasks, runs, resultsDir, ledgerPath = defaul
     for (const step of steps) {
       const task = loadTask(step.task, tasksFolder)
       log(`${arm.name} ${arm.model} ${step.task} repeat ${step.repeat}`)
-      const record = await runOnce({ arm, task, repeat: step.repeat, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
+      const record = await runOnce({ arm, task, repeat: step.repeat, pack, plugin, claudeCommit, fixture, resultsDir, ledgerPath, keep, exec, checkRun })
       records.push(record)
       log(`  ${record.accepted ? 'accepted' : 'rejected'} (${record.subtype}), $${record.totalCostUsd.toFixed(2)}, ${record.turns} turns, ${record.subagents} subagents`)
     }
