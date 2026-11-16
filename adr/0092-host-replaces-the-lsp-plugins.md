@@ -46,8 +46,8 @@ Claude Code 2.1.316's LSP client, read from its bundled code, starts one set of 
 - **Not `.lsp.json`.** Claude Code's client only receives pushed diagnostics, and neither Roslyn nor TypeScript 7 pushes. A `.lsp.json` with the host's servers would give D1 for YAML only. A `.lsp.json` with csharp-ls would keep a second C# server beside the host.
 - **D1 is a PostToolUse hook on `Edit`, `Write` and `MultiEdit`.**
   - It finds the worktree that holds the edited file and asks that worktree's host for the file's diagnostics.
-  - It returns them as `additionalContext`, one line each: `path:line:col severity code message`. It prints nothing when there are none.
-  - It has a deadline. When the host is not ready in time, it prints nothing and exits 0, so it never blocks an edit.
+  - It returns errors and warnings as `additionalContext`, one line each: `path:line:col severity code message`. It shows at most 20 and counts the rest. It prints nothing when there are none.
+  - It has a deadline and always exits 0, so it never blocks an edit. When the host is still loading, misses the deadline or fails, it prints one line saying that the edit is unchecked and why, so a missing answer never reads as a clean file (CLA-0088).
   - Hooks load in the CLI, the Desktop app and `claude -p` (CLA-0088).
 - **The host starts at session start.** A SessionStart hook starts the worktree's host in the background, so that the C# server has loaded before the first edit. A cold C# server needs 6 to 14 s, which is longer than the hook's deadline.
 - **One host per worktree.** It listens on a named pipe on windows and a unix socket elsewhere, both named from a hash of the worktree root. It roots every server in that worktree and opens the C# solution by path, as the measured isolation needs. Sessions in the same worktree share it.

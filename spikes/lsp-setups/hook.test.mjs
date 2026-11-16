@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_DEADLINE_MS, diagnosticsText, formatDiagnostics, inputOf, outputFor } from './post-edit-hook.mjs'
+import { DEFAULT_DEADLINE_MS, diagnosticsText, formatDiagnostics, inputOf, notReady, outputFor, unavailable } from './post-edit-hook.mjs'
 import { endpointFor, isAbsent, request } from './lib/daemon-protocol.mjs'
 import { normalizeRoot } from './lib/common.mjs'
 
@@ -78,11 +78,28 @@ test('diagnostics are compact path:line:col lines and only errors and warnings a
   assert.deepEqual(JSON.parse(outputFor(text)), { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } })
 })
 
-test('when no daemon answers within the deadline the hook gives up with no text and starts the daemon once', async () => {
+test('more than twenty errors and warnings end with a count of the ones left out', () => {
+  const root = join(tmpdir(), 'app')
+  const many = Array.from({ length: 23 }, (_, i) => ({ line: i + 1, character: 1, severity: 'error', code: 'CS0103', message: 'x' }))
+  const lines = formatDiagnostics(root, join(root, 'a.cs'), many).split('\n')
+  assert.equal(lines.length, 21)
+  assert.equal(lines[20], 'a.cs: 3 more errors and warnings not shown')
+})
+
+test('a host that is loading or failed is reported, never shown as a clean file', async () => {
+  const root = worktree()
+  const file = join(root, 'a.cs')
+  assert.equal(await diagnosticsText({ file, root }, { deadlineMs: 400, start: () => {}, ask: async () => ({ ok: true, pending: true }) }), notReady(file))
+  assert.equal(await diagnosticsText({ file, root }, { deadlineMs: 400, start: () => {}, ask: async () => ({ ok: false, error: 'restore failed' }) }), unavailable(file, 'restore failed'))
+  assert.match(notReady(file), /^csharp diagnostics for .* not ready/)
+  rmSync(root, { recursive: true, force: true })
+})
+
+test('when no daemon answers within the deadline the hook says the edit is unchecked and starts the daemon once', async () => {
   const root = worktree()
   const started = []
   const text = await diagnosticsText({ file: join(root, 'a.yml'), root }, { deadlineMs: 400, start: (r) => started.push(r), ask: async () => Promise.reject(Object.assign(new Error('absent'), { code: 'ENOENT' })) })
-  assert.equal(text, '')
+  assert.equal(text, notReady(join(root, 'a.yml')))
   assert.deepEqual(started, [root])
   assert.equal(isAbsent({ code: 'ECONNREFUSED' }), true)
   rmSync(root, { recursive: true, force: true })
@@ -96,7 +113,8 @@ test('the hook starts the daemon when it is absent, prints the diagnostics once 
     for (let attempt = 0; attempt < 10 && !printed; attempt++) {
       const run = await runHook(editInput(root, file), { CLAUDALISK_LSP_HOOK_DEADLINE_MS: '4000' })
       assert.equal(run.status, 0)
-      if (run.stdout.trim()) printed = JSON.parse(run.stdout)
+      const output = run.stdout.trim() ? JSON.parse(run.stdout) : undefined
+      if (output && !/not ready/.test(output.hookSpecificOutput.additionalContext)) printed = output
     }
     assert.ok(printed, 'the hook never printed diagnostics')
     assert.equal(printed.hookSpecificOutput.hookEventName, 'PostToolUse')

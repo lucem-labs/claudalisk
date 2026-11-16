@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { chooseSolution } from '../../lsp-host/lib/solution.mjs'
 import { restoreSolution } from '../../lsp-host/lib/servers.mjs'
 import { uriOf } from '../../lsp-host/lib/edits.mjs'
+import { spawnArguments } from '../../../tools/registry.mjs'
 import { spikeDirectory } from './common.mjs'
 
 export const YAML_SETTINGS = { yaml: { validate: true, schemaStore: { enable: true } } }
@@ -19,7 +20,8 @@ export function globalDotnetTool(name) {
 let npmRoot
 export function globalNpmRoot() {
   if (npmRoot === undefined) {
-    const result = spawnSync('npm', ['root', '-g'], { encoding: 'utf8', shell: process.platform === 'win32', windowsHide: true })
+    const [file, args, options] = spawnArguments('npm', ['root', '-g'], spikeDirectory)
+    const result = spawnSync(file, args, { ...options, stdio: 'pipe', encoding: 'utf8', windowsHide: true })
     npmRoot = result.status === 0 ? result.stdout.trim() : ''
   }
   return npmRoot

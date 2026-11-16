@@ -43,6 +43,8 @@ function serverFor(language) {
       entry.readyAt = Date.now()
     } catch (error) {
       entry.failed = String(error.message ?? error).slice(0, 400)
+      if (servers.get(language) === entry) servers.delete(language)
+      entry.instance?.stop().catch(() => {})
       throw error
     }
   })()
@@ -99,22 +101,23 @@ async function handle(message) {
 
 const server = net.createServer((socket) => {
   let buffer = ''
+  let answered = Promise.resolve()
   socket.setEncoding('utf8')
   socket.on('error', () => {})
-  socket.on('data', async (chunk) => {
+  socket.on('data', (chunk) => {
     buffer += chunk
     for (let end = buffer.indexOf('\n'); end >= 0; end = buffer.indexOf('\n')) {
       const line = buffer.slice(0, end)
       buffer = buffer.slice(end + 1)
-      let message
-      try {
-        message = JSON.parse(line)
-      } catch {
-        socket.write(`${JSON.stringify({ ok: false, error: 'not JSON' })}\n`)
-        continue
-      }
-      const answer = await handle(message)
-      if (!socket.destroyed) socket.write(`${JSON.stringify(answer)}\n`)
+      answered = answered.then(async () => {
+        let answer
+        try {
+          answer = await handle(JSON.parse(line))
+        } catch {
+          answer = { ok: false, error: 'not JSON' }
+        }
+        if (!socket.destroyed) socket.write(`${JSON.stringify(answer)}\n`)
+      })
     }
   })
 })

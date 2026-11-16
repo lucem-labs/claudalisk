@@ -25,12 +25,16 @@ export function findRoot(file, fallback) {
 
 export function formatDiagnostics(root, file, diagnostics) {
   const path = relative(root, file).replaceAll('\\', '/')
-  return diagnostics
-    .filter((diagnostic) => REPORTED.has(diagnostic.severity))
+  const reported = diagnostics.filter((diagnostic) => REPORTED.has(diagnostic.severity))
+  const lines = reported
     .slice(0, MAX_LINES)
     .map((d) => `${path}:${d.line}:${d.character} ${d.severity} ${d.code ? `${d.code} ` : ''}${d.message}`)
-    .join('\n')
+  if (reported.length > MAX_LINES) lines.push(`${path}: ${reported.length - MAX_LINES} more errors and warnings not shown`)
+  return lines.join('\n')
 }
+
+export const notReady = (file) => `${languageOf(file)} diagnostics for ${file} not ready: the language server is still loading, so this edit is unchecked`
+export const unavailable = (file, error) => `${languageOf(file)} diagnostics for ${file} unavailable: ${error ?? 'the host gave no reason'}`
 
 export function outputFor(text) {
   if (!text) return ''
@@ -66,10 +70,12 @@ export async function diagnosticsText({ file, root }, { deadlineMs, start = star
     const remaining = until - Date.now()
     try {
       const answer = await ask(endpoint, { id: 1, method: 'diagnostics', file, deadlineMs: Math.max(0, remaining - 150) }, { timeoutMs: remaining })
-      if (!answer.ok || answer.pending || answer.skipped) return ''
+      if (answer.skipped) return ''
+      if (!answer.ok) return unavailable(file, answer.error)
+      if (answer.pending) return notReady(file)
       return formatDiagnostics(root, file, answer.diagnostics ?? [])
     } catch (error) {
-      if (!isAbsent(error)) return ''
+      if (!isAbsent(error)) return notReady(file)
       if (!started) {
         started = true
         start(root)
@@ -77,7 +83,7 @@ export async function diagnosticsText({ file, root }, { deadlineMs, start = star
       await sleep(40)
     }
   }
-  return ''
+  return notReady(file)
 }
 
 export async function main({ stdin = process.stdin, stdout = process.stdout, env = process.env } = {}) {
