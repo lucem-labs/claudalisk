@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "csharp-ls": {
+      "version": "0.28.0",
+      "commands": [
+        "csharp-ls"
+      ],
+      "rollForward": false
+    },
+    "roslyn-language-server": {
+      "version": "5.13.0-1.26514.10",
+      "commands": [
+        "roslyn-language-server"
+      ],
+      "rollForward": false
+    }
+  }
+}

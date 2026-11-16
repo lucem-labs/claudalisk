@@ -1,0 +1,9 @@
+name: Lsp case
+on:
+  push:
+    branches: [main]
+jobs:
+  check:
+    stepz:
+      - uses: actions/checkout@v4
+      - run: echo checked
