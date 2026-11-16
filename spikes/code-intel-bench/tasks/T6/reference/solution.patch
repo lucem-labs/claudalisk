@@ -1,0 +1,15 @@
+diff --git a/backend/Bench.Modules.Billing/Shared/Formatting/InvoiceText.cs b/backend/Bench.Modules.Billing/Shared/Formatting/InvoiceText.cs
+index d6fd16a..e7e7564 100644
+--- a/backend/Bench.Modules.Billing/Shared/Formatting/InvoiceText.cs
++++ b/backend/Bench.Modules.Billing/Shared/Formatting/InvoiceText.cs
+@@ -20,9 +20,8 @@ public static class InvoiceText
+ 
+     public static string PaymentReminder(string customer, decimal amount)
+     {
+-        var label = customer.Trim().PadRight(10, '.');
+         var rounded = Math.Round(amount, 2).ToString("F2", CultureInfo.InvariantCulture);
+-        return $"PAYMENT REMINDER:{label}:{rounded}:END-3";
++        return $"Dear {customer.Trim()}, please pay {rounded} within 14 days.";
+     }
+ 
+     public static string LateFeeNotice(string customer, decimal amount)

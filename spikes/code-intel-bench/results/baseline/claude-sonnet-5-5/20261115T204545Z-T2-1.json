@@ -1,0 +1,61 @@
+{
+  "arm": "baseline",
+  "task": "T2",
+  "repeat": 1,
+  "at": "2026-11-15T20:45:45.487Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "totalCostUsd": 0.15852539999999998,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1519,
+      "output": 3331,
+      "cacheRead": 32075,
+      "cacheCreation": 15030,
+      "costUsd": 0.0040169
+    },
+    "claude-sonnet-5-5": {
+      "input": 18,
+      "output": 3609,
+      "cacheRead": 282585,
+      "cacheCreation": 22531,
+      "costUsd": 0.1545085
+    }
+  },
+  "turns": 18,
+  "subagents": 1,
+  "wallMs": 80602,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "schema.d.ts and the other schemas",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden backend tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

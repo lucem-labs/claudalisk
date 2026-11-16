@@ -1,0 +1,56 @@
+{
+  "arm": "baseline",
+  "task": "T1",
+  "repeat": 1,
+  "at": "2026-11-15T20:43:20.270Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "totalCostUsd": 0.13280350999999999,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1454,
+      "output": 2606,
+      "cacheRead": 37131,
+      "cacheCreation": 12084,
+      "costUsd": 0.00333021
+    },
+    "claude-sonnet-5-5": {
+      "input": 14,
+      "output": 2671,
+      "cacheRead": 205433,
+      "cacheCreation": 20548,
+      "costUsd": 0.1294733
+    }
+  },
+  "turns": 4,
+  "subagents": 1,
+  "wallMs": 69662,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "the old names are gone",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "hidden tests",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "architecture tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

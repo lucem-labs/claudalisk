@@ -1,0 +1,81 @@
+diff --git a/backend/Bench.Modules.Ordering/Shared/Orders/OrderResponse.cs b/backend/Bench.Modules.Ordering/Shared/Orders/OrderResponse.cs
+index 5cdabe9..cf0838e 100644
+--- a/backend/Bench.Modules.Ordering/Shared/Orders/OrderResponse.cs
++++ b/backend/Bench.Modules.Ordering/Shared/Orders/OrderResponse.cs
+@@ -5,7 +5,7 @@ namespace Bench.Modules.Ordering.Shared.Orders;
+ 
+ public sealed record OrderResponse(
+     Guid Id,
+-    string Name,
++    string Label,
+     long Version,
+     [property: JsonPropertyName(Hal.LinksMember)] HalLinks Links,
+     [property: JsonPropertyName(Hal.ActionsMember)] HalActions Actions);
+diff --git a/frontend/src/entities/order/model/order.test.ts b/frontend/src/entities/order/model/order.test.ts
+index 0b98c6d..445d648 100644
+--- a/frontend/src/entities/order/model/order.test.ts
++++ b/frontend/src/entities/order/model/order.test.ts
+@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
+ 
+ import { calculateTotal, labelOf, toOrder } from './order'
+ 
+-const response = { id: '1', name: ' First ', version: 1, _links: {}, _actions: {} }
++const response = { id: '1', label: ' First ', version: 1, _links: {}, _actions: {} }
+ 
+ describe('order', () => {
+   it('totals the quantity times the unit price of every line', () => {
+diff --git a/frontend/src/entities/order/model/order.ts b/frontend/src/entities/order/model/order.ts
+index 1bb6d3f..f5c79bc 100644
+--- a/frontend/src/entities/order/model/order.ts
++++ b/frontend/src/entities/order/model/order.ts
+@@ -16,11 +16,11 @@ export type Order = {
+ }
+ 
+ export function toOrder(response: OrderResponse, lines: readonly OrderLine[] = []): Order {
+-  return { id: response.id, name: response.name, version: response.version, lines }
++  return { id: response.id, name: response.label, version: response.version, lines }
+ }
+ 
+ export function labelOf(response: OrderResponse): string {
+-  return response.name.trim()
++  return response.label.trim()
+ }
+ 
+ export function calculateTotal(order: Order): number {
+diff --git a/frontend/src/entities/order/ui/order-title.tsx b/frontend/src/entities/order/ui/order-title.tsx
+index 69b5126..a0c345b 100644
+--- a/frontend/src/entities/order/ui/order-title.tsx
++++ b/frontend/src/entities/order/ui/order-title.tsx
+@@ -1,5 +1,5 @@
+ import type { OrderResponse } from '../model/order'
+ 
+ export function OrderTitle({ response }: { response: OrderResponse }) {
+-  return <h2>{response.name}</h2>
++  return <h2>{response.label}</h2>
+ }
+diff --git a/frontend/src/pages/orders/ui/orders-page.tsx b/frontend/src/pages/orders/ui/orders-page.tsx
+index 76ca01e..ed92dbd 100644
+--- a/frontend/src/pages/orders/ui/orders-page.tsx
++++ b/frontend/src/pages/orders/ui/orders-page.tsx
+@@ -10,7 +10,7 @@ export function OrdersPage({ orders, focusId }: { orders: readonly Order[]; focu
+   const biggest = biggestOrder(orders)
+   return (
+     <>
+-      {focus.data ? <OrderTitle response={{ id: focus.data.id, name: focus.data.name, version: focus.data.version, _links: {}, _actions: {} }} /> : null}
++      {focus.data ? <OrderTitle response={{ id: focus.data.id, label: focus.data.name, version: focus.data.version, _links: {}, _actions: {} }} /> : null}
+       <OrderBoard orders={orders} />
+       {biggest ? <p>Biggest: {summarizeOrder(biggest)}</p> : null}
+       <a href={`data:text/csv,${encodeURIComponent(ordersToCsv(orders))}`}>Download</a>
+diff --git a/frontend/src/shared/api/schema.d.ts b/frontend/src/shared/api/schema.d.ts
+index bfff81a..ad4f0c1 100644
+--- a/frontend/src/shared/api/schema.d.ts
++++ b/frontend/src/shared/api/schema.d.ts
+@@ -436,7 +436,7 @@ export interface components {
+         };
+         OrderResponse: {
+             id: string;
+-            name: string;
++            label: string;
+             version: number;
+             _links: {
+                 [key: string]: components["schemas"]["HalLink"];

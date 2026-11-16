@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos, and the benchmark from #202
-- **Issue:** #201, #200
+- **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos; the benchmark in `spikes/code-intel-bench/`, whose own CI job runs its tests on the same three
+- **Issue:** #201, #200, #202
 
 ## Context
 
@@ -35,7 +35,13 @@ What the evidence in #200 shows:
   - Claudalisk's own tests prove it on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse it.
   - When a generated app's CI needs a binary these tools use, such as a language server, the binary goes into the DinD runner image in `lucem-labs/github-runner-dind`, and apps pick it up through the `RUNNER_IMAGE` pin (CLA-0086). It is never installed per job.
 - **Every feature works in the CLI, the Desktop app and `claude -p`.** It ships as plugin parts that every surface loads, such as hooks, agents, MCP servers and LSP servers. Nothing depends on a Claude Code feature that only some surfaces have, such as Code Mode. If the interface spike picks a code-execution style of calling tools, claudalisk builds its own.
-- **A change is accepted only on measurement.** A code-intelligence change is accepted when the benchmark from #202 shows that cost per accepted task drops, or holds while correctness rises. Token counts per call and output sizes are not evidence on their own. A loop guard or tool-output compression is built only if a transcript spike first shows that the waste exists, as #146 did.
+- **A change is accepted only on measurement.** A code-intelligence change is accepted when the benchmark shows that cost per accepted task drops, or holds while correctness rises. Token counts per call and output sizes are not evidence on their own. A loop guard or tool-output compression is built only if a transcript spike first shows that the waste exists, as #146 did.
+  - **The measuring instrument is `spikes/code-intel-bench/`.** It generates a pinned fixture app, gives an agent each of seven tasks in a fresh copy, runs hidden tests the agent never sees, and records cost, tokens, turns, subagents, wall time and the hidden-test result of every run. An arm is a plugin directory, a settings file and a list of models. The baseline is the plugin at the current commit. The baseline and every arm run on both `claude-opus-5-5` and `claude-sonnet-5-5`, and each model is reported and judged on its own, never pooled. Every run passes `--setting-sources project,local`, so the settings and plugins of the user who runs it never reach a measured run, and each run's record holds its arguments.
+  - **The unit of comparison is the repeat:** one pass over the seven tasks. Each arm and the baseline run 3 repeats. A repeat's cost per accepted task is its total cost divided by the number of its runs that passed, and is infinite when none passed. A run that exceeds its budget counts as failed, with its cost.
+  - **An arm is compared with the baseline on the same model.** The rules below give one verdict per model.
+  - **An arm lowers cost only when both hold.** Separation: every one of its 3 repeats costs less per accepted task than every one of the baseline's 3. With no real difference all 6 orderings are equally likely, so full separation happens by chance 1 time in 20, a 5% false-positive rate that assumes no distribution. Size: its mean cost per accepted task is at least 10% below the baseline's.
+  - **An arm holds cost while correctness rises** when its mean cost per accepted task is not above the baseline's highest repeat, it passes at least 2 more of the 21 runs, and no task passes fewer runs than in the baseline.
+  - **Anything else is no effect, and the change is not accepted.** The harness stops starting runs when the next run's cap would take the total spend past $150. The spend is kept in one ledger per machine, outside any checkout, so every worktree and session shares the cap, and each run reserves its cap before it starts, so a run that never ends stays charged.
 - **The catalogue below lists what code intelligence means here, with a decision for each feature.** Ids are stable: a later ADR amends a row by its id, and an id is never renumbered or reused. A new feature takes the next free number in its letter's group. "Build" means build it and keep it if it passes the benchmark. "Spike" means a code experiment decides first. The savings it targets are:
   - **turns:** fewer model round trips;
   - **reads:** less file content in context;
@@ -81,6 +87,6 @@ What the evidence in #200 shows:
 - Each tool's CI job runs three times, once per operating system, so a bug that shows on one of them fails CI before it reaches an app.
 - Adding a binary for apps' CI is a change in `lucem-labs/github-runner-dind` and a pin bump in each `runners.env`, not a line in every app's workflow.
 - A surface-limited Claude Code feature can be cheaper on one surface and still not be used. Claudalisk builds its own equivalent instead.
-- The benchmark has a budget of about $150 in total, so each result rests on a few runs per setup, and #202 says how a drop is told apart from noise.
+- The benchmark has a budget of about $150 in total, so each result rests on a few runs per setup, and the noise rule in the decision tells a drop from noise.
 - The spikes in #200 record their decisions as ADRs CLA-0089 to CLA-0096, each amending the rows it settles.
 - The ADRs carry no product names, so a reader who wants a source follows the `Issue:` link to #200 or #201.

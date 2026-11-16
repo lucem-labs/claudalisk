@@ -1,0 +1,69 @@
+{
+  "arm": "baseline",
+  "task": "T7",
+  "repeat": 2,
+  "at": "2026-11-15T22:58:06.651Z",
+  "claudaliskCommit": "4fff35be24e30f1b1ae9ec42a75b53166e781803",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-opus-5-5",
+  "settingSources": "project,local",
+  "claudeArguments": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--plugin-dir",
+    "C:\\Users\\KACPER~1\\AppData\\Local\\Temp\\claudalisk-bench-plugin-Dy9cMb\\plugin",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "C:\\git\\claudalisk-202\\spikes\\code-intel-bench\\arms\\baseline\\settings.json",
+    "--model",
+    "claude-opus-5-5",
+    "--max-budget-usd",
+    "3",
+    "--permission-mode",
+    "bypassPermissions"
+  ],
+  "totalCostUsd": 0.22884711500000002,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1489,
+      "output": 1930,
+      "cacheRead": 21489,
+      "cacheCreation": 8121,
+      "costUsd": 0.0023439150000000002
+    },
+    "claude-opus-5-5": {
+      "input": 14,
+      "output": 2471,
+      "cacheRead": 200096,
+      "cacheCreation": 17126,
+      "costUsd": 0.22650320000000004
+    }
+  },
+  "turns": 9,
+  "subagents": 1,
+  "wallMs": 77937,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the function ships with its test",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend typecheck",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "name": "frontend tests",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

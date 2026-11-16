@@ -1,0 +1,41 @@
+{
+  "arm": "baseline",
+  "task": "T5",
+  "repeat": 1,
+  "at": "2026-11-15T20:50:32.542Z",
+  "claudaliskCommit": "5ad9f66dd34a490e1c7a6989214d21600b7d89c4",
+  "fixtureHead": "e997f8df2db0963fd2caa7b7b4783e179e2d336e",
+  "model": "claude-sonnet-5-5",
+  "settingSources": "project,local",
+  "totalCostUsd": 0.095580695,
+  "models": {
+    "claude-haiku-5-5": {
+      "input": 1514,
+      "output": 4166,
+      "cacheRead": 41602,
+      "cacheCreation": 8315,
+      "costUsd": 0.003689795
+    },
+    "claude-sonnet-5-5": {
+      "input": 10,
+      "output": 1466,
+      "cacheRead": 136749,
+      "cacheCreation": 15884,
+      "costUsd": 0.09189090000000001
+    }
+  },
+  "turns": 2,
+  "subagents": 1,
+  "wallMs": 42529,
+  "isError": false,
+  "subtype": "success",
+  "completed": true,
+  "checks": [
+    {
+      "name": "the answer lists exactly the calls",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "accepted": true
+}

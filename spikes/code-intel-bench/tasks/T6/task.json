@@ -1,0 +1,30 @@
+{
+  "id": "T6",
+  "title": "Replace one method body in a large file",
+  "features": [
+    "E4"
+  ],
+  "prompt": "In the Billing module, the static class InvoiceText (backend/Bench.Modules.Billing/Shared/Formatting/InvoiceText.cs) has many formatting methods. Replace the body of PaymentReminder(string customer, decimal amount) so that it returns the text Dear {customer trimmed}, please pay {amount rounded to 2 places, formatted with F2 and the invariant culture} within 14 days. For example, PaymentReminder(\"  acme  \", 1234.567m) returns \"Dear acme, please pay 1234.57 within 14 days.\". Keep its signature, and change no other method.",
+  "checks": [
+    {
+      "name": "the backend builds, tests included",
+      "command": [
+        "dotnet",
+        "build",
+        "backend/Bench.slnx",
+        "--nologo",
+        "--verbosity",
+        "quiet"
+      ]
+    },
+    {
+      "name": "hidden tests",
+      "command": [
+        "dotnet",
+        "test",
+        "--project",
+        "backend/Bench.Hidden.T6.Tests/Bench.Hidden.T6.Tests.csproj"
+      ]
+    }
+  ]
+}
