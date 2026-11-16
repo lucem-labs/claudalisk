@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); the spike measurements below, including the edit-applier rules and the capability probe
+- **Enforced by:** reviewer (CLA-0023); from #208 on, the shipped host's tests of the edit-applier rules and the capability probe
 - **Issue:** #203, #200
 
 ## Context
@@ -46,7 +46,7 @@ What the three OSes showed:
   - It sends diagnostics only when asked (`textDocument/diagnostic`). Source actions come back only when the request lists them in `only`. At the error sites of the cases it returned no quick fix.
   - It does not advertise type hierarchy, and offers no extract, inline or move.
 - **Diagnostics: where the client advertises pull, no server pushes; where it does not, only csharp-ls does.** The spike broke the build with one edit and waited 20 s for `textDocument/publishDiagnostics`, twice per server. With the client advertising `textDocument.diagnostic`, none of the three pushed, and all three answered `textDocument/diagnostic` with the error. With the client not advertising it, csharp-ls pushed the error (2 diagnostics), and Roslyn and TypeScript still pushed nothing and are unsupported there, on all three OSes. So Roslyn and TypeScript can give diagnostics only by pull, and csharp-ls's push is switched off by a client that advertises pull. The host advertises pull and pulls diagnostics after each edit for D1 and on request for D2. It does not wait for a push.
-- **The host applies a `WorkspaceEdit` by these rules.** The spike implements them with a test for each, and the host that ships carries the same tests.
+- **The host applies a `WorkspaceEdit` by these rules.** The spike implements them with a test for each; the host that #208 ships must carry the same tests.
   - **Shapes:** `changes`, `documentChanges` with `TextDocumentEdit`, and the resource operations `CreateFile`, `RenameFile` and `DeleteFile` with `overwrite`, `ignoreIfExists`, `ignoreIfNotExists` and `recursive`. The client advertises `failureHandling: abort`.
   - **Positions are UTF-16 code units.** A character past the end of a line is clamped to the end. A line past the end of the document is refused.
   - **Edits in one document apply from the end to the start.** Inserts at one position keep the order they were sent in.
