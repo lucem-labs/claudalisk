@@ -15,7 +15,7 @@
   - An agent starts it with `node tools/proxy.mjs up`, which creates the network, refuses when another container holds the port, and starts the proxy only if it is not running. `recreate` rebuilds it for a version bump and needs the owner's yes. There is no `down`.
   - Traefik is pinned to v3.6.1 or later, by tag and digest, which Docker Engine 29 needs.
 - **CI runners.** Ephemeral containerised runners (Docker-in-Docker) run on the owner's machine. Apps carry only a runner label (`ci`). The runners refuse public repositories, because a pull request from anyone would run code on the owner's machine.
-- **No deploy runner.** No runner has the host's Docker. The agent deploys uat with the app's guarded deploy script (CLA-0030).
+- No runner has the host's Docker (CLA-0030). CLA-0086 decides how the runner stack is built and guarded.
 - An app never stops, restarts or reconfigures the proxy or the runners. It never touches the containers, projects or volumes of another app, because the uat of that app depends on them.
 
 ## Consequences

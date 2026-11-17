@@ -26,7 +26,7 @@ It creates, in `backend/`:
 | Project | Holds |
 |---|---|
 | `<Root>.Modules.<Name>` | The module class and one folder per feature with its controller, DTOs, handler, validator and mapping (CLA-0005, CLA-0047). Response DTOs used by several features are in `Shared/<Plural>/` |
-| `.Interfaces` | Only messages and the module marker (CLA-0067) |
+| `.Interfaces` | Only messages and the module marker (CLA-0003) |
 | `.Domain` | The aggregate (CLA-0048) |
 | `.Persistence`, `.Persistence.Interfaces` | The DbContext in the module's own schema, the store and its contract, and one baseline migration (CLA-0007, CLA-0051) |
 | `.Tests` | Domain, Feature and API tests in folders that mirror the features (CLA-0064, CLA-0070) |

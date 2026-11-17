@@ -15,12 +15,7 @@ These never appear in commits, pull requests, issues or comments:
 
 Test fixtures are allowed. Example env files hold placeholders that cannot work, never a usable password.
 
-**CI checks every push** (CLA-0071):
-
-- **Secrets:** the gitleaks CLI scans the pushed commits and fails on a finding. It runs the CLI directly, because gitleaks-action needs a licence on organization repositories.
-- **Files:** a check fails when a pushed commit adds a file that matches a forbidden pattern: an env file other than `*.example`, a dump or backup, or a `*.local.json` file.
-
-A secret scanner cannot recognise real data or screenshots. The file check and review cover those.
+**CI checks every push** with a secret scan and a forbidden-file check (CLA-0071). The gitleaks CLI runs directly, because gitleaks-action needs a licence on organization repositories. A secret scanner cannot recognise real data or screenshots, so the file check and review cover those.
 
 ## Consequences
 

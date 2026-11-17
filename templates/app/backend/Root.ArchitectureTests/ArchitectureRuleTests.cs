@@ -104,7 +104,7 @@ public sealed class ArchitectureRuleTests
 
     [Fact]
     public void CLA0047_FeaturesDoNotReferenceEachOther() =>
-        Rule.Holds("CLA-0047 and CLA-0050 features do not reference each other", Part(""), Rules.FeaturesDoNotReferenceEachOther);
+        Rule.Holds("CLA-0047 features do not reference each other", Part(""), Rules.FeaturesDoNotReferenceEachOther);
 
     [Fact]
     public void CLA0048_DomainProjectsReferenceOnlySharedAndDomainPackage() =>
@@ -115,8 +115,8 @@ public sealed class ArchitectureRuleTests
         Rule.Holds("CLA-0049 controllers depend only on the dispatcher and their feature's types", [.. Rules.Controllers(Implementation)], Rules.ControllersDependOnlyOnTheDispatcher);
 
     [Fact]
-    public void CLA0050_SharedDoesNotReferenceFeatures() =>
-        Rule.Holds("CLA-0050 Shared does not reference Features", [.. Part("").SelectMany(project => project.Sources).Where(source => source.Path.StartsWith("Shared/", StringComparison.Ordinal))], Rules.SharedDoesNotReferenceFeatures);
+    public void CLA0047_SharedDoesNotReferenceFeatures() =>
+        Rule.Holds("CLA-0047 Shared does not reference Features", [.. Part("").SelectMany(project => project.Sources).Where(source => source.Path.StartsWith("Shared/", StringComparison.Ordinal))], Rules.SharedDoesNotReferenceFeatures);
 
     [Fact]
     public void CLA0051_IdentifiersFitPostgres() =>
@@ -163,8 +163,8 @@ public sealed class ArchitectureRuleTests
         Rule.Holds("CLA-0064 every module has a test project", App.ModuleNames, scanned => Rules.EveryModuleHasPart(scanned, App.Projects, Naming, "Tests"));
 
     [Fact]
-    public void CLA0067_InterfacesHoldOnlyMessagesAndTheMarker() =>
-        Rule.Holds("CLA-0067 Interfaces projects hold only messages and the module marker", Interfaces, Rules.InterfacesHoldOnlyMessagesAndTheMarker);
+    public void CLA0003_InterfacesHoldOnlyMessagesAndTheMarker() =>
+        Rule.Holds("CLA-0003 Interfaces projects hold only messages and the module marker", Interfaces, Rules.InterfacesHoldOnlyMessagesAndTheMarker);
 
     [Fact]
     public void CLA0068_EventHandlersStayOutOfTheUnitOfWork() =>

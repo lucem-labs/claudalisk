@@ -63,7 +63,7 @@ Show the plan first. It changes nothing:
 node "${CLAUDE_PLUGIN_ROOT}/tools/new-app.mjs" finish <folder> --dry-run
 ```
 
-It lists creating the private repository and pushing `main`, the labels `epic` and `needs-design-review` (CLA-0087), registering the app in `~/.claudalisk/apps.json` (CLA-0082) and enrolling it with the runners (CLA-0086).
+It lists creating the private repository and pushing `main`, the labels `epic` and `needs-design-review` (CLA-0021), registering the app in `~/.claudalisk/apps.json` (CLA-0082) and enrolling it with the runners (CLA-0086).
 
 Ask the owner before running it for real, and name the repository. Then:
 

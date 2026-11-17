@@ -29,17 +29,29 @@ dotnet ef migrations add <Name> --project <Module>.Persistence --startup-project
 - A cleanup or backfill is a raw-SQL migration on the module's own schema, never the DbContext. It is tried on dev with uat data first (CLA-0012).
 - Review the generated file and the snapshot diff for changes you did not intend.
 
+### Writing a data fix
+
+- Put the data change in `Up()` through `migrationBuilder.Sql(...)`, written against the schema as it exists at that step. Code that uses today's model breaks when the model changes.
+- Order the steps inside the migration: add the column or table as nullable or unconstrained, then clean up or backfill, then tighten the constraint (`NOT NULL`, unique index, foreign key). Bad rows block a constraint, so clean them up first.
+- Check each precondition and raise when it is missing, for example `DO $$ BEGIN IF to_regclass('<schema>.<table>') IS NULL THEN RAISE EXCEPTION '...'; END IF; END $$`. A precondition is something an earlier migration of the module created, never a row count.
+- A statement that cannot run in a transaction, such as `CREATE INDEX CONCURRENTLY` or `VACUUM`, uses `migrationBuilder.Sql(..., suppressTransaction: true)`.
+- A big `DELETE` or `UPDATE` can hold locks and hit the command timeout. Batch it, or raise the migration command timeout for that deploy. A fix that takes longer than a deploy should is a `needs-design-review` issue (CLA-0022), never a startup task.
+- `Down()` undoes the schema change but cannot bring deleted rows back. When the data matters, copy the affected rows to a backup table first. Otherwise the pre-deploy backup is the way back (CLA-0031).
+- The fix is a no-op on an empty database, apart from queueing a read-model rebuild, so the fresh-database test still passes.
+- Refresh dev from uat (CLA-0032), deploy dev, which runs the migration, and check the result before you open the pull request.
+- A read model fed by another module is seeded by a rebuild job that the migration queues through the jobs library's migration helper, by a fixed job name and a dedupe key (CLA-0012, CLA-0068). `Down()` removes the job by that key while it is still queued.
+
 ## 3. Test it
 
 Migrations are a deploy step (CLA-0008). The API refuses to start with pending migrations and seeds nothing, so a test that starts the API does not apply them. Never patch the schema in a test fixture to work around a migration (CLA-0011).
 
-Run the fresh-database test every time, and with a data fix also the tests of the code that reads the data (CLA-0016):
+Run the fresh-database test every time, and with a data fix also the tests of the code that reads the data (CLA-0070):
 
 ```
 dotnet test --project backend/<Root>.Api.Tests/<Root>.Api.Tests.csproj --filter-method "*FreshDatabaseMigrates"
 ```
 
-It migrates a fresh, empty PostgreSQL database up end to end, then down, then up again. The test is generated for the app with #17 of claudalisk. Until it exists, report that it was not run.
+It migrates a fresh, empty PostgreSQL database up end to end, then down, then up again. The app template ships it in `<Root>.Api.Tests`. An app that lacks it reports that it was not run.
 
 ## 4. Apply and verify on dev
 

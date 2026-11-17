@@ -19,13 +19,11 @@ A session starts without knowing which commit dev and uat run, which pull reques
   - `dev runs <ref>@<sha7>; uat runs <ref>@<sha7>`, from `GET /api/health` on `<hostPrefix>.dev.localhost` and `<hostPrefix>.uat.localhost`;
   - the current branch and its open pull request number, if any;
   - the open pull request whose head is the ref uat runs, and that it awaits the owner's review.
-- **The hook connects to 127.0.0.1 and sends the name in the `Host` header,** the way `curl --resolve` does, on the port the proxy registration records, 80 by default. The two requests run in parallel with a 500 ms timeout each. An environment with no answer reads `dev is down` or `uat is down`.
-- **A 503 still has a JSON body,** so the hook reports the ref and sha the body gives, with the status code and state.
-- **When uat gives no answer, the hook falls back to the latest GitHub `uat` deployment** (CLA-0030), read through `gh api`. A deployment's `ref` is its commit sha, so the branch and pull request come from the commit's pull requests. The line says it is the last recorded deployment and not a live reading, and a pull request found this way reads as the one uat last showed.
-- **Text from the health body and GitHub is reduced to the characters a ref or state uses, with a length limit,** because it goes into the session's context. A `-dirty` sha keeps its marker.
-- **`gh` runs asynchronously with a timeout of about 2 seconds,** and the hook as a whole answers within 4.5 seconds, inside the 5 second limit it is registered with. Any failure drops that one line.
-- **One more line reports the shared runners** (CLA-0086): the state of the stack that serves the app's repository, its supervisor, the runners online and busy, and whether the repository is in the runner group. It reads the registry, `docker ps` and read-only `gh api` calls in parallel with the other probes, says `unknown` for a part whose call failed, and says that no stack serves the repository when the registry has none. A registry that cannot be read leaves the line out.
-- **It never blocks a session.** An unreadable input, a broken config or any other error prints nothing and exits 0.
+- **The hook connects to 127.0.0.1 and sends the name in the `Host` header,** on the port the proxy registration records, 80 by default. An environment with no answer reads `dev is down` or `uat is down`, and a `503` still reports the ref and sha its body gives.
+- **When uat gives no answer, the hook falls back to the latest GitHub `uat` deployment** (CLA-0030), and says that it is the last recorded deployment, not a live reading.
+- **Text from the health body and GitHub is reduced to the characters a ref or state uses, with a length limit,** because it goes into the session's context.
+- **One more line reports the shared runners** (CLA-0086): the state of the stack that serves the app's repository, the runners online and busy, and whether the repository is enrolled, with `unknown` for any part a call could not answer.
+- **It never blocks a session.** The probes run in parallel with short timeouts, inside the 5 second limit the hook is registered with. Any failure drops that one line, and an unreadable input or a broken config prints nothing and exits 0.
 
 ## Consequences
 

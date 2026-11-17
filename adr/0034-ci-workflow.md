@@ -21,7 +21,7 @@ CI that triggers on push, on ready-for-review and on merge runs up to three time
 - **Superseded runs.** Per-ref `concurrency` cancels them.
 - **Runners.** `runs-on` reads a repository variable. When the machine is off, the repo can fall back to GitHub-hosted runners. The weekly ZAP job is the exception: it runs only on the self-hosted runner where dev runs (CLA-0071).
 - **Pins.** The Playwright version is pinned exactly to the browsers in the runner image. Line endings are LF (`.gitattributes`).
-- **Jobs.** Backend and frontend jobs run in parallel. Each job starts its own throwaway PostgreSQL (CLA-0017). Backend tests start it through Testcontainers (CLA-0018), so the job needs Docker but no PostgreSQL service.
+- **Jobs.** Backend and frontend jobs run in parallel. Each job starts its own throwaway PostgreSQL through Testcontainers (CLA-0018), so the job needs Docker but no PostgreSQL service.
 
 ## Consequences
 

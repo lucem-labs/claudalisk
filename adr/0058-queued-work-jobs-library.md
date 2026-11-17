@@ -8,37 +8,36 @@
 
 ## Context
 
-Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043, CLA-0045), but none decided how it works. A hand-written jobs table can have workers that claim rows with `FOR UPDATE SKIP LOCKED`, woken by `NOTIFY`, with lanes, heartbeats, progress, cancel requests and a dedupe key, and still lack retries and queue jobs on its own connection, outside the unit of work. The apps run on PostgreSQL today, but a production deployment may use an AWS queue.
+Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043). A hand-written jobs table can have claiming workers, heartbeats, progress and cancel requests, and still lack retries and queue jobs outside the unit of work. The apps run on PostgreSQL today, but a production deployment may use an AWS queue.
+
+The jobs package is not built yet (CLA-0062), so the defaults below are its specification.
 
 ## Decision
 
-- **A job is a command that runs later.** It is a command (CLA-0052) with one handler, sent through the dispatcher's pipeline (CLA-0049) by a worker instead of by a controller.
-- **Work that can outlast a request is queued.** Work that calls a third-party API more than once, or can run longer than a request, never runs inside the request. The command's result is a `JobReference` (CLA-0067), its endpoint answers `202` with the job's link (CLA-0060), and the work runs as a batch job that commits per batch (CLA-0059).
-- **A job stores its normalised plan.** A command that queues a job is validated by the pipeline (CLA-0057) like any other command. Its handler normalises the input and queues the job's command with the normalised plan, not the raw request: defaults filled in, ids deduplicated, a random seed chosen. A rerun of a stored input reproduces the run, and a list of runs shows what really ran.
+- **A job is a command that runs later.** It is a command (CLA-0052) with one handler, sent through the dispatcher's pipeline (CLA-0049) by a worker instead of a controller.
+- **Work that can outlast a request is queued.** Work that calls a third-party API more than once, or can run longer than a request, never runs inside the request. Its command returns a `JobReference` (CLA-0003), its endpoint answers `202` with the job's link (CLA-0060), and it runs as a batch job (CLA-0059).
+- **A job stores its normalised plan.** The handler that queues it normalises the input and stores the plan, not the raw request: defaults filled in, ids deduplicated, a random seed chosen. A rerun reproduces the run, and a list of runs shows what really ran.
 - **The code is the claudalisk jobs library** (CLA-0062). Apps do not write their own queueing.
-- **A jobs table only where it is needed.** A module that accepts background work, or subscribes to an event (CLA-0068), says so in its module registration (CLA-0004). It then has a `jobs` table in its own schema (CLA-0007), created by its migrations, and a worker. A module without background work has no jobs table.
-- **The transport is swappable.** The jobs table always holds each job's command (its normalised plan, or the event for a fan-out job, CLA-0068), status, attempts, progress, checkpoint, cancel request, result link and last error. A transport only moves jobs from the table to a worker:
-  - **PostgreSQL** (now): the jobs table is the queue. Workers claim a job with `FOR UPDATE SKIP LOCKED`, and `LISTEN`/`NOTIFY` wakes them, with polling as a fallback.
-  - **AWS SQS** (later): the jobs table is the outbox. A relay publishes committed rows to SQS, and the consumer updates the job's row.
-- **Queueing joins the caller's transaction.** The job row is inserted on the scope's shared connection, inside the current unit of work. It commits or rolls back with the data that queued it, so no job runs for a rolled-back change.
-- **The queue stays behind the module's contract.** Another module asks for background work by sending a command from the target module's Interfaces project, whose result is a `JobReference` (CLA-0067). Only the target module queues its own jobs. The calling module never sees the jobs library.
+- **A jobs table only where it is needed.** A module that accepts background work, or subscribes to an event (CLA-0068), says so in its registration (CLA-0004). It then has a `jobs` table in its own schema and a worker.
+- **The transport is swappable.** The jobs table always holds each job's command, status, attempts, progress, checkpoint, cancel request, result link and last error. A transport only moves jobs from the table to a worker:
+  - **PostgreSQL** (now): the table is the queue. Workers claim with `FOR UPDATE SKIP LOCKED`, woken by `LISTEN`/`NOTIFY`, with polling as a fallback.
+  - **AWS SQS** (later): the table is the outbox. A relay publishes committed rows, and the consumer updates the job's row.
+- **Queueing joins the caller's transaction.** The job row is inserted on the scope's shared connection, inside the current unit of work (CLA-0007), so no job runs for a rolled-back change.
+- **The queue stays behind the module's contract.** Only a module queues its own jobs, and another module asks for one through its contract (CLA-0003).
 - **A worker runs each job in a fresh DI scope.**
-  - A claim is a short transaction of its own. It sets the job to `running`, increments `attempts` and stamps the heartbeat.
-  - The worker sends the command through the pipeline. The unit of work that runs the handler also marks the job `succeeded`, so the handler's writes and the job's completion commit together. Batch jobs commit per batch instead (CLA-0059).
-  - On an exception, the unit of work rolls back. A separate transaction records the error and puts the job back in the queue with exponential backoff and jitter. After the last attempt (5 by default) the job stays `failed`.
-  - A validation failure (CLA-0057) or a `DomainException` (CLA-0063) fails the job at once, because it gives the same answer on every attempt. The job's error keeps the problem type and title. Every other exception is retried. A third-party outage (`DependencyUnavailableException`, CLA-0063) is retried no sooner than the wait it carries.
-  - A heartbeat runs on its own connection every 15 seconds by default. A running job whose heartbeat is older than 2 minutes goes back in the queue.
-  - A cancel request reaches the handler through its cancellation token. Progress is written on its own connection, so the UI sees it before the job commits.
-  - A dedupe key replaces older queued jobs with the same key.
-  - On shutdown, a running job is cancelled and goes back in the queue.
-- **Handlers are idempotent for side effects outside the database.** They use the job id as the idempotency key for calls such as HTTP requests or emails.
-- **The job stores its result link.** When the job succeeds, its handler sets the URL of the resource it created or changed, for the UI to follow. A failed or canceled job has no result link. CLA-0060 says where the link points.
-- **Workers run only queued work.** A worker is not a startup write (CLA-0009). End-to-end runs can turn workers off or run jobs inline.
+  - A claim is a short transaction that sets `running`, increments `attempts` and stamps the heartbeat.
+  - The unit of work that runs the handler also marks the job `succeeded`, so the handler's writes and the completion commit together. Batch jobs commit per batch (CLA-0059).
+  - On an exception, the unit of work rolls back. A separate transaction records the error and requeues the job with exponential backoff and jitter. After the last attempt, 5 by default, the job stays `failed`.
+  - A validation failure (CLA-0057) or a `DomainException` (CLA-0063) fails the job at once, keeping its problem type and title. A `DependencyUnavailableException` is retried no sooner than the wait it carries. Every other exception is retried.
+  - A heartbeat on its own connection, every 15 seconds by default, keeps a job claimed. A running job whose heartbeat is older than 2 minutes goes back in the queue.
+  - Cancel requests reach the handler through its cancellation token. Progress is written on its own connection, so the UI sees it before the job commits.
+  - A dedupe key replaces older queued jobs with that key. On shutdown, a running job is requeued.
+- **Handlers use the job id as the idempotency key** for side effects outside the database, such as HTTP requests or emails.
+- **A succeeded job stores its result link** (CLA-0060).
+- **Workers run only queued work,** so a worker is not a startup write (CLA-0009). End-to-end runs can turn workers off or run jobs inline.
 
 ## Consequences
 
 - Queueing has one implementation with one set of tests, in the library.
-- A move from PostgreSQL to SQS changes the transport registration, not the modules.
-- A module that moves to its own database takes its jobs table with it.
-- A run can be repeated from its stored plan, with the same defaults and seed.
+- A move from PostgreSQL to SQS changes the transport registration, not the modules. A module that moves to its own database takes its jobs table with it.
 - A job that only writes to its database takes effect exactly once. A job with external side effects can run more than once and must tolerate that.

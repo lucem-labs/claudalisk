@@ -21,7 +21,7 @@ function asks(result) {
   assert.equal(result.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(result.hookSpecificOutput.permissionDecision, 'ask');
   assert.match(result.hookSpecificOutput.permissionDecisionReason, /node scripts\/verify\.mjs/);
-  assert.match(result.hookSpecificOutput.permissionDecisionReason, /CLA-0077/);
+  assert.match(result.hookSpecificOutput.permissionDecisionReason, /CLA-0076/);
 }
 
 test('asks for a foreground gh pr checks and gh run view', () => {

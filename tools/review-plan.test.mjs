@@ -305,7 +305,7 @@ test('a plan with no reviewer domains still runs /code-review', () => {
 });
 
 test('an ADR file maps to the skills that list it', () => {
-  const p = plan(change('adr/0088-code-intelligence-ground-rules.md'));
+  const p = plan(change('adr/0088-measure-before-building-token-saving-features.md'));
   assert.ok(p.domains.find((d) => d.name === 'adr-conformance').skills.includes('workflow'));
   assert.deepEqual(p.unmapped, []);
 });

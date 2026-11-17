@@ -3,45 +3,39 @@
 - **Status:** accepted
 - **Date:** 2026-11-03
 - **Area:** workflow
-- **Enforced by:** the plugin's `scout-gate` hook (`hooks/scout-gate.mjs`, with its tests); `scout` agent; the app template's `.claude/settings.json`; workflow skill; reviewer
-- **Issue:** #106, #196, #198, #207, #208
+- **Enforced by:** the plugin's `scout-gate` hook (`hooks/scout-gate.mjs`, with its tests); `scout` agent; workflow skill; reviewer
+- **Issue:** #106, #196, #198
 
 ## Context
 
-Every model request sends the whole conversation again (CLA-0073). Whatever the main thread searches and reads stays in its context and is paid for on every later turn. A subagent reads the same code in its own context and hands back a short answer, so the cost follows which model reads the code.
+Every model request sends the whole conversation again (CLA-0073). Whatever the main thread searches and reads stays in its context and is paid for on every later turn. A subagent reads the same code in its own context and hands back a short answer, so the cost follows the model that reads the code.
 
-In a controlled experiment, with Opus leading every run on three coding tasks of increasing breadth, a Haiku subagent that did all searching and exploratory reading cut the cost of a task by 21% to 32% against the main thread doing it, and every result still passed its hidden tests. A Sonnet subagent cost more than a Haiku one and saved the main thread almost nothing.
+In a controlled experiment on three coding tasks, with Opus leading every run, a Haiku subagent that did all searching and exploratory reading cut the cost of a task by 21% to 32%, and every result still passed its hidden tests. A Sonnet subagent cost more and saved the main thread almost nothing (#106).
 
-Text search cannot find every use of a method whose receiver is not named at the call site, such as `copy.deepcopy(tags).items()`. A language server's `findReferences` on the method's definition finds them, because it resolves the receiver's type. While the server is still loading the workspace, the same call can return an incomplete list without any error.
+Text search cannot find every use of a method whose receiver is not named at the call site. A language server's `findReferences` on the definition does, because it resolves the receiver's type. While the server is still loading the workspace, the same call can return an incomplete list without an error.
 
 ## Decision
 
-- **The main thread sends every code search and exploratory read to `claudalisk:scout`.** It asks one question, such as where something is defined, every place that uses a symbol, or how a flow works, and gets back paths, line numbers and the smallest excerpts needed.
+- **The main thread sends every code search and exploratory read to `claudalisk:scout`.** It asks one question, such as where something is defined, every place that uses a symbol, or how a flow works. It gets back paths, line numbers and the smallest excerpts needed.
 - **The main thread reads code itself only to edit or check it.** It reads by range (CLA-0078) the lines it is about to edit, a file of about 300 lines or fewer, or its own edit when the tool result does not show it. A `Grep` of the one file it is about to edit counts as such a read.
-- **The scout runs on Haiku at low effort, with `Read`, `Grep`, `Glob` and `LSP` only.** It never edits, and it answers in at most 300 words.
-- **To find every use of a symbol, the scout uses `LSP`.** It runs `findReferences` on the symbol's definition, not on its class and not with `Grep`, repeats the call until the count stops changing, and reports every `path:line`. Without a language server for the file, it falls back to `Grep` and says the list may miss calls.
-- **The LSP plugins below stay, and claudalisk builds no host to replace them (CLA-0092).** The diagnostics a host would add are worth too little. `ts7-lsp` gives the model no diagnostics, because Claude Code's client takes only pushed diagnostics and TypeScript 7's server pushes none. Only C# and YAML diagnostics reach the model after an edit.
-- **The plugin bundles no language server. An app enables three LSP plugins from the public `kharabasz/claude-toolkit` marketplace** in its committed `.claude/settings.json`: it registers the marketplace under `extraKnownMarketplaces`, pinned with `ref` to a commit so that new plugin code reaches an app through a reviewed change to that file (Claude Code registers only a marketplace it does not know yet, so on a machine that already has one named `claude-toolkit`, that registration and its updates win), sets `csharp-ls-lsp`, `ts7-lsp` and `yaml-lsp` to `true` in `enabledPlugins`, and sets the official `csharp-lsp` and `typescript-lsp` to `false`. A project setting overrides a user one, so nobody gets two servers for one file type. Enabling a plugin does not install it: each developer runs `claude plugin install <name>@claude-toolkit` for the three plugins, and installs the servers' binaries with `dotnet tool install --global csharp-ls`, `npm install -g typescript@7` and `npm install -g yaml-language-server`. Without them the scout falls back to `Grep`.
-- **The official `csharp-lsp` can load the wrong solution.** It starts `csharp-ls` with no solution, so `csharp-ls` searches the whole tree, `.claude/worktrees` included, and picks among every copy it finds. In one app it found 30 solutions, loaded a worktree's copy, and `findReferences` on an interface in the checkout returned 0 for over two minutes. `csharp-ls-lsp` loads the `.sln` or `.slnx` nearest the project root, outside folders that start with a dot, `node_modules`, `bin` and `obj`, and runs `dotnet restore` on it first. Without the restore, a project that was never built locally, as in a fresh worktree, cannot bind its symbols: an unrestored test project left out 2 of 20 references. A client that starts `csharp-ls` itself pins the solution with `--solution backend/<Root>.slnx` and restores first.
-- **The official `typescript-lsp` finds no TypeScript.** It runs `typescript-language-server`, which looks for TypeScript in the workspace root and the folders above it, never in `frontend/node_modules`, so from the app root it falls back to the global install. TypeScript 7 ships `tsc` without `tsserver`, so with a global TypeScript 7, `initialize` fails. `ts7-lsp` runs TypeScript 7's own server, `tsc --lsp --stdio`, which starts from the root and found the same references in a TypeScript 7 frontend and a TypeScript 6 one.
-- **`yaml-lsp` checks workflows, Compose files and Dependabot config.** It runs `yaml-language-server`, which validates each file against the SchemaStore schema its name matches and reports a misspelt key or a missing `runs-on` as a diagnostic. Claude Code passes a server's diagnostics to Claude after each edit ([code intelligence](https://code.claude.com/docs/en/plugins/code-intelligence.md)), so the mistake can be fixed before a push and a CI run. On 23 tracked YAML files of two apps the server reported nothing, and it found all four errors planted in a workflow and a Compose file.
-- **Node scripts carry a `jsconfig.json`.** Without a `jsconfig.json` or `tsconfig.json`, the TypeScript server treats each opened `.mjs` file as a project of its own, and `findReferences` returns only the declaration. The app template puts one at the app root for `scripts/`, and this repository has one for `tools/`, `hooks/` and `packages/scripts/`. The frontend's `.mjs` files under `e2e/` and `scripts/` belong to its `tsconfig.node.json`, because `frontend/tsconfig.json` owns every file under `frontend/` before a root config can. Each sets `allowJs` and leaves `checkJs` off, so the server reports no type errors in scripts that were never type-checked. On `segments` in `hooks/shell.mjs`, it took `findReferences` from the declaration alone to 23 references in 6 files.
-- **After a rename or a signature change, the compiler checks the result.** The verify script (CLA-0076) builds every project before the change is done, so a reference the scout missed fails there.
-- **Subagents search for themselves.** The `implementer` keeps its own `Grep` and `Glob` (CLA-0074): its searches are part of the build, test and fix loop, not exploration.
-- **A hook enforces this in the main thread.** The plugin's `PreToolUse` hook acts only on a tool call whose input has no `agent_id`, the field Claude Code adds when the call comes from a subagent. In the main thread it denies:
+- **The scout runs on Haiku at low effort, with `Read`, `Grep`, `Glob` and `LSP` only** (CLA-0079). It never edits, and it answers in at most 300 words.
+- **To find every use of a symbol, the scout uses `LSP`.** It runs `findReferences` on the symbol's definition and repeats the call until the count stops changing. It reports every `path:line`, and says whether the list came from `LSP` or, without a language server for the file, from `Grep`, which may miss calls. The language servers come from the LSP plugins of CLA-0092.
+- **After a rename or a signature change, the compiler checks the result.** The verify script (CLA-0076) builds every project, so a reference the scout missed fails there.
+- **Subagents search for themselves.** The implementer keeps its own `Grep` and `Glob` (CLA-0074), because its searches are part of the build, test and fix loop.
+- **A hook enforces this in the main thread.** The plugin's `PreToolUse` hook acts only on tool calls without an `agent_id`, the field Claude Code adds to a subagent's calls. It denies:
   - `Grep` across the project, unless its `path` is one file;
   - `Glob` in the project;
   - a whole-file `Read` of a file over 300 lines, unless it is an image or PDF;
   - shell commands that search or read project files, such as `grep`, `rg`, `git grep`, `find`, `ls -R`, `cat`, `head`, `sed -n`, `Select-String` and `Get-Content`.
 
-  It allows a ranged `Read`, files outside the project (logs, the plugin's own ADRs), a `grep` that filters another command's output, and every command that reads no code. Each denial names the scout, or the ranged read, as the way through.
-- **The hook blocks, unlike the warning CLA-0078 describes.** That warning protects a read the agent needs after compaction. Here there is always a way through, a ranged read or the scout, so a block costs one turn and never leaves the agent stuck.
+  It allows a ranged `Read`, files outside the project, a `grep` over another command's output, and every command that reads no code. Each denial names the scout, or the ranged read, as the way through.
+- **The hook blocks.** CLA-0078's warning protects a read that an agent needs after compaction. Here a ranged read or the scout is always a way through, so a block costs one turn and never leaves the agent stuck.
 - **`CLAUDALISK_SCOUT_GATE=off` turns the hook off** for a session, for example to measure without it. It is not a way around a denial.
 
 ## Consequences
 
 - Exploration costs Haiku tokens in the scout's context, not Opus tokens in the main thread's, and the main thread keeps only the answer.
-- A lookup the main thread could have done with one `Grep` now costs a scout round trip. Searching one file it is about to edit stays in the main thread.
-- The scout can miss a reference. Its answer says whether a list came from `LSP` with a stable count or from text search, and the build catches what remains.
-- A hook that cannot tell the main thread from a subagent would block the scout's own searches. The hook's tests cover both, and the check relies on Claude Code's `agent_id` field.
-- The savings come from two runs per setup on three tasks. Re-measure on a few real claudalisk issues, and change the threshold or the denied commands if the logs show a need.
+- A lookup the main thread could have done with one `Grep` now costs a scout round trip.
+- The scout can miss a reference. Its answer says where the list came from, and the build catches the rest.
+- The hook relies on Claude Code's `agent_id` field. Its tests cover the main thread and subagents, so it never blocks the scout's own searches.
+- The savings come from two runs per setup on three tasks. Re-measure on real claudalisk issues, and change the threshold or the denied commands if the logs show a need.

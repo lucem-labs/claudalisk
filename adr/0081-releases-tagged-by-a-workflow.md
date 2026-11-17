@@ -30,4 +30,3 @@ Apps pin claudalisk to a release: the plugin by version, the registry by its `v<
 - A merged version bump is a release. Merging a pull request that bumps the version is the owner's decision to ship (CLA-0024).
 - A broken registry build never becomes a release that apps can pin.
 - A scripts package version needs both this workflow and the owner's approval on npm.
-- v0.2.0 was tagged by hand before this workflow existed. The workflow's first release is the next version.
