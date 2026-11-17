@@ -4,7 +4,7 @@
 - **Date:** 2026-11-15
 - **Area:** workflow
 - **Enforced by:** reviewer (CLA-0023); from the first tool on, its CI job on ubuntu, windows and macos; the benchmark of #202
-- **Issue:** #201, #200, #202
+- **Issue:** #201, #200, #202, #208, #232
 
 ## Context
 
@@ -35,6 +35,7 @@ What the evidence in #200 shows:
   - Claudalisk's own tests prove it on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse it.
   - When a generated app's CI needs a binary these tools use, such as a language server, the binary goes into the DinD runner image in `lucem-labs/github-runner-dind`, and apps pick it up through the `RUNNER_IMAGE` pin (CLA-0086). It is never installed per job.
 - **Every feature works in the CLI, the Desktop app and `claude -p`.** It ships as plugin parts that every surface loads, such as hooks, agents, MCP servers and LSP servers. Nothing depends on a Claude Code feature that only some surfaces have, such as Code Mode. If the interface spike picks a code-execution style of calling tools, claudalisk builds its own.
+- **Claudalisk works alongside the terminal's experimental code-execution mode and never depends on it.** A user may turn that mode on, and the plugin's hooks must not refuse the calls it makes (#232).
 - **A change is accepted only on measurement.** A code-intelligence change is accepted when the benchmark shows that cost per accepted task drops, or holds while correctness rises. Token counts per call and output sizes are not evidence on their own. A loop guard or tool-output compression is built only if a transcript spike first shows that the waste exists, as #146 did.
   - **The measuring instrument is the benchmark of #202.** It generates a pinned fixture app, gives an agent each of seven tasks in a fresh copy, runs hidden tests the agent never sees, and records cost, tokens, turns, subagents, wall time and the hidden-test result of every run. An arm is a plugin directory, a settings file and a list of models. The baseline is the plugin at the current commit. The baseline and every arm run on both `claude-opus-5-5` and `claude-sonnet-5-5`, and each model is reported and judged on its own, never pooled. Every run passes `--setting-sources project,local`, so the settings and plugins of the user who runs it never reach a measured run, and each run's record holds its arguments.
   - **The unit of comparison is the repeat:** one pass over the seven tasks. Each arm and the baseline run 3 repeats. A repeat's cost per accepted task is its total cost divided by the number of its runs that passed, and is infinite when none passed. A run that exceeds its budget counts as failed, with its cost.
@@ -88,5 +89,6 @@ What the evidence in #200 shows:
 - Adding a binary for apps' CI is a change in `lucem-labs/github-runner-dind` and a pin bump in each `runners.env`, not a line in every app's workflow.
 - A surface-limited Claude Code feature can be cheaper on one surface and still not be used. Claudalisk builds its own equivalent instead.
 - The benchmark has a budget of about $150 in total, so each result rests on a few runs per setup, and the noise rule in the decision tells a drop from noise.
-- The spikes in #200 record their decisions as ADRs CLA-0089 to CLA-0096, each amending the rows it settles.
+- The spikes in #200 record their decisions as ADRs CLA-0089 to CLA-0095, each amending the rows it settles.
+- **Outcome of #200:** every code-intelligence spike measured no saving, so claudalisk built none of the catalogue's tools and the epic was wound down. CLA-0089 to CLA-0095 hold the numbers, and their spikes stay available to re-measure.
 - The ADRs carry no product names, so a reader who wants a source follows the `Issue:` link to #200 or #201.

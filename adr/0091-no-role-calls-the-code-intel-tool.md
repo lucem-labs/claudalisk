@@ -4,7 +4,7 @@
 - **Date:** 2026-11-17
 - **Area:** workflow
 - **Enforced by:** reviewer (CLA-0023)
-- **Issue:** #206
+- **Issue:** #206, #208
 
 ## Context
 
@@ -37,7 +37,7 @@ Hidden tests check each task. Each task ran 3 times per side on Sonnet 5.5 and O
 
 - **No role calls the code-intelligence tool.** The main thread, the scout and the implementer carry none of the interfaces. CLA-0090 measured the scout and the implementer, and this spike measured the main thread. None saved cost, turns or failures.
 - **The main thread keeps discovery through the scout.** CLA-0080 stands as written. `scout-gate` gets no MCP rule, because no tool reaches the main thread to need one.
-- **#208 builds the host and CLA-0092's hooks only.** The host serves D1 through the PostToolUse hook and serves scripts. No agent tool list and no plugin MCP server changes, and #209 has no tool list to change.
+- **No agent tool list and no plugin MCP server changes.** Only D1 was left as a reason to build the host, and CLA-0092 found it worth too little, so no host is built.
 
 ## Consequences
 
