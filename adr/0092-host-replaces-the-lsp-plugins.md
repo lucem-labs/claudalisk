@@ -52,7 +52,7 @@ Claude Code 2.1.316's LSP client, read from its bundled code, starts one set of 
 - **No host is built.** The template keeps today's set-up as CLA-0080 describes it: it enables `csharp-ls-lsp`, `ts7-lsp` and `yaml-lsp` from the `claude-toolkit` marketplace, keeps `csharp-lsp` and `typescript-lsp` set to `false`, and the scout uses Claude Code's `LSP` tool for references. TypeScript diagnostics at edit time, the only thing the host would add, are worth at most 0.28% of spend, and every compile-error round together at most 0.98%. Building, testing on three OSes and maintaining the host, its daemon and its hook costs more than that can return.
 - **What reopens it.** A later ADR revisits this if:
   - a Claude Code release pulls diagnostics (`textDocument.diagnostic`), so that a `.lsp.json` with TypeScript 7's server would give TypeScript D1 without a host;
-  - a transcript spike by the same method finds compile-error rounds that the plugins do not already cover above 2% of spend;
+  - a transcript spike by the same method finds compile-error rounds that the plugins do not already cover above 2% of spend, the bar CLA-0094 sets for a loop guard;
   - or the #202 benchmark shows a host arm lowering cost per accepted task.
 - **If a host is built later, it starts from what this spike settled.** The measurements above stay valid until a server or Claude Code upgrade, and they gave:
   - **Host only, not side by side.** Running the plugins beside the host doubles the servers and costs 1.7 to 1.9 GB per worktree, against 1.0 to 1.2 GB for the host alone, and gives two sources of C# and YAML diagnostics and still none for TypeScript.
