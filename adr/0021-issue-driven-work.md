@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-10-24
 - **Area:** workflow
-- **Enforced by:** work-issue skill (planned); reviewer
+- **Enforced by:** work-issue skill; reviewer
 
 ## Decision
 
@@ -13,7 +13,7 @@
 - One branch gives one pull request that closes the issue. Open it only when the work is ready for review. It is never a draft (CLA-0023).
 - Update the docs and the touched sections of the app's `AGENTS.md` in the same pull request.
 - Record decision changes as issue comments.
-- Issues use the sections "Depends on", "Goal", "Design" and "Acceptance criteria".
+- Issues use the sections "Depends on", "Goal", "Design" and "Acceptance criteria", and the labels `epic` and `needs-design-review`, which new-app creates.
 
 ## Consequences
 

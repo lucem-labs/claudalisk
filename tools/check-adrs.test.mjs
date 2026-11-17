@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkAdrs } from './check-adrs.mjs';
+import { checkAdrs, MAX_ADR_WORDS } from './check-adrs.mjs';
 
 const adr = (id, status = 'accepted', area = 'testing') =>
   `# ${id}: A decision\n\n- **Status:** ${status}\n- **Date:** 2026-10-24\n- **Area:** ${area}\n- **Enforced by:** reviewer\n\n## Decision\n\n- Do it.\n`;
@@ -124,6 +124,59 @@ test('a line outside the ADR\'s area must be the README decision', () => {
   assert.match(check(files).join('\n'), /outside its area \(testing\), so its text must be the README decision: "A decision"/);
   files['skills/workflow/SKILL.md'] = skill('workflow', ['- [CLA-0001](${CLAUDE_PLUGIN_ROOT}/adr/0001-a.md) (accepted): A decision.']);
   assert.deepEqual(check(files), []);
+});
+
+test('an ADR over the word cap fails', () => {
+  const files = valid();
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', `- ${Array.from({ length: MAX_ADR_WORDS }, () => 'word').join(' ')}`);
+  assert.match(check(files).join('\n'), /adr\/0001-a\.md: \d+ words; an ADR has at most 800/);
+});
+
+const retiring = (files, text = 'merged into CLA-0001') => {
+  files['adr/README.md'] += `\n## Retired ids\n\n- CLA-0002: ${text}\n`;
+  return files;
+};
+
+test('a citation of a retired id fails in an ADR, a skill and a hook', () => {
+  const files = retiring(valid());
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', '- Do it as CLA-0002 said.');
+  files['skills/testing/SKILL.md'] += 'See CLA-0002.\n';
+  files['hooks/guard.mjs'] = "export const reason = 'CLA-0002';\n";
+  files['templates/app/RuleTests.cs'] = 'public void CLA0002_Holds() { }\n';
+  const errors = check(files).join('\n');
+  assert.match(errors, /templates\/app\/RuleTests\.cs: cites retired CLA-0002/);
+  assert.match(errors, /adr\/0001-a\.md: cites retired CLA-0002 \(merged into CLA-0001\)/);
+  assert.match(errors, /skills\/testing\/SKILL\.md: cites retired CLA-0002/);
+  assert.match(errors, /hooks\/guard\.mjs: cites retired CLA-0002/);
+});
+
+test('a citation of an id with no ADR fails, and test files are not scanned', () => {
+  const files = valid();
+  files['agents/a.md'] = 'Follow CLA-0099.\n';
+  files['hooks/guard.test.mjs'] = "assert.match(out, /CLA-0099/);\n";
+  const errors = check(files);
+  assert.deepEqual(errors, ['agents/a.md: cites CLA-0099, which has no ADR and is not retired']);
+});
+
+test('a citation is a whole id, and the scan covers the registry and workflows', () => {
+  const files = valid();
+  files['registry/README.md'] = 'See CLA-0099.\n';
+  files['.github/workflows/ci.yml'] = 'name: CLA-00012 XCLA0099\n';
+  assert.deepEqual(check(files), ['registry/README.md: cites CLA-0099, which has no ADR and is not retired']);
+});
+
+test('table pipes do not count toward the word cap', () => {
+  const files = valid();
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', Array.from({ length: 400 }, () => '| a |').join('\n'));
+  assert.deepEqual(check(files), []);
+});
+
+test('a retired id that still has a file fails', () => {
+  const files = retiring(valid());
+  files['adr/0002-b.md'] = adr('CLA-0002');
+  files['adr/README.md'] = files['adr/README.md'].replace('\n\n## Retired', `\n${row('CLA-0002', '0002-b.md')}\n\n## Retired`);
+  files['skills/testing/SKILL.md'] = skill('testing', [line('CLA-0001', '0001-a.md'), line('CLA-0002', '0002-b.md')]);
+  assert.match(check(files).join('\n'), /CLA-0002 is listed as retired but still has a file/);
 });
 
 test('an ADR indexed twice by one skill fails', () => {

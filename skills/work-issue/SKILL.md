@@ -7,7 +7,7 @@ user-invocable: true
 
 # Work an issue
 
-This skill strings the lifecycle ADRs together (CLA-0087). It does not restate them: each step names the ADR that holds its rules, so read that ADR before acting. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). One session works on one issue (CLA-0073).
+This skill strings the lifecycle ADRs together (CLA-0074). It does not restate them: each step names the ADR that holds its rules, so read that ADR before acting. The app's `AGENTS.md` wins where it lists a deviation (CLA-0028). One session works on one issue (CLA-0073).
 
 ## 0. Find the step
 
@@ -33,7 +33,7 @@ The main thread plans and writes the brief for the implementer. Code discovery g
 
 ## 4. Verify
 
-The implementer verifies with `scripts/verify.mjs`, and the change is checked on dev, which the implementer reports as `devVerified` (CLA-0076, CLA-0077, CLA-0029). The workflow stops at the implement stage unless both are true.
+The implementer verifies with `scripts/verify.mjs`, and the change is checked on dev, which the implementer reports as `devVerified` (CLA-0076, CLA-0029). The workflow stops at the implement stage unless both are true.
 
 ## 5. Review
 

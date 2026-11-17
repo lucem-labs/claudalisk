@@ -8,9 +8,40 @@ const STATUS = /^(proposed|accepted|superseded by CLA-\d{4})$/;
 const SKILL_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\) \(([^)]+)\): \S/;
 const SKILL_LINK = /\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)\s`]+)/g;
 const README_ROW = /^\| \[(CLA-\d{4})\]\(([^)]+)\) \| ([^|]+?) \| ([^|]+?) \| ([^|]+?) \|$/;
+const RETIRED_LINE = /^- (CLA-\d{4}): (.+)$/;
+const CITATION = /(?<![A-Za-z0-9])CLA-?(\d{4})(?!\d)/g;
+const CITING_DIRS = ['skills', 'hooks', 'agents', 'templates', 'tools', 'workflows', 'packages', 'output-styles', 'registry', 'proxy', 'docs', '.github', '.claude-plugin'];
+const CITING_FILE = /\.(md|mjs|cjs|js|json|ya?ml|ts|tsx|cs|txt)$/;
+const SKIPPED_DIRS = new Set(['node_modules', '.git', 'bin', 'obj', 'public']);
 export const MAX_WORDS = 40;
+export const MAX_ADR_WORDS = 800;
 
 const field = (text, name) => text.match(new RegExp(`^- \\*\\*${name}:\\*\\* (.+)$`, 'm'))?.[1].trim();
+const wordCount = (text) => text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+
+export function readRetired(readme) {
+  const retired = new Map();
+  const section = readme.split(/^## /m).find((s) => s.startsWith('Retired ids'));
+  for (const line of (section ?? '').split('\n')) {
+    const m = line.match(RETIRED_LINE);
+    if (m) retired.set(m[1], m[2].trim());
+  }
+  return retired;
+}
+
+function citingFiles(root) {
+  const found = [];
+  const walk = (rel) => {
+    for (const entry of readdirSync(join(root, rel), { withFileTypes: true })) {
+      const path = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) { if (!SKIPPED_DIRS.has(entry.name)) walk(path); }
+      else if (CITING_FILE.test(entry.name) && !entry.name.endsWith('.test.mjs')) found.push(path);
+    }
+  };
+  for (const dir of CITING_DIRS) if (existsSync(join(root, dir))) walk(dir);
+  if (existsSync(join(root, 'README.md'))) found.push('README.md');
+  return found;
+}
 
 export function readAdrs(root) {
   const dir = join(root, 'adr');
@@ -57,6 +88,8 @@ export function checkAdrs(root) {
     if (!a.date || !/^\d{4}-\d{2}-\d{2}$/.test(a.date)) errors.push(`adr/${a.file}: Date must be YYYY-MM-DD`);
     if (!a.area) errors.push(`adr/${a.file}: Area is missing`);
     else if (!skillNames.has(a.area)) errors.push(`adr/${a.file}: Area "${a.area}" is not a skill in skills/`);
+    const words = wordCount(a.text);
+    if (words > MAX_ADR_WORDS) errors.push(`adr/${a.file}: ${words} words; an ADR has at most ${MAX_ADR_WORDS}. Move evidence to its issue and mechanics to the tool's README or the skill`);
   }
   const statusById = new Map(adrs.map((a) => [a.id, a.status]));
   for (const a of adrs) {
@@ -74,9 +107,25 @@ export function checkAdrs(root) {
   const readmePath = join(root, 'adr', 'README.md');
   const indexed = new Set();
   const decisionByFile = new Map();
-  if (!existsSync(readmePath)) errors.push('adr/README.md is missing');
+  const readme = existsSync(readmePath) ? readFileSync(readmePath, 'utf8').replace(/\r\n/g, '\n') : undefined;
+  const retired = readRetired(readme ?? '');
+  const known = new Set(ids);
+  for (const id of retired.keys()) if (known.has(id)) errors.push(`adr/README.md: ${id} is listed as retired but still has a file`);
+  const checkCitations = (where, text, ownId) => {
+    for (const [, number] of text.matchAll(CITATION)) {
+      const cited = `CLA-${number}`;
+      if (cited === ownId || known.has(cited)) continue;
+      if (retired.has(cited)) errors.push(`${where}: cites retired ${cited} (${retired.get(cited)})`);
+      else errors.push(`${where}: cites ${cited}, which has no ADR and is not retired`);
+    }
+  };
+  for (const a of adrs) checkCitations(`adr/${a.file}`, a.text, a.id);
+  for (const file of citingFiles(root)) {
+    checkCitations(file, readFileSync(join(root, file), 'utf8'));
+  }
+  if (readme === undefined) errors.push('adr/README.md is missing');
   else {
-    for (const line of readFileSync(readmePath, 'utf8').replace(/\r\n/g, '\n').split('\n')) {
+    for (const line of readme.split('\n')) {
       const m = line.match(README_ROW);
       if (!m) continue;
       const [, id, file, decision, status, area] = m;

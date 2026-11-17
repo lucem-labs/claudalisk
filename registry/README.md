@@ -59,5 +59,14 @@ An app with its own global stylesheet moves in steps, and every page keeps worki
   ```bash
   node tools/check-registry.mjs
   ```
-- Tests for the components go in `fixture-app/src`, next to where the item installs.
+  CI's `registry` job, on GitHub-hosted runners, fails when:
+  - a registry source has a comment or a raw colour (CLA-0035, CLA-0054);
+  - `public/r` differs from a fresh `shadcn build`;
+  - two files in one folder differ only by case, or a file in `ui/` or in the installed `shared/ui` is not kebab-case (CLA-0053);
+  - a `registry:ui` item has no `describe` block of its name in the fixture app's `accessibility.test.tsx`;
+  - the installed `@claudalisk/base` does not type-check, build or pass its Vitest and Testing Library tests;
+  - an axe check, or a component's test of its landmarks and roles, fails (colour contrast is left out, because jsdom does not render);
+  - the scaffold left a comment in the installed files;
+  - shadcn's MCP server does not list `@claudalisk` or search `@shadcn`.
+- Tests for the components go in `fixture-app/src`, next to where the item installs. They test the installed copies, as an app receives them.
 - Apps get a change at the next release: bump `version` in `.claude-plugin/plugin.json` in the pull request. After it merges, the release workflow (`.github/workflows/release.yml`, CLA-0081) tags `v<version>`, checks that every item resolves at the tag and creates the release.

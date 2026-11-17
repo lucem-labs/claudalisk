@@ -17,7 +17,7 @@
 - **Schema names are unique.** Every request and response schema name is unique across the app and the claudalisk libraries it hosts, such as the jobs library's job resource (CLA-0060). Two features, or two modules' DTOs of the same shape (CLA-0005), that both name a DTO `OrderResponse` collide, so one of them takes a more specific name. Building the OpenAPI document fails on a collision; the check is in the claudalisk web package. Schema names are never made unique automatically, for example with a counter or a namespace prefix, which would hide the collision.
 - **Frontend API types are generated from the document.**
   - The types go into `shared/api`, and the `api` segment of each entity uses them (CLA-0014, CLA-0037).
-  - `openapi-typescript` generates them (CLA-0065). Nobody edits the generated file by hand.
+  - `openapi-typescript` generates them (CLA-0014). Nobody edits the generated file by hand.
   - CI regenerates the types and fails when they differ from the committed ones. A backend change that breaks the frontend then shows as a type error in the same pull request.
 
 ## Consequences

@@ -10,7 +10,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 |---|---|---|---|
 | [CLA-0001](0001-modular-monolith.md) | The backend is a modular monolith | accepted | backend-architecture |
 | [CLA-0002](0002-interfaces-projects.md) | Modules are referenced only through their Interfaces projects | accepted | backend-architecture |
-| [CLA-0003](0003-lean-interfaces-projects.md) | Interfaces projects are lean, and pass messages that are POCOs | accepted | backend-architecture |
+| [CLA-0003](0003-lean-interfaces-projects.md) | Module contracts are messages: POCOs in a lean Interfaces project, sent through the dispatcher | accepted | backend-architecture |
 | [CLA-0004](0004-module-registration.md) | Module registration is idempotent and declares dependencies | accepted | backend-architecture |
 | [CLA-0005](0005-modules-expose-thin-controllers.md) | Modules may expose their own API, and controllers stay thin | accepted | backend-architecture |
 | [CLA-0006](0006-architecture-tests-by-convention.md) | Architecture tests discover modules by naming convention and prove that each rule can fail | accepted | backend-architecture |
@@ -21,11 +21,9 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0011](0011-fresh-database-migrates.md) | A fresh, empty database migrates end to end | accepted | data-and-migrations |
 | [CLA-0012](0012-one-off-data-fixes.md) | Data fixes are EF Core migrations | accepted | data-and-migrations |
 | [CLA-0013](0013-external-data-on-explicit-trigger.md) | External data is refreshed only on an explicit trigger, and never from tests | accepted | data-and-migrations |
-| [CLA-0014](0014-frontend-stack-and-api-module.md) | React, TypeScript and Vite, with every backend call through a typed API layer | accepted | frontend |
+| [CLA-0014](0014-frontend-stack-and-api-module.md) | The frontend is React, TypeScript and Vite, with React Router 7, oxlint, Vitest and a typed API client generated from OpenAPI | accepted | frontend |
 | [CLA-0015](0015-ui-renders-api-values.md) | The UI renders what the API returns and never duplicates backend rules | accepted | frontend |
-| [CLA-0016](0016-every-change-ships-with-tests.md) | Every behaviour change ships with tests | accepted | testing |
-| [CLA-0017](0017-tests-run-on-throwaway-stacks.md) | Tests run on throwaway stacks | accepted | testing |
-| [CLA-0018](0018-real-postgres-never-skipped.md) | Persistence tests use real PostgreSQL and never skip silently | accepted | testing |
+| [CLA-0018](0018-real-postgres-never-skipped.md) | Tests run on throwaway stacks with real PostgreSQL, and never skip silently | accepted | testing |
 | [CLA-0019](0019-parallel-safe-tests.md) | Tests are parallel-safe | accepted | testing |
 | [CLA-0020](0020-no-wall-clock-assertions.md) | No wall-clock assertions in tests | accepted | testing |
 | [CLA-0021](0021-issue-driven-work.md) | All work is issue-driven | accepted | workflow |
@@ -42,21 +40,19 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0033](0033-shared-machine-infrastructure.md) | The proxy and CI runners are shared by every app on the machine | accepted | environments |
 | [CLA-0034](0034-ci-workflow.md) | CI runs once per pushed commit, fully parallel | accepted | environments |
 | [CLA-0035](0035-no-code-comments.md) | Code carries no comments | accepted | code-standards |
-| [CLA-0036](0036-feature-sliced-design-pages-first.md) | The frontend follows Feature-Sliced Design, pages first | accepted | frontend |
+| [CLA-0036](0036-feature-sliced-design-pages-first.md) | The frontend follows Feature-Sliced Design, pages first, and Steiger checks its boundaries in CI | accepted | frontend |
 | [CLA-0037](0037-entities-mirror-backend-modules.md) | Frontend entities mirror backend modules | accepted | frontend |
 | [CLA-0038](0038-server-state-in-tanstack-query.md) | Server state lives in TanStack Query | accepted | frontend |
 | [CLA-0039](0039-client-state-in-zustand-stores.md) | Shared client state lives in Zustand stores that components only subscribe to | accepted | frontend |
-| [CLA-0040](0040-frontend-boundaries-linted.md) | Frontend layer boundaries are checked by Steiger in CI | accepted | frontend |
 | [CLA-0041](0041-module-api-is-a-bounded-context.md) | A module's API is a bounded context that speaks its ubiquitous language | accepted | backend-architecture |
 | [CLA-0042](0042-resources-are-aggregates.md) | Resources are aggregates, and read models are their own resources | accepted | backend-architecture |
 | [CLA-0043](0043-state-changes-are-domain-commands.md) | State changes are domain commands, posted to a sub-resource named after the command | accepted | backend-architecture |
 | [CLA-0044](0044-hypermedia-links-and-actions.md) | Representations carry links and the commands available now; the UI shows only those | accepted | backend-architecture |
 | [CLA-0045](0045-http-semantics-and-problem-details.md) | The API uses HTTP's own semantics: status codes, Problem Details and conditional writes | accepted | backend-architecture |
 | [CLA-0046](0046-openapi-document.md) | The OpenAPI document groups endpoints by module, and frontend API types are generated from it | accepted | backend-architecture |
-| [CLA-0047](0047-modules-organized-by-feature.md) | A module's implementation is organized by feature folders | accepted | backend-architecture |
+| [CLA-0047](0047-modules-organized-by-feature.md) | A module is organized by feature folders, its dependencies go down, and code starts in its feature | accepted | backend-architecture |
 | [CLA-0048](0048-aggregates-in-a-domain-project.md) | Aggregates live in a Domain project per module, and the stores map them | accepted | backend-architecture |
 | [CLA-0049](0049-features-go-through-the-dispatcher.md) | Every feature sends its commands and queries through the dispatcher | accepted | backend-architecture |
-| [CLA-0050](0050-module-dependencies-go-down-feature-first.md) | Inside a module, dependencies go down and code starts in its feature | accepted | backend-architecture |
 | [CLA-0051](0051-database-naming.md) | Database names are lowercase snake_case, set by convention | accepted | data-and-migrations |
 | [CLA-0052](0052-cqrs-naming.md) | Commands, queries, events and their handlers follow fixed naming patterns | accepted | backend-architecture |
 | [CLA-0053](0053-shadcn-ui-design-system.md) | shadcn/ui is the design system, and its components live in `shared/ui` | accepted | frontend |
@@ -71,19 +67,15 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0062](0062-claudalisk-nuget-packages.md) | Infrastructure ships as claudalisk NuGet packages | accepted | backend-architecture |
 | [CLA-0063](0063-domain-exceptions-and-one-problem-handler.md) | Domain errors are `DomainException`s, and one API-wide handler turns every error into Problem Details | accepted | backend-architecture |
 | [CLA-0064](0064-repository-and-test-layout.md) | Every app has the same repository layout, with a test project per module | accepted | backend-architecture |
-| [CLA-0065](0065-frontend-tooling.md) | The frontend uses React Router 7, oxlint, Vitest and generated OpenAPI types | accepted | frontend |
 | [CLA-0066](0066-environment-state-outside-the-checkout.md) | Environment files and backups live outside the checkout, per app and machine | accepted | environments |
-| [CLA-0067](0067-module-contracts-are-messages-only.md) | Module contracts are messages only, sent through the dispatcher | accepted | backend-architecture |
 | [CLA-0068](0068-events-fan-out-as-jobs.md) | Events fan out to every subscriber as a job after the commit | accepted | backend-architecture |
 | [CLA-0069](0069-hand-written-mapping.md) | Mapping is hand-written, with no AutoMapper or other mapping library | accepted | backend-architecture |
-| [CLA-0070](0070-testing-layers.md) | Each rule is tested at the lowest layer that can see it | accepted | testing |
+| [CLA-0070](0070-testing-layers.md) | Every behaviour change ships with tests, and each rule is tested at the lowest layer that can see it | accepted | testing |
 | [CLA-0071](0071-security-scans.md) | Security scans run in CI at three levels, and every suppression expires | accepted | environments |
 | [CLA-0072](0072-dependabot-updates.md) | Dependabot opens grouped dependency updates, and the owner merges them | accepted | workflow |
-| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, and hands over through a note on the issue | accepted | workflow |
+| [CLA-0073](0073-one-session-per-issue.md) | One session works on one issue, compacts at milestones, and hands over through a note on the issue | accepted | workflow |
 | [CLA-0074](0074-main-thread-plans-subagent-iterates.md) | The main thread plans and reviews, and an implementer subagent runs the build, test and fix loop | accepted | workflow |
-| [CLA-0075](0075-compact-at-task-boundaries.md) | Compact at task boundaries, by about 40% of the context window | accepted | workflow |
-| [CLA-0076](0076-one-verify-script-per-cycle.md) | One verify call per cycle pushes to CI and prints only the failures | accepted | workflow |
-| [CLA-0077](0077-wait-for-ci-in-one-call.md) | Wait for CI in one call, never by polling | accepted | workflow |
+| [CLA-0076](0076-one-verify-script-per-cycle.md) | CI is the only verifier, and one verify call per cycle pushes, waits without polling and prints only the failures | accepted | workflow |
 | [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | workflow |
 | [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | workflow |
 | [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
@@ -93,12 +85,8 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0084](0084-environment-scripts-package.md) | The environment scripts ship as a pinned npm package, called by thin entries | accepted | environments |
 | [CLA-0085](0085-session-start-router.md) | A session-start hook prints what dev and uat run and points to the workflow skill | accepted | environments |
 | [CLA-0086](0086-runners-stack-from-the-kit.md) | One org-wide runner stack from the public kit, configured and guarded by the plugin | accepted | environments |
-| [CLA-0087](0087-work-issue-skill-and-workflow.md) | A work-issue skill strings the lifecycle ADRs together, and a workflow runs the unattended middle | accepted | workflow |
-| [CLA-0088](0088-code-intelligence-ground-rules.md) | Code intelligence is native, deterministic, cross-platform, surface-independent and measured | accepted | workflow |
-| [CLA-0089](0089-language-server-host-servers-and-edit-rules.md) | The host drives Roslyn's server for C# and TypeScript 7's server for TypeScript, and applies their edits by fixed rules | accepted | workflow |
-| [CLA-0090](0090-code-intel-interface-and-exposure.md) | Sessions carry no code-intelligence tools by default, and a role that needs them gets one MCP tool | accepted | workflow |
-| [CLA-0091](0091-no-role-calls-the-code-intel-tool.md) | No role calls the code-intelligence tool, and the main thread keeps discovery through the scout | accepted | workflow |
-| [CLA-0092](0092-host-replaces-the-lsp-plugins.md) | The LSP plugins stay and no host is built, because the diagnostics a host would add are worth too little | accepted | workflow |
+| [CLA-0088](0088-measure-before-building-token-saving-features.md) | Token-saving features ship only on a measured saving, as claudalisk's own deterministic tools that work on every surface | accepted | workflow |
+| [CLA-0092](0092-lsp-plugins-and-no-code-intelligence-tools.md) | Apps use three LSP plugins, and claudalisk builds no code-intelligence tools or host | accepted | workflow |
 | [CLA-0094](0094-no-loop-guard.md) | No loop guard, because agent loops cost about half a percent of spend | accepted | workflow |
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 
@@ -120,6 +108,37 @@ Then come **Context** (optional), **Decision** and **Consequences**. Keep an ADR
 
 - **proposed**: the decision comes from a design issue that is not agreed yet.
 - **accepted**: the epic or the issue settles the decision.
+
+## What goes in an ADR
+
+Claude reads an ADR before it acts on it, so every sentence costs tokens on every read. An ADR holds the decision and the reasons for it, and nothing that lives better elsewhere.
+
+- **At most 800 words, and aim for about 400.** `check-adrs.mjs` fails a longer ADR.
+- **One decision, and each rule in one place.** An ADR that needs another ADR's rule cites its id and does not restate it.
+- **Evidence stays where it was gathered.** Measurements, spike test lists and benchmark tables stay in the issue or the spike. The ADR gives the result in a sentence, and its `Issue:` line leads to the rest.
+- **Mechanics live with the code.** Timeouts, flags, file formats, step-by-step recipes and parser details go in the tool's README, its tests or the skill that runs it. The ADR says what must hold.
+- **A rejected option gets one line** in Context when an agent might propose it again. Decisions not to build something are ADRs too.
+- **No history.** An ADR reads as the decision today, and git keeps earlier versions. While a decision holds, its ADR is edited in place. When it is reversed, a new ADR supersedes it.
+- **No product names** beyond the tools a decision adopts, such as language servers and Claude Code features. Sources go in the issue.
+
+## Retired ids
+
+A retired id has no file and is never reused. An app's `AGENTS.md` deviation that cites one moves to the ADR named here.
+
+- CLA-0016: merged into CLA-0070
+- CLA-0017: merged into CLA-0018
+- CLA-0025: removed before the ADRs were first accepted (stacked pull requests)
+- CLA-0040: merged into CLA-0036
+- CLA-0050: merged into CLA-0047
+- CLA-0065: merged into CLA-0014
+- CLA-0067: merged into CLA-0003
+- CLA-0075: merged into CLA-0073
+- CLA-0077: merged into CLA-0076
+- CLA-0087: merged into CLA-0074, and the work-issue skill describes the tools
+- CLA-0089: removed; no language-server host is built (CLA-0092), and #203 holds its measurements
+- CLA-0090: removed; no role gets code-intelligence tools (CLA-0092), and #205 holds its measurements
+- CLA-0091: merged into CLA-0092
+- CLA-0093: never used
 
 ## Adding or changing an ADR
 

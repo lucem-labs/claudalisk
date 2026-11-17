@@ -10,7 +10,7 @@ const BASH_SHELLS = new Set(['bash', 'sh', 'zsh', 'dash']);
 const PS_SHELLS = new Set(['pwsh', 'powershell']);
 const VALUED = new Set(['-R', '--repo', '--hostname']);
 
-const REASON = 'Polling CI with a foreground gh run view or gh pr checks sends the whole context again with every check (CLA-0077). Run node scripts/verify.mjs, which waits for CI in one call, or use gh pr checks --watch or gh run watch, or run the command in the background.';
+const REASON = 'Polling CI with a foreground gh run view or gh pr checks sends the whole context again with every check (CLA-0076). Run node scripts/verify.mjs, which waits for CI in one call, or use gh pr checks --watch or gh run watch, or run the command in the background.';
 
 const ask = () => ({
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: REASON },

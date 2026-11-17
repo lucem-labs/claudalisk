@@ -8,7 +8,7 @@
 
 ## Context
 
-Output tokens are the most expensive kind, and a higher effort level makes a model write more of them on every request. In one week of usage logs, nine subagents that ran at max effort produced 17% of the week's output tokens. Output per request was 6.9k tokens for Fable at max, 2.4k for Sonnet at max and 2.1k for Opus at max, against 1.25k for Sonnet at medium. A subagent that inherits the main thread's model and effort, or gets max effort by habit, pays that price on every step of a long loop.
+Output tokens are the most expensive kind, and a higher effort level makes a model write more of them on every request. In one week of usage logs, nine subagents at max effort produced 17% of the week's output tokens, at up to five times the output per request of Sonnet at medium (#98). A subagent that inherits the main thread's model and effort, or gets max effort by habit, pays that price on every step of a long loop.
 
 Roles differ in what they need. A build, test and fix loop or a search takes many small steps, and each step is simple. A review or a design question takes few steps, and the quality of each judgement decides the outcome. A watcher only waits and reports what it sees.
 

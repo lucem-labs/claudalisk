@@ -124,7 +124,7 @@ export function lifecycleStep(facts) {
       step: 3,
       title: 'Plan, implement, verify and review (steps 3 to 5)',
       next: `Work in ${facts.worktree ?? `branch ${facts.branch}, which has no worktree`}: write the brief, run the implementer, verify on dev, then review.`,
-      adrs: ['CLA-0074', 'CLA-0080', 'CLA-0076', 'CLA-0077', 'CLA-0029', 'CLA-0023'],
+      adrs: ['CLA-0074', 'CLA-0080', 'CLA-0076', 'CLA-0029', 'CLA-0023'],
     };
   }
   if (pr.state === 'MERGED') {
@@ -142,7 +142,7 @@ export function lifecycleStep(facts) {
     return { step: 6, title: 'Draft pull request', next: `#${pr.number} is a draft, which CLA-0021 forbids. Ask the owner how to replace it with a ready one.`, adrs: ['CLA-0021'], blocked: true, breach: 'CLA-0021' };
   }
   if (!pr.green) {
-    return { step: 4, title: 'Verify', next: `CI is not green on ${pr.headRefOid.slice(0, 7)}. Run node scripts/verify.mjs in the worktree.`, adrs: ['CLA-0076', 'CLA-0077', 'CLA-0029'] };
+    return { step: 4, title: 'Verify', next: `CI is not green on ${pr.headRefOid.slice(0, 7)}. Run node scripts/verify.mjs in the worktree.`, adrs: ['CLA-0076', 'CLA-0029'] };
   }
   if (!pr.hasReview || !pr.reviewedHead) {
     return { step: 5, title: 'Review', next: `Run /claudalisk:review and put its result, with its "Reviewed head:" line, in the "## Review" section of #${pr.number}.`, adrs: ['CLA-0023'] };

@@ -111,7 +111,7 @@ public sealed class RuleGuardTests
     public void CLA0049_ControllersDependOnlyOnTheDispatcher() => Flags(Rules.ControllersDependOnlyOnTheDispatcher([typeof(BadController)]));
 
     [Fact]
-    public void CLA0050_SharedDoesNotReferenceFeatures() =>
+    public void CLA0047_SharedDoesNotReferenceFeatures() =>
         Flags(Rules.SharedDoesNotReferenceFeatures([Source("using App.Modules.A.Features.First;")]));
 
     [Fact]
@@ -152,7 +152,7 @@ public sealed class RuleGuardTests
         Flags(Rules.EveryModuleHasPart(["A"], [Project("App.Modules.A")], Naming, "Tests"));
 
     [Fact]
-    public void CLA0067_InterfacesHoldOnlyMessagesAndTheMarker() => Flags(Rules.InterfacesHoldOnlyMessagesAndTheMarker([typeof(IServiceInInterfaces)]));
+    public void CLA0003_InterfacesHoldOnlyMessagesAndTheMarker() => Flags(Rules.InterfacesHoldOnlyMessagesAndTheMarker([typeof(IServiceInInterfaces)]));
 
     [Fact]
     public void CLA0068_EventHandlersStayOutOfTheUnitOfWork() => Flags(Rules.EventHandlersStayOutOfTheUnitOfWork([typeof(ThingHappenedHandler)]));

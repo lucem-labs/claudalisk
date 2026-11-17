@@ -19,10 +19,10 @@ A second reason is low operational complexity. These are single-owner, local-fir
 - Features live in modules. Each module has a `<Root>.Modules.<Name>` implementation project, a `<Root>.Modules.<Name>.Interfaces` project for its public contracts, a `<Root>.Modules.<Name>.Domain` project (CLA-0048), and the persistence projects of CLA-0007.
 - **A module's name is a singular noun for its bounded context**, such as `Ordering`, `Billing` or `Inventory`. It is never a plural, such as `Orders`. A noun that names the context is better than the name of its main entity.
   - The name sets many other names: the projects and namespaces, the schema (CLA-0007, CLA-0051), the job links (CLA-0060), the problem types (CLA-0063), the module a schedule names (CLA-0061), the OpenAPI tag (CLA-0046) and the frontend entity slice (CLA-0037).
-  - Steiger needs the entity slices to be all singular or all plural (CLA-0040). Singular module names keep that rule on.
+  - Steiger needs the entity slices to be all singular or all plural (CLA-0036). Singular module names keep that rule on.
   - An architecture test checks that no module class name, minus `Module`, ends in a plural `s`. The test keeps a short allow-list of singular nouns that end in `s`, such as `Analysis`.
 - **The boundary is the contract, not the transport.** Modules talk only through their Interfaces projects (CLA-0002). Behind a contract, a call can be:
-  - an in-process call (the default): a message sent through the dispatcher (CLA-0067);
+  - an in-process call (the default): a message sent through the dispatcher (CLA-0003);
   - queued background work, through jobs (CLA-0058);
   - a network call, or a module with its own database, when the module needs it. By default a module owns a schema in the app's one database (CLA-0007).
 - The callers of a module do not change when its transport or data store changes.

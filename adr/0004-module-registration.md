@@ -30,7 +30,7 @@ The Host should be only a list of modules. Each module stays responsible for its
   - it then registers each new module once.
 
   Its state lives in the service collection, so separate collections (for example in tests) do not affect each other.
-- **Controllers come in as application parts.** ASP.NET Core finds controllers only in the assemblies its `ApplicationPartManager` knows about, which by default is the entry assembly. Registration calls `AddControllers().AddApplicationPart(module.GetType().Assembly)` for each module that exposes an API, so its controllers are discovered although the Host never references their types. Controllers stay public, because ASP.NET Core ignores internal ones (CLA-0050).
+- **Controllers come in as application parts.** ASP.NET Core finds controllers only in the assemblies its `ApplicationPartManager` knows about, which by default is the entry assembly. Registration calls `AddControllers().AddApplicationPart(module.GetType().Assembly)` for each module that exposes an API, so its controllers are discovered although the Host never references their types. Controllers stay public, because ASP.NET Core ignores internal ones (CLA-0047).
 - **Tests cover:**
   - the dependency failures;
   - registration order;
