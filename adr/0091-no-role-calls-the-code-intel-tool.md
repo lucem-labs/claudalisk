@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-17
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); the app template's agent tool lists and plugin MCP servers
+- **Enforced by:** reviewer (CLA-0023)
 - **Issue:** #206
 
 ## Context
@@ -28,7 +28,7 @@ Hidden tests check each task. Each task ran 3 times per side on Sonnet 5.5 and O
 | Opus | main thread with C | 9 of 9 | $0.32 | 10 | 423k | 1.0 | 1.8 |
 
 - **The main thread used the tool.** Every run called it, and on T10 Sonnet renamed through it without sending the scout.
-- **Opus still sent the scout.** It called the tool and also sent the scout, so it added turns and context. It cost more on each task, and 23 percent more overall.
+- **Opus still sent the scout.** Every Opus run called the tool and also sent the scout, so it added turns and context. It cost more on each task, and 23 percent more overall.
 - **The scout was never the cost.** The Haiku scout cost $0.002 to $0.003 per run on both sides. Nearly all of the cost was the main thread, so moving lookups from the scout to the main thread saves less than a cent and costs whatever the tool's output adds to the main thread's context.
 - **Nothing failed on either side.** Text search through the scout found every use in all three tasks, so the tool had no missed uses to make up for.
 - These runs used the CLI's print mode. Code Mode was not measured, and nothing here depends on it.
