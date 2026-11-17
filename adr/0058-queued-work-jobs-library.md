@@ -9,6 +9,7 @@
 ## Context
 
 Several ADRs rely on queued work (CLA-0001, CLA-0007, CLA-0043). A hand-written jobs table can have claiming workers, heartbeats, progress and cancel requests, and still lack retries and queue jobs outside the unit of work. The apps run on PostgreSQL today, but a production deployment may use an AWS queue.
+
 ## Decision
 
 - **A job is a command that runs later.** It is a command (CLA-0052) with one handler, sent through the dispatcher's pipeline (CLA-0049) by a worker instead of a controller.
