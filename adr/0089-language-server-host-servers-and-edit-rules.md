@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-11-15
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); from #208 on, the shipped host's tests of the edit-applier rules and the capability probe
-- **Issue:** #203, #200
+- **Enforced by:** reviewer (CLA-0023); the spike's tests of the edit-applier rules and the capability probe. No host is built (CLA-0092).
+- **Issue:** #203, #200, #208
 
 ## Context
 
@@ -39,14 +39,14 @@ What the three OSes showed:
   - It returns references that lie in source-generated files, as `roslyn-source-generated://` URIs. csharp-ls returns none, so a rename or a reference count that depends on generated code is silent there.
   - Its cold start is probably lower, by a margin that varies from run to run. Its warm `findReferences` is about 0.5 s a call, which is acceptable for a tool call a model makes, and its memory is higher.
   - **The 0.5 s is a wait inside the server and the client cannot remove it.** The spike timed `textDocument/references` four ways on a loaded server, 25 calls each: plain, with a `partialResultToken`, with a `workDoneToken`, and with both. All four took the same time on every OS, 501 to 502 ms median on linux, 502 to 504 ms on windows and 556 to 582 ms on macos. With a `partialResultToken` the four locations came back through `$/progress` and the response was empty, and the wait did not change. The server sent `window/workDoneProgress/create` twice in the whole run, which held 100 references calls, so a call does not start a progress round trip. In Roslyn's references handler (read on the main branch at the time of this ADR, not at the pinned version), `FindUsagesLSPContext` reports results through an `AsyncBatchingWorkQueue` with `DelayTimeSpan.Medium`, which is 500 ms, and `OnCompletedAsync` waits for the current batch to finish. That is the delay, and it applies to a request that is not streaming. The host pays it once per `findReferences`, uses the plain call shape, and does not poll `findReferences` in a loop. `prepareRename` took under 2.1 ms on the same server.
-  - It is published only as a prerelease, so the host pins an exact version in a tool manifest, and a generated app's CI gets the tool from the DinD runner image (CLA-0088). csharp-ls stays what CLA-0080's `LSP` plugin runs until the host replaces it.
+  - It is published only as a prerelease, so the host pins an exact version in a tool manifest, and a generated app's CI gets the tool from the DinD runner image (CLA-0088). csharp-ls stays what CLA-0080's `LSP` plugin runs, since no host is built (CLA-0092).
   - The host must open the solution with the `solution/open` notification, wait for `workspace/projectInitializationComplete` and answer `workspace/configuration`, `client/registerCapability` and `window/workDoneProgress/create`. Some actions, such as "Add parameter", arrive as a command `roslyn.client.nestedCodeAction` that carries child actions. The host resolves a child with `codeAction/resolve` and applies its edit.
 - **The TypeScript server is `tsc --lsp --stdio` from the `typescript` package, pinned exactly.** The generated app's own `tsc -b` ran on 6.0.3 and passed after edits made by the 7.0.2 server, so the two versions are independent.
   - Rename returns `changes`. By default it keeps a barrel's public name: renaming `formatPrice` gives `export { renderPrice as formatPrice }` and leaves importers alone. Answering `workspace/configuration` with `typescript.preferences.useAliasesForRenames: false` renames every site. The host asks for the second form and says so.
   - It sends diagnostics only when asked (`textDocument/diagnostic`). Source actions come back only when the request lists them in `only`. At the error sites of the cases it returned no quick fix.
   - It does not advertise type hierarchy, and offers no extract, inline or move.
 - **Diagnostics: where the client advertises pull, no server pushes; where it does not, only csharp-ls does.** The spike broke the build with one edit and waited 20 s for `textDocument/publishDiagnostics`, twice per server. With the client advertising `textDocument.diagnostic`, none of the three pushed, and all three answered `textDocument/diagnostic` with the error. With the client not advertising it, csharp-ls pushed the error (2 diagnostics), and Roslyn and TypeScript still pushed nothing and are unsupported there, on all three OSes. So Roslyn and TypeScript can give diagnostics only by pull, and csharp-ls's push is switched off by a client that advertises pull. The host advertises pull and pulls diagnostics after each edit for D1 and on request for D2. It does not wait for a push.
-- **The host applies a `WorkspaceEdit` by these rules.** The spike implements them with a test for each; the host that #208 ships must carry the same tests.
+- **The host applies a `WorkspaceEdit` by these rules.** The spike implements them with a test for each; a host built later must carry the same tests.
   - **Shapes:** `changes`, `documentChanges` with `TextDocumentEdit`, and the resource operations `CreateFile`, `RenameFile` and `DeleteFile` with `overwrite`, `ignoreIfExists`, `ignoreIfNotExists` and `recursive`. The client advertises `failureHandling: abort`.
   - **Positions are UTF-16 code units.** A character past the end of a line is clamped to the end. A line past the end of the document is refused.
   - **Edits in one document apply from the end to the start.** Inserts at one position keep the order they were sent in.
@@ -69,6 +69,7 @@ What the three OSes showed:
 
 ## Consequences
 
+- No host is built (CLA-0092), so these choices and rules bind only a host that a later ADR builds.
 - The host depends on a prerelease tool. A version bump is a change to the tool manifest and the DinD image together, and the spike's CI job on three OSes is the check that the new version still passes.
 - The host carries server-specific duties: the Roslyn start sequence and nested actions, TypeScript's `only` filter and rename configuration. Each is covered by a case in the spike.
 - A rename tool must report which overloads, and which generated or non-file locations, it did not change, because the two C# servers differ and generated sites cannot be edited.

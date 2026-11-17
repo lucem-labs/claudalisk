@@ -98,7 +98,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0089](0089-language-server-host-servers-and-edit-rules.md) | The host drives Roslyn's server for C# and TypeScript 7's server for TypeScript, and applies their edits by fixed rules | accepted | workflow |
 | [CLA-0090](0090-code-intel-interface-and-exposure.md) | Sessions carry no code-intelligence tools by default, and a role that needs them gets one MCP tool | accepted | workflow |
 | [CLA-0091](0091-no-role-calls-the-code-intel-tool.md) | No role calls the code-intelligence tool, and the main thread keeps discovery through the scout | accepted | workflow |
-| [CLA-0092](0092-host-replaces-the-lsp-plugins.md) | The host replaces the LSP plugins in one change, and a PostToolUse hook delivers D1 | accepted | workflow |
+| [CLA-0092](0092-host-replaces-the-lsp-plugins.md) | The LSP plugins stay and no host is built, because the diagnostics a host would add are worth too little | accepted | workflow |
 | [CLA-0094](0094-no-loop-guard.md) | No loop guard, because agent loops cost about half a percent of spend | accepted | workflow |
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 

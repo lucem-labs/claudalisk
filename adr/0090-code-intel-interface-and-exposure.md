@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-11-16
 - **Area:** workflow
-- **Enforced by:** reviewer (CLA-0023); from #209 on, the app template's agent tool lists and their tests
-- **Issue:** #205, #202
+- **Enforced by:** reviewer (CLA-0023); the app template's agent tool lists, which carry none of the tools
+- **Issue:** #205, #202, #208
 
 ## Context
 
@@ -45,16 +45,16 @@ Each pair ran in the #202 harness as an arm with the claudalisk plugin, `--setti
 
 ## Decision
 
-- **No code-intelligence tools in a session by default.** Neither the main thread, the scout nor the implementer carries A, B or C. No arm saved cost, turns or failures on either model, and every arm cost more on the fixture. The host's value stays where it costs no schema: D1 through the PostToolUse hook of CLA-0092, and the host's use from scripts.
-- **A role that needs them gets interface C over MCP.** Cost tracked the schema in context, and C over MCP is the smallest, one tool of about 140 tokens, and the arm closest to the baseline, one cent above it on Opus. A role is the scout, the implementer or the main thread; which one, if any, is #206's question, and it reuses this spike's benchmark arms.
+- **No code-intelligence tools in a session by default.** Neither the main thread, the scout nor the implementer carries A, B or C. No arm saved cost, turns or failures on either model, and every arm cost more on the fixture. The host's value stays where it costs no schema: D1 through a PostToolUse hook, and the host's use from scripts. CLA-0092 found D1 worth too little to build the host for it.
+- **A role that needs them gets interface C over MCP.** Cost tracked the schema in context, and C over MCP is the smallest, one tool of about 140 tokens, and the arm closest to the baseline, one cent above it on Opus. A role is the scout, the implementer or the main thread; which one, if any, was #206's question, and CLA-0091 answered none.
 - **A read-only role gets the read-only server.** It has no rename and no replaceBody, so read-only holds without a hook.
 - **MCP over the CLI.** The CLI costs the same, but each distinct command prompts, and a read-only agent needs a shell hook that Opus scouts keep tripping.
 - **Symbol names over positions inside C.** Positions and names cost the same. Agents hold names, and a position goes stale after an edit.
-- **Agent tool lists change only in #209.** The arms override the scout's and implementer's tool lists in their run copies. The template's lists stay as CLA-0080 has them until #209, and change only if #206 finds a role where the tools pay.
+- **Agent tool lists do not change.** The arms override the scout's and implementer's tool lists in their run copies. The template's lists stay as CLA-0080 has them, because CLA-0091 found no role where the tools pay.
 
 ## Consequences
 
 - Sessions keep today's cost. The interfaces, their servers and their tests stay with the spike, so #206 can measure a role without rebuilding them.
 - A future server or model can change the answer. The arms, the schema table and the private pack rerun it; three repeats per side would give a verdict.
-- The snippet sandbox is claudalisk code with its own tests. If #206 ships C, its limits (no file system, network or process, and the time limit) become a guarantee, and its tests move into CI on three OSes with the shipped tool.
-- This amends CLA-0092's line that the scout gets references from the host's tools: it does so only if #206 finds that it pays. Until then the scout keeps finding references as CLA-0080 has it.
+- The snippet sandbox is spike code with its own tests. It ships only if a later ADR gives a role C, and then its limits (no file system, network or process, and the time limit) become a guarantee and its tests move into CI on three OSes.
+- The scout keeps finding references as CLA-0080 has it. CLA-0091 found no role where the tools pay, and CLA-0092 builds no host.
