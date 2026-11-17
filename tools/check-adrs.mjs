@@ -9,15 +9,15 @@ const SKILL_LINE = /^- \[(CLA-\d{4})\]\(\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)]+)\)
 const SKILL_LINK = /\$\{CLAUDE_PLUGIN_ROOT\}\/adr\/([^)\s`]+)/g;
 const README_ROW = /^\| \[(CLA-\d{4})\]\(([^)]+)\) \| ([^|]+?) \| ([^|]+?) \| ([^|]+?) \|$/;
 const RETIRED_LINE = /^- (CLA-\d{4}): (.+)$/;
-const CITATION = /CLA-?(\d{4})/g;
-const CITING_DIRS = ['skills', 'hooks', 'agents', 'templates', 'tools', 'workflows', 'packages', 'output-styles'];
+const CITATION = /(?<![A-Za-z0-9])CLA-?(\d{4})(?!\d)/g;
+const CITING_DIRS = ['skills', 'hooks', 'agents', 'templates', 'tools', 'workflows', 'packages', 'output-styles', 'registry', 'proxy', 'docs', '.github', '.claude-plugin'];
 const CITING_FILE = /\.(md|mjs|cjs|js|json|ya?ml|ts|tsx|cs|txt)$/;
 const SKIPPED_DIRS = new Set(['node_modules', '.git', 'bin', 'obj', 'public']);
 export const MAX_WORDS = 40;
 export const MAX_ADR_WORDS = 800;
 
 const field = (text, name) => text.match(new RegExp(`^- \\*\\*${name}:\\*\\* (.+)$`, 'm'))?.[1].trim();
-const wordCount = (text) => text.split(/\s+/).filter(Boolean).length;
+const wordCount = (text) => text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 
 export function readRetired(readme) {
   const retired = new Map();
@@ -123,7 +123,7 @@ export function checkAdrs(root) {
   for (const file of citingFiles(root)) {
     checkCitations(file, readFileSync(join(root, file), 'utf8'));
   }
-  if (!readme) errors.push('adr/README.md is missing');
+  if (readme === undefined) errors.push('adr/README.md is missing');
   else {
     for (const line of readme.split('\n')) {
       const m = line.match(README_ROW);

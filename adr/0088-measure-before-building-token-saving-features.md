@@ -33,7 +33,7 @@ Rejected options:
   - It ships as plugin parts that every surface loads: hooks, agents, MCP servers and LSP servers. It never depends on a feature that only some surfaces have, such as Code Mode.
   - The plugin's hooks never refuse the calls that the terminal's code-execution mode makes.
 - **Testing and CI.**
-  - Claudalisk's tests run on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse public repositories.
+  - A token-saving tool's tests run on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse public repositories.
   - A binary that an app's CI needs goes into the DinD runner image (CLA-0086), not into each job.
 
 ## Consequences

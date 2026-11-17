@@ -158,6 +158,19 @@ test('a citation of an id with no ADR fails, and test files are not scanned', ()
   assert.deepEqual(errors, ['agents/a.md: cites CLA-0099, which has no ADR and is not retired']);
 });
 
+test('a citation is a whole id, and the scan covers the registry and workflows', () => {
+  const files = valid();
+  files['registry/README.md'] = 'See CLA-0099.\n';
+  files['.github/workflows/ci.yml'] = 'name: CLA-00012 XCLA0099\n';
+  assert.deepEqual(check(files), ['registry/README.md: cites CLA-0099, which has no ADR and is not retired']);
+});
+
+test('table pipes do not count toward the word cap', () => {
+  const files = valid();
+  files['adr/0001-a.md'] = adr('CLA-0001').replace('- Do it.', Array.from({ length: 400 }, () => '| a |').join('\n'));
+  assert.deepEqual(check(files), []);
+});
+
 test('a retired id that still has a file fails', () => {
   const files = retiring(valid());
   files['adr/0002-b.md'] = adr('CLA-0002');

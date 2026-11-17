@@ -24,7 +24,7 @@ Every model request sends the whole conversation again (CLA-0073).
 - **Flags:**
   - `--backend`, `--frontend` and `--e2e` wait only for those layers' jobs.
   - `--fail-fast` returns at the first failed job.
-  - `--timeout` sets the minutes before the script says to run it again. Run again on a pushed commit, it only waits.
+  - `--timeout` sets the minutes before the script says to run it again, 9 by default, under the agent's 10-minute command limit. Run again on a pushed commit, it only waits.
 - **Failures come from the check-run annotations that CI produces,** so parsing happens on the runner. `templates/README.md` lists how each tool annotates. A job without annotations falls back to its failed step's log. The full logs of failed jobs go to `~/.claudalisk/apps/<app>/verify/<worktree>/` (CLA-0066), never the checkout.
 - **Waiting is one blocking call, never a loop of status checks,** whether by shell calls, the host's pull request status tool or a scheduled wake-up.
   - **The main thread** runs `verify.mjs` in the background with a timeout longer than the run, such as `--timeout 60`. It does other work or ends its turn until the host wakes it.

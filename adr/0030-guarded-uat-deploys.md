@@ -14,7 +14,7 @@ Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted 
 
 ## Decision
 
-- **Only the agent deploys uat,** with `node scripts/deploy.mjs --environment uat`, and only as a review deploy: when it opens a pull request, or when an open pull request's head changes. Nothing deploys `main` or dev: after a merge, uat keeps running the merged head, and dev changes only when the agent deploys it by hand (CLA-0029).
+- **Only the agent deploys uat,** with `node scripts/deploy.mjs --environment uat`, and only as a review deploy: when it opens a pull request, or when an open pull request's head changes. Nothing deploys `main`: after a merge, uat keeps running the merged head. The review deploy never touches dev, which the agent deploys by hand (CLA-0029).
 - **The script refuses before it builds or changes anything unless:**
   - the confirmation names the exact commit (`--confirm 'deploy uat <sha7>'`);
   - the checkout's `origin` is the repository in the app config;
