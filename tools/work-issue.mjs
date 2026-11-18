@@ -124,7 +124,7 @@ export function lifecycleStep(facts) {
       step: 3,
       title: 'Plan, implement, verify and review (steps 3 to 5)',
       next: `Work in ${facts.worktree ?? `branch ${facts.branch}, which has no worktree`}: write the brief, run the implementer, verify on dev, then review.`,
-      adrs: ['CLA-0074', 'CLA-0080', 'CLA-0076', 'CLA-0029', 'CLA-0023'],
+      adrs: ['CLA-0074', 'CLA-0076', 'CLA-0029', 'CLA-0023'],
     };
   }
   if (pr.state === 'MERGED') {

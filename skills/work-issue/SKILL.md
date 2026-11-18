@@ -29,7 +29,7 @@ Create the issue's worktree and branch off an up-to-date `origin/main` with the 
 
 ## 3. Plan, implement and discover
 
-The main thread plans and writes the brief for the implementer. Code discovery goes through the scout (CLA-0074, CLA-0080).
+The main thread plans and writes the brief for the implementer (CLA-0074).
 
 ## 4. Verify
 

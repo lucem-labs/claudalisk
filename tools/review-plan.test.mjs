@@ -318,25 +318,24 @@ test('a new ADR no skill lists maps to its Area', () => {
 test('files an Enforced by line names map to the skills that list the ADR', () => {
   const guard = plan(change('hooks/ci-poll-guard.mjs')).files[0].skills;
   assert.ok(guard.includes('workflow') && guard.includes('code-standards'));
-  assert.ok(plan(change('hooks/scout-gate.mjs')).files[0].skills.includes('workflow'));
+  assert.ok(plan(change('hooks/session-start.mjs')).files[0].skills.includes('environments'));
 });
 
 test('a token does not match a file that merely contains it', () => {
-  assert.deepEqual(plan(change('hooks/scout-gate-extra.md')).files[0].skills, []);
-  assert.deepEqual(plan(change('docs/my-scout-gate.txt')).files[0].skills, []);
+  assert.deepEqual(plan(change('agents/implementer-extra.md')).files[0].skills, []);
+  assert.deepEqual(plan(change('docs/my-implementer.txt')).files[0].skills, []);
 });
 
 test('a plain word in an Enforced by line names no file', () => {
   assert.ok(!plan(change('frontend/src/entities/order/model.ts')).files[0].skills.includes('workflow'));
   assert.equal(namesPath('model', 'frontend/src/entities/order/model'), false);
-  assert.equal(namesPath('scout-gate', 'hooks/scout-gate'), false);
-  assert.equal(namesPath('scout', 'docs/scout.md'), false);
+  assert.equal(namesPath('migration-guard', 'hooks/migration-guard'), false);
+  assert.equal(namesPath('implementer', 'docs/implementer.md'), false);
 });
 
 test('a bare agent or hook name maps that agent or hook file', () => {
   assert.ok(plan(change('agents/implementer.md')).files[0].skills.includes('workflow'));
-  assert.ok(plan(change('agents/scout.md')).files[0].skills.includes('workflow'));
-  assert.equal(namesPath('scout-gate', 'hooks/scout-gate.mjs'), true);
+  assert.equal(namesPath('migration-guard', 'hooks/migration-guard.mjs'), true);
 });
 
 test('a directory token names files under it at any depth', () => {

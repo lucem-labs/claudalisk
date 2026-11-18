@@ -5,13 +5,12 @@ The plugin's hooks, registered in `hooks.json`. Each has tests beside it, and CI
 | Hook | Event | ADR |
 |---|---|---|
 | `guardrail.mjs` | `PreToolUse` on `Bash\|PowerShell` | CLA-0083 |
-| `scout-gate.mjs` | `PreToolUse` on `Read\|Grep\|Glob\|Bash\|PowerShell` | CLA-0080 |
 | `ci-poll-guard.mjs` | `PreToolUse` on `Bash\|PowerShell` | CLA-0076 |
 | `migration-guard.mjs` | `PreToolUse` on `Edit\|Write\|MultiEdit` | CLA-0010 |
 | `stack-config-guard.mjs` | `PreToolUse` on `Edit\|Write\|MultiEdit` | CLA-0086 |
 | `session-start.mjs` | `SessionStart` | CLA-0085 |
 
-`shell.mjs` is the one shell parser that the guardrail, the scout gate and the CI poll guard share.
+`shell.mjs` is the one shell parser that the guardrail and the CI poll guard share.
 
 ## How the guardrail reads a command
 

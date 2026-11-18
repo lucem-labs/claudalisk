@@ -12,7 +12,7 @@ Rejected: a hand-written `permissions.deny` list of command prefixes per app. Ev
 
 ## Decision
 
-- **One `PreToolUse` hook on `Bash|PowerShell` decides by tokens and protected names, not by prefix.** `hooks/shell.mjs` is the one parser, shared with the scout gate (CLA-0080). It splits sequences, strips quotes, follows `cd` and looks inside substitutions and nested shells. `hooks/README.md` describes how it reads a command and what it cannot see.
+- **One `PreToolUse` hook on `Bash|PowerShell` decides by tokens and protected names, not by prefix.** `hooks/shell.mjs` is the one parser, shared with the CI poll guard (CLA-0076). It splits sequences, strips quotes, follows `cd` and looks inside substitutions and nested shells. `hooks/README.md` describes how it reads a command and what it cannot see.
 - **It applies to subagents too.** Every segment is checked. Deny beats ask beats allow.
 - **The protected names are read at each call.** They are every registered app's uat Compose project, volume and protected volumes, the proxy's project and network, and the runners' projects (CLA-0082). The current app's `.claude/claudalisk.json` adds its own, and names derived from them are protected too: `<hostPrefix>.uat.localhost`, and the project name with `_` for `-`.
 - **A broken registry or config denies only what needs the names.** A command that runs a container tool or a database client, or a Compose call, is denied with the file to fix. Other commands still go through the rules that need no names. An absent registry protects only the current app.

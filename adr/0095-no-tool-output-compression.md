@@ -17,7 +17,7 @@ A `PostToolUse` hook could return `updatedToolOutput` with deterministic filters
 - **No tool-output compression.** No hook rewrites tool output, and the plugin ships no per-command filters.
   - Build, test, lint, CI, Docker and git output is 4.4% of context and 3.5% of cost. Halving all of it would save about 2% of context, which is less than the benchmark of #202 can tell from noise. Each tool call would also pay for a Node process.
   - Claude Code and other plugins already truncate long output. One truncated result in four was followed by a re-run or a read of the full output, so a filter costs more than its output size shows.
-  - File reads and search are 31% of context. Compressing them would change the evidence the agent asked for (CLA-0088). The read rules (CLA-0078) and the scout (CLA-0080) deal with that cost.
+  - File reads and search are 31% of context. Compressing them would change the evidence the agent asked for (CLA-0088). The read rules (CLA-0078) deal with that cost.
 - **`verify.mjs` stays the one compaction for CI output** (CLA-0076).
 - **What reopens it:** a spike by the same method that finds this output above 10% of context, or a benchmark that finds rework caused by it. A design would then:
   - use `PostToolUse` with `updatedToolOutput`;

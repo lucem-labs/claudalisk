@@ -8,7 +8,7 @@
 
 ## Context
 
-Every model request sends the whole conversation again (CLA-0073). A feature that cuts what a session reads, or how many turns it takes, can cut its cost. It also adds schema, hooks and turns of its own, and a smaller tool output is not a cheaper session: cache reads, extra turns and rework decide what a task costs. In #146 a re-read guard was not built, because the transcripts showed no repeat reads. Measuring first saved building something with no effect. Epic #200 applied that rule to code intelligence, and no spike measured a saving (CLA-0092).
+Every model request sends the whole conversation again (CLA-0073). A feature that cuts what a session reads, or how many turns it takes, can cut its cost. It also adds schema, hooks and turns of its own, and a smaller tool output is not a cheaper session: cache reads, extra turns and rework decide what a task costs. In #146 a re-read guard was not built, because the transcripts showed no repeat reads. Measuring first saved building something with no effect. Epic #200 applied that rule to code intelligence, and no spike measured a saving.
 
 Rejected options:
 
@@ -23,14 +23,14 @@ Rejected options:
   - An arm lowers cost only when each of its repeats costs less per accepted task than each of the baseline's, and its mean is at least 10% lower.
   - Anything short of that is no effect.
 - **Tool output is deterministic evidence.**
-  - It holds language-server results, parsed file content and exact `path:line` locations.
+  - It holds parsed file content and exact `path:line` locations.
   - It never holds embeddings, local-model output or a summary that a model wrote.
-  - The same code and the same call give the same output. A tool waits for the language server to load, and never returns a partial list as complete.
+  - The same code and the same call give the same output. A tool never returns a partial list as complete.
   - A tool that cannot answer says so, and says what it did not cover.
-- **Claudalisk builds its own tools.** It depends on no external code-intelligence service and never copies copyleft code. It defines its own interface instead of mirroring Claude Code's `LSP` tool.
+- **Claudalisk builds its own tools.** It depends on no external code-intelligence service and never copies copyleft code.
 - **Every feature works everywhere.**
   - It runs on Windows, Linux and macOS, in the CLI, the Desktop app and `claude -p`.
-  - It ships as plugin parts that every surface loads: hooks, agents, MCP servers and LSP servers. It never depends on a feature that only some surfaces have, such as Code Mode.
+  - It ships as plugin parts that every surface loads: hooks, agents and MCP servers. It never depends on a feature that only some surfaces have, such as Code Mode.
   - The plugin's hooks never refuse the calls that the terminal's code-execution mode makes.
 - **Testing and CI.**
   - A token-saving tool's tests run on GitHub-hosted ubuntu, windows and macos runners, because this repository is public and the DinD runners refuse public repositories.

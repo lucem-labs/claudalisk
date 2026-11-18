@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-01
 - **Area:** workflow
-- **Enforced by:** `implementer` and `scout` agents; workflow and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`; in the main thread, the plugin's `scout-gate` hook (CLA-0080). No hook for repeat reads, and none for shell reads in subagents.
+- **Enforced by:** `implementer` agent; workflow and code-standards skills; reviewer; Claude Code's own "File unchanged since last read" stub for a whole-file `Read`. No hook for repeat reads or shell reads.
 - **Issue:** #97, #218
 
 ## Context
@@ -14,7 +14,7 @@ Claude Code tracks what each agent has read. A repeat `Read` of an unchanged fil
 
 ## Decision
 
-- **Find before you read.** Use `Grep` (with `-n` and a few lines of context) or `Glob` to find the lines you need. Read a whole file only when it is about 300 lines or fewer, or when the task needs all of it. The main thread asks the scout instead (CLA-0080).
+- **Find before you read.** Use `Grep` (with `-n` and a few lines of context) or `Glob` to find the lines you need. Read a whole file only when it is about 300 lines or fewer, or when the task needs all of it.
 - **Read large files by range,** with `Read` and an `offset` and `limit` around the lines found.
 - **Read with `Read`, not with Bash,** so that read tracking works.
 - **Never re-read a file you just edited.** The `Edit` or `Write` result shows the change, and a failed edit says so.
@@ -28,5 +28,5 @@ Claude Code tracks what each agent has read. A repeat `Read` of an unchanged fil
 
 - A file usually costs its relevant lines once per agent, not its whole length on every read.
 - A subagent reads only what its brief points it to.
-- In subagents, the range rule and the Bash rule are prompt only, on purpose.
+- The range rule and the Bash rule are prompt only.
 - An agent that compacts mid-task may need to read a file again. That read is allowed, and compacting at milestones (CLA-0073) makes it rare.
