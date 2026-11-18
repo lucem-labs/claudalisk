@@ -78,7 +78,6 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0076](0076-one-verify-script-per-cycle.md) | CI is the only verifier, and one verify call per cycle pushes, waits without polling and prints only the failures | accepted | workflow |
 | [CLA-0078](0078-read-by-range-never-re-read.md) | Read files by range, and never re-read a file that has not changed | accepted | workflow |
 | [CLA-0079](0079-subagent-model-and-effort-follow-the-role.md) | A subagent's model and effort follow its role | accepted | workflow |
-| [CLA-0080](0080-code-discovery-goes-through-the-scout.md) | Code search and discovery in the main thread go through the scout | accepted | workflow |
 | [CLA-0081](0081-releases-tagged-by-a-workflow.md) | A workflow tags, checks and publishes each release from the plugin version | accepted | workflow |
 | [CLA-0082](0082-app-config-and-machine-registry.md) | An app's config has one schema, and a machine-wide registry lists every app | accepted | environments |
 | [CLA-0083](0083-guardrail-hook.md) | One guardrail hook checks every shell command against the protected resources | accepted | environments |
@@ -86,7 +85,6 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0085](0085-session-start-router.md) | A session-start hook prints what dev and uat run and points to the workflow skill | accepted | environments |
 | [CLA-0086](0086-runners-stack-from-the-kit.md) | One org-wide runner stack from the public kit, configured and guarded by the plugin | accepted | environments |
 | [CLA-0088](0088-measure-before-building-token-saving-features.md) | Token-saving features ship only on a measured saving, as claudalisk's own deterministic tools that work on every surface | accepted | workflow |
-| [CLA-0092](0092-lsp-plugins-and-no-code-intelligence-tools.md) | Apps use three LSP plugins, and claudalisk builds no code-intelligence tools or host | accepted | workflow |
 | [CLA-0094](0094-no-loop-guard.md) | No loop guard, because agent loops cost about half a percent of spend | accepted | workflow |
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 
@@ -119,7 +117,7 @@ Claude reads an ADR before it acts on it, so every sentence costs tokens on ever
 - **Mechanics live with the code.** Timeouts, flags, file formats, step-by-step recipes and parser details go in the tool's README, its tests or the skill that runs it. The ADR says what must hold.
 - **A rejected option gets one line** in Context when an agent might propose it again. Decisions not to build something are ADRs too.
 - **No history.** An ADR reads as the decision today, and git keeps earlier versions. While a decision holds, its ADR is edited in place. When it is reversed, a new ADR supersedes it.
-- **No product names** beyond the tools a decision adopts, such as language servers and Claude Code features. Sources go in the issue.
+- **No product names** beyond the tools a decision adopts, such as Claude Code features. Sources go in the issue.
 
 ## Retired ids
 
@@ -134,10 +132,12 @@ A retired id has no file and is never reused. An app's `AGENTS.md` deviation tha
 - CLA-0067: merged into CLA-0003
 - CLA-0075: merged into CLA-0073
 - CLA-0077: merged into CLA-0076
+- CLA-0080: removed; code discovery is not part of the plugin, and #106 and #237 hold the reasons
 - CLA-0087: merged into CLA-0074, and the work-issue skill describes the tools
-- CLA-0089: removed; no language-server host is built (CLA-0092), and #203 holds its measurements
-- CLA-0090: removed; no role gets code-intelligence tools (CLA-0092), and #205 holds its measurements
-- CLA-0091: merged into CLA-0092
+- CLA-0089: removed; no language-server host is built, and #203 holds its measurements
+- CLA-0090: removed; no role gets code-intelligence tools, and #205 holds its measurements
+- CLA-0091: removed with the language-server setup; #200 holds its measurements
+- CLA-0092: removed; the plugin sets up no language servers, and #200 and #237 hold the reasons
 - CLA-0093: never used
 
 ## Adding or changing an ADR
