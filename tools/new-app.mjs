@@ -30,7 +30,7 @@ const databaseName = (text) => text.replace(/-/g, '_')
 const SUPPRESSION_DAYS = 90
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000
 const UNPATCHED_ADVISORIES = [
-  { id: 'GHSA-gcqx-w48m-w2h4', lockfileEntry: 'node_modules/deepmerge', reason: 'deepmerge has no patched version, and only the shadcn command line tool uses it' },
+  { id: 'GHSA-fc5q-39xc-vjpf', lockfileEntry: 'node_modules/picomatch', reason: 'picomatch has no patched version, and only the build and test tools use it, on glob patterns written in the repository' },
 ]
 
 export function osvSuppressions(lockfilePackages, now) {

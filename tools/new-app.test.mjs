@@ -93,10 +93,10 @@ describe('generateApp', () => {
 
   it('suppresses an advisory with no patched version until 90 days after generating, which the suppression check accepts', async () => {
     const now = new Date('2026-11-08T12:00:00Z')
-    const design = async ({ app }) => writeFileSync(join(app, 'package-lock.json'), JSON.stringify({ packages: { 'node_modules/deepmerge': { version: '4.3.1' } } }))
+    const design = async ({ app }) => writeFileSync(join(app, 'package-lock.json'), JSON.stringify({ packages: { 'node_modules/picomatch': { version: '4.0.7' } } }))
     const { target } = await generated({ now }, { design })
     const text = readFileSync(join(target, 'osv-scanner.toml'), 'utf8')
-    assert.match(text, /^id = "GHSA-gcqx-w48m-w2h4"$/m)
+    assert.match(text, /^id = "GHSA-fc5q-39xc-vjpf"$/m)
     assert.match(text, /^ignoreUntil = 2027-02-06$/m)
     assert.match(text, /^reason = ".+"$/m)
     assert.deepEqual(findSuppressionProblems('osv-scanner.toml', text, '2026-11-08'), [])
