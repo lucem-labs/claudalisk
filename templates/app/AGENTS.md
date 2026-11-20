@@ -24,6 +24,10 @@ Describe what this app is for and who uses it.
 
 uat holds real data that cannot be recreated. Only the guarded review deploy changes it (CLA-0029, CLA-0030).
 
+## Design
+
+Design work for this app lives in the owner's design repository, in its `<AppName>` folder. Design sessions start there, and this repository keeps Artifacts off (CLA-0096).
+
 ## Deviations
 
 None yet. List each one by ADR id, with the reason.

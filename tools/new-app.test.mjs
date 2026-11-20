@@ -57,6 +57,17 @@ describe('generateApp', () => {
     assert.deepEqual(config.ports, { devDb: 5433, apiLocal: 5100 })
   })
 
+  it('turns Artifacts off and sets nothing else in the project settings', async () => {
+    const { target } = await generated()
+    const settings = JSON.parse(readFileSync(join(target, '.claude', 'settings.json'), 'utf8'))
+    assert.deepEqual(settings, { enableArtifact: false })
+  })
+
+  it('tells sessions where design work for the app lives', async () => {
+    const { target } = await generated()
+    assert.match(readFileSync(join(target, 'AGENTS.md'), 'utf8'), /^Design work for this app lives in the owner's design repository.*`acme-shop` folder.*CLA-0096/m)
+  })
+
   it('uses a database name PostgreSQL accepts without quoting', async () => {
     const { target } = await generated()
     assert.match(readFileSync(join(target, '.env.dev.example'), 'utf8'), /^POSTGRES_DB=acme_shop$/m)

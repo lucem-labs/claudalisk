@@ -87,6 +87,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0088](0088-measure-before-building-token-saving-features.md) | Token-saving features ship only on a measured saving, as claudalisk's own deterministic tools that work on every surface | accepted | workflow |
 | [CLA-0094](0094-no-loop-guard.md) | No loop guard, because agent loops cost about half a percent of spend | accepted | workflow |
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
+| [CLA-0096](0096-design-work-in-a-design-repository.md) | Design work lives in a separate design repository, and apps turn Artifacts off | accepted | workflow |
 
 ## Format
 
