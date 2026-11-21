@@ -19,12 +19,12 @@ runMain(deploy)
 
 | Entry | Export | What it does |
 |---|---|---|
-| `scripts/deploy.mjs` | `@claudalisk/scripts/deploy` | `--environment dev\|uat [--confirm 'deploy uat <sha7>']`: the guarded deploy (CLA-0030) |
+| `scripts/deploy.mjs` | `@claudalisk/scripts/deploy` | `--environment dev\|uat [--confirm 'deploy uat <sha7>'] [--recreate-dev-volume]`: the guarded deploy (CLA-0030). `--recreate-dev-volume` lets a dev deploy remove a dev volume that has no `dev.env` |
 | `scripts/backup.mjs` | `@claudalisk/scripts/backup` | `[--reason <text>]`: a uat backup (CLA-0031) |
 | `scripts/restore.mjs` | `@claudalisk/scripts/restore` | `--environment dev\|uat --backup <name\|latest> [--owner-approved --confirm '...'] [--no-start]` |
 | `scripts/prune-backups.mjs` | `@claudalisk/scripts/prune-backups` | `[--keep <n>] [--apply]`: dry run unless `--apply` |
 | `scripts/refresh-dev.mjs` | `@claudalisk/scripts/refresh-dev` | `[--backup <name\|latest>] [--fresh]` (CLA-0032) |
-| `scripts/init.mjs` | `@claudalisk/scripts/init` | `--environment dev\|uat`: env file and volume (CLA-0066) |
+| `scripts/init.mjs` | `@claudalisk/scripts/init` | `--environment dev\|uat [--adopt-volume [--password <password>]]`: env file and volume (CLA-0066). `--adopt-volume` writes `dev.env` for an existing dev volume and checks that the password connects |
 | `scripts/migrate.mjs` | `@claudalisk/scripts/migrate` | `[--project <csproj>]`: migrates the dev databases from a directly launched Host (CLA-0008) |
 | `scripts/check-migrations.mjs` | `@claudalisk/scripts/check-migrations` | Fails when a migration on `origin/main` is changed or missing on this branch, unless `approved-migration-edits.txt` on main covers its new content (CLA-0010). A branch is judged only on what it changed since its merge base with main |
 | `scripts/no-comments.mjs` | `@claudalisk/scripts/no-comments` | `[<root>] [--skip <path>]...`: fails when a tracked file has a comment (CLA-0035) |

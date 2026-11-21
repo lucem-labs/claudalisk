@@ -2,7 +2,10 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path'
 import {
   assertEnvironment,
+  compose,
+  composeChecked,
   envFileFromExample,
+  loadEnvironment,
   newPassword,
   projectFor,
   stateDirectory,
@@ -15,6 +18,15 @@ export function initCommand(environment) {
   return `node scripts/init.mjs --environment ${environment}`
 }
 
+function writeEnvFileFromExample(app, environment, stateDir, envFile, password) {
+  const example = join(app.root, `.env.${environment}.example`)
+  if (!existsSync(example)) throw new Error(`${example} does not exist; init builds the env file from it.`)
+  const extra = environment === 'dev' ? { DEV_POSTGRES_PORT: String(app.ports.devDb) } : {}
+  const text = envFileFromExample(readFileSync(example, 'utf8'), password, extra)
+  mkdirSync(environment === 'uat' ? join(stateDir, 'backups') : stateDir, { recursive: true })
+  writeFileSync(envFile, text, { mode: 0o600, flag: 'wx' })
+}
+
 export async function initEnvironment(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), password = newPassword() } = {}) {
   const volume = volumeFor(app, environment)
   const envFile = join(stateDir, `${environment}.env`)
@@ -24,12 +36,7 @@ export async function initEnvironment(runner, app, environment, { env = process.
     const present = [hasEnvFile ? envFile : null, hasVolume ? `the volume ${volume}` : null].filter(Boolean).join(' and ')
     throw new Error(`${present} already exists; init changes nothing.`)
   }
-  const example = join(app.root, `.env.${environment}.example`)
-  if (!existsSync(example)) throw new Error(`${example} does not exist; init builds the env file from it.`)
-  const extra = environment === 'dev' ? { DEV_POSTGRES_PORT: String(app.ports.devDb) } : {}
-  const text = envFileFromExample(readFileSync(example, 'utf8'), password, extra)
-  mkdirSync(environment === 'uat' ? join(stateDir, 'backups') : stateDir, { recursive: true })
-  writeFileSync(envFile, text, { mode: 0o600, flag: 'wx' })
+  writeEnvFileFromExample(app, environment, stateDir, envFile, password)
   try {
     await runChecked(runner, 'docker', ['volume', 'create', volume], { what: `Creating volume ${volume}` })
   } catch (error) {
@@ -40,7 +47,40 @@ export async function initEnvironment(runner, app, environment, { env = process.
   return envFile
 }
 
-export async function ensureInitialised(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), password } = {}) {
+export async function adoptVolume(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), askPassword }) {
+  if (environment !== 'dev') throw new Error('--adopt-volume is only for dev. The owner writes uat.env by hand with the password the uat volume was created with.')
+  const volume = volumeFor(app, environment)
+  const envFile = join(stateDir, `${environment}.env`)
+  if (existsSync(envFile)) throw new Error(`${envFile} already exists; init changes nothing.`)
+  if (!(await volumeExists(runner, volume))) {
+    throw new Error(`The volume ${volume} does not exist, so there is nothing to adopt; init changes nothing. Run ${initCommand(environment)} without --adopt-volume to create it.`)
+  }
+  const password = await askPassword(volume)
+  if (!password) throw new Error(`--adopt-volume needs the password the volume ${volume} was created with; init changes nothing.`)
+  writeEnvFileFromExample(app, environment, stateDir, envFile, password)
+  const settings = loadEnvironment(environment, { app, env, stateDir })
+  const user = settings.values.POSTGRES_USER
+  const database = settings.values.POSTGRES_DB || 'postgres'
+  try {
+    await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { what: 'Starting the dev database' })
+    await composeChecked(runner, settings, ['run', '--rm', '--no-deps', '--entrypoint', 'psql', '--env', 'PGPASSWORD', 'db', '--host', 'db', '--username', user, '--dbname', database, '--no-psqlrc', '--tuples-only', '--command', 'SELECT 1'], {
+      env: { PGPASSWORD: password },
+      what: `Connecting to the dev database as ${user}`,
+    })
+  } catch (error) {
+    await compose(runner, settings, ['stop', 'db']).catch(() => undefined)
+    rmSync(envFile, { force: true })
+    throw new Error(`${error.message}\nCould not adopt the volume ${volume}, so ${envFile} was removed and the volume was left as it was. Check the password, and that POSTGRES_USER and POSTGRES_DB in .env.dev.example match the volume.`)
+  }
+  console.log(`Created ${envFile} for the existing volume ${volume}, and connected to it with that password.`)
+  return envFile
+}
+
+export function devVolumeWithoutEnvFileMessage(volume, envFile) {
+  return `The dev volume ${volume} exists but ${envFile} does not, so a deploy would remove the volume and its data. Nothing was changed. Keep the data with ${initCommand('dev')} --adopt-volume, which asks for the volume's password, or start dev empty with node scripts/deploy.mjs --environment dev --recreate-dev-volume.`
+}
+
+export async function ensureInitialised(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), password, recreateDevVolume = false } = {}) {
   assertEnvironment(environment)
   const volume = volumeFor(app, environment)
   const envFile = join(stateDir, `${environment}.env`)
@@ -60,7 +100,8 @@ export async function ensureInitialised(runner, app, environment, { env = proces
   }
 
   if (hasVolume) {
-    console.log(`${envFile} does not exist but the dev volume ${volume} does; dev is disposable, so the volume is removed.`)
+    if (!recreateDevVolume) throw new Error(devVolumeWithoutEnvFileMessage(volume, envFile))
+    console.log(`${envFile} does not exist but the dev volume ${volume} does, and --recreate-dev-volume was passed, so the volume is removed.`)
     await runChecked(runner, 'docker', ['compose', '--project-name', projectFor(app, environment), 'down', '--remove-orphans'], { what: 'Stopping the dev stack' })
     await runChecked(runner, 'docker', ['volume', 'rm', volume], { what: `Removing volume ${volume}` })
   } else if (hasEnvFile) {
