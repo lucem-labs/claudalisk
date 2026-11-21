@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { OS_ASSIGNED } from './ports.mjs'
 
 export function createStubServer(stubs) {
   return createServer((request, response) => {
@@ -13,14 +14,14 @@ export function createStubServer(stubs) {
   })
 }
 
-export async function startStubs(stubs, port) {
+export async function startStubs(stubs, port = OS_ASSIGNED) {
   const server = createStubServer(stubs)
   await new Promise((resolve, reject) => {
     server.once('error', reject)
     server.listen(port, '127.0.0.1', resolve)
   })
   return {
-    url: `http://127.0.0.1:${port}`,
+    url: `http://127.0.0.1:${server.address().port}`,
     stop: () => new Promise((resolve) => {
       server.close(resolve)
       server.closeAllConnections()

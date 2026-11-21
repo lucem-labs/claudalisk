@@ -158,9 +158,6 @@ jobs:
         working-directory: frontend
         run: if [ "$RUNNER_ENVIRONMENT" = "github-hosted" ]; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi
 
-      - name: Free ports
-        run: node scripts/free-ports.mjs E2E_API_PORT E2E_WEB_PORT
-
       - name: End-to-end tests
         working-directory: frontend
         run: npm run e2e

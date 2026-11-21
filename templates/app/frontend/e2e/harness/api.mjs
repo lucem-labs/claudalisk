@@ -1,9 +1,9 @@
-import { freePorts } from './ports.mjs'
+import { OS_ASSIGNED } from './ports.mjs'
 import { startUntilLogged } from './processes.mjs'
 
-export const LISTENING = /Now listening on:/
+export const LISTENING = /Now listening on:\s*(?<url>https?:\/\/[^\s"']+)/
 
-export function apiEnvironment({ connectionString, port, workers, extra = {} }) {
+export function apiEnvironment({ connectionString, port = OS_ASSIGNED, workers, extra = {} }) {
   return {
     ...process.env,
     ...extra,
@@ -16,24 +16,22 @@ export function apiEnvironment({ connectionString, port, workers, extra = {} }) 
   }
 }
 
-export function startApi({ dll, connectionString, port, workers, extra }) {
-  return startUntilLogged({
+export async function startApi({ dll, connectionString, port, workers, extra }) {
+  const api = await startUntilLogged({
     name: workers ? 'The API with workers' : 'The API',
     command: 'dotnet',
     args: [dll],
     options: { env: apiEnvironment({ connectionString, port, workers, extra }) },
     ready: LISTENING,
   })
+  return { ...api, url: new URL(api.url).origin }
 }
 
 export async function startWorkerApi(env = process.env) {
-  const [port] = await freePorts(1)
-  const api = await startApi({
+  return startApi({
     dll: env.E2E_API_DLL,
     connectionString: env.E2E_CONNECTION_STRING,
-    port,
     workers: true,
     extra: JSON.parse(env.E2E_API_EXTRA_ENV),
   })
-  return { ...api, url: `http://127.0.0.1:${port}` }
 }

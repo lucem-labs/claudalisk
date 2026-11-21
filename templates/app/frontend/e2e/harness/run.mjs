@@ -7,12 +7,11 @@ import { fileURLToPath } from 'node:url'
 import { stubEnvironment, stubs } from '../stubs/index.mjs'
 import { apiEnvironment, startApi } from './api.mjs'
 import { runProjects } from './playwright-runs.mjs'
-import { resolvePorts } from './ports.mjs'
+import { portOf, resolvePorts } from './ports.mjs'
 import { startPostgres } from './postgres.mjs'
-import { runToEnd, startUntilLogged } from './processes.mjs'
+import { runToEnd } from './processes.mjs'
 import { startStubs } from './stubs.mjs'
-
-const VITE_READY = /ready in \d/
+import { startVite } from './vite.mjs'
 
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const backend = join(frontend, '..', 'backend')
@@ -42,8 +41,7 @@ async function main(extra) {
   }
 
   try {
-    const ports = await resolvePorts(['E2E_API_PORT', 'E2E_WEB_PORT', 'E2E_STUB_PORT'])
-    const postgresPort = process.env.E2E_POSTGRES_PORT ? (await resolvePorts(['E2E_POSTGRES_PORT'])).E2E_POSTGRES_PORT : undefined
+    const ports = resolvePorts(['E2E_API_PORT', 'E2E_WEB_PORT', 'E2E_STUB_PORT', 'E2E_POSTGRES_PORT'])
 
     const output = mkdtempSync(join(tmpdir(), 'e2e-api-'))
     cleanup.push(async () => rmSync(output, { recursive: true, force: true }))
@@ -51,7 +49,7 @@ async function main(extra) {
     await runToEnd('dotnet', ['build', join(backend, `${root}.Api`, `${root}.Api.csproj`), '-nodeReuse:false', '-o', output], { cwd: join(backend, '..') })
     const dll = join(output, `${root}.Api.dll`)
 
-    const postgres = await startPostgres(postgresPort)
+    const postgres = await startPostgres(ports.E2E_POSTGRES_PORT || undefined)
     cleanup.push(postgres.stop)
 
     const stubServer = await startStubs(stubs, ports.E2E_STUB_PORT)
@@ -59,25 +57,19 @@ async function main(extra) {
     const extraEnv = stubEnvironment(stubServer.url)
 
     await runToEnd('dotnet', [dll, '--initialize-databases'], {
-      env: apiEnvironment({ connectionString: postgres.connectionString, port: ports.E2E_API_PORT, workers: false, extra: extraEnv }),
+      env: apiEnvironment({ connectionString: postgres.connectionString, workers: false, extra: extraEnv }),
     })
 
     const api = await startApi({ dll, connectionString: postgres.connectionString, port: ports.E2E_API_PORT, workers: false, extra: extraEnv })
     cleanup.push(api.stop)
 
-    const vite = await startUntilLogged({
-      name: 'Vite',
-      command: process.execPath,
-      args: [join(frontend, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', String(ports.E2E_WEB_PORT), '--strictPort'],
-      options: { cwd: frontend, env: { ...process.env, NO_COLOR: '1', E2E_API_URL: `http://127.0.0.1:${ports.E2E_API_PORT}` } },
-      ready: VITE_READY,
-    })
+    const vite = await startVite({ frontend, port: ports.E2E_WEB_PORT, apiUrl: api.url })
     cleanup.push(vite.stop)
 
     return await runProjects(runPlaywright({
       ...process.env,
-      E2E_WEB_PORT: String(ports.E2E_WEB_PORT),
-      E2E_API_PORT: String(ports.E2E_API_PORT),
+      E2E_WEB_PORT: String(portOf(vite.url)),
+      E2E_API_PORT: String(portOf(api.url)),
       E2E_API_DLL: dll,
       E2E_CONNECTION_STRING: postgres.connectionString,
       E2E_API_EXTRA_ENV: JSON.stringify(extraEnv),

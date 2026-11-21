@@ -43,5 +43,5 @@ export async function startUntilLogged({ name, command, args, options, ready, ti
     clearTimeout(timer)
   }
   failed.catch(() => {})
-  return { stop, tail: () => latch.tail() }
+  return { stop, tail: () => latch.tail(), url: latch.match.groups?.url }
 }

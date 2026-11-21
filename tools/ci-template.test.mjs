@@ -161,9 +161,10 @@ test('a failing migration check still shows the build and test results', () => {
   assert.ok(steps.indexOf(build) > steps.findIndex((step) => step.run === 'node scripts/check-migrations.mjs'));
 });
 
-test('the e2e job gets free ports and uploads the Playwright report when it fails', () => {
+test('the e2e job leaves its ports to the OS and uploads the Playwright report when it fails', () => {
   const steps = ci.jobs.e2e.steps;
-  assert.ok(steps.some((step) => step.run === 'node scripts/free-ports.mjs E2E_API_PORT E2E_WEB_PORT'));
+  assert.ok(!steps.some((step) => step.run?.includes('free-ports')));
+  assert.ok(!steps.some((step) => Object.keys(step.env ?? {}).some((name) => /^E2E_.*_PORT$/.test(name))));
   const browser = steps.find((step) => step.name === 'Install the browser');
   assert.equal(browser.if, undefined);
   assert.equal(browser.run, 'if [ "$RUNNER_ENVIRONMENT" = "github-hosted" ]; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi');
