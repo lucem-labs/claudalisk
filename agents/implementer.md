@@ -5,7 +5,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 effort: medium
 maxTurns: 150
-autoCompactWindow: 200000
+autoCompactWindow: 150000
 ---
 
 You implement one scoped issue in a claudalisk app, following CLA-0074. The main thread planned the work and will review it. Your job is the loop: change the code, verify it on CI, fix, and repeat until everything is green.
