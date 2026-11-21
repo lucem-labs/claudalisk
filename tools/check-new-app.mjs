@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { serve, runAsync } from './check-registry.mjs'
+import { checkProjects, projectPath, requireTests } from './check-dotnet-tests.mjs'
 import { generateApp, finishApp } from './new-app.mjs'
 import { builtRegistry, readJson, repositoryRoot, spawnArguments } from './registry.mjs'
 
@@ -89,7 +90,9 @@ async function main() {
     ))
 
     const frontend = join(app, 'frontend')
-    await step('Backend restore, build and tests, architecture tests included', () => runAsync('dotnet', ['test', '--solution', `backend/${ROOT}.slnx`], app))
+    await step('Backend restore, build and tests, architecture tests included', () => requireTests(app, ['--solution', `backend/${ROOT}.slnx`]))
+    await step('Each backend test project runs its tests with --project, and a run with no tests fails', () => checkProjects(app, [`${ROOT}.Api.Tests`, `${ROOT}.ArchitectureTests`, `${ROOT}.Modules.Ordering.Tests`]))
+    await step('The add-migration skill runs the fresh-database test', () => requireTests(app, ['--project', projectPath(`${ROOT}.Api.Tests`), '--filter-method', '*FreshDatabaseMigrates']))
     await step('Root install', () => runAsync('npm', INSTALL, app))
     await step('Frontend lint and Steiger', () => runAsync('npm', ['run', 'lint:ci'], frontend))
     await step('Frontend typecheck', () => runAsync('npm', ['run', 'typecheck'], frontend))

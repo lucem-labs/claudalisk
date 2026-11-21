@@ -8,7 +8,7 @@ Describe what this app is for and who uses it.
 
 ## Commands
 
-- Backend: `dotnet test --solution backend/<Root>.slnx`
+- Backend: `dotnet test --solution backend/<Root>.slnx`, or `dotnet test --project backend/<Project>/<Project>.csproj` for one project, from the app root, where `global.json` opts into Microsoft.Testing.Platform. A run that finds no tests exits 8: never treat it as a pass.
 - Frontend: run `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` in `frontend`
 - End to end: `npm run e2e` in `frontend`
 - API types, after a backend change: `npm run api:types` in `frontend`
