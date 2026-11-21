@@ -17,9 +17,22 @@ function git(cwd, ...args) {
   assert.equal(result.status, 0, result.stderr);
 }
 
-function repo({ onMain = true } = {}) {
+const APP_CONFIG = JSON.stringify({
+  name: 'shop',
+  hostPrefix: 'shop',
+  repo: 'acme/shop',
+  databases: [{ role: 'app', envVar: 'DB' }],
+  ports: { devDb: 5432, apiLocal: 5000 },
+  uat: { composeProject: 'shop-uat', volume: 'shop-uat-data' },
+});
+
+function repo({ onMain = true, app = true } = {}) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'migration-guard-')));
   git(root, 'init', '--quiet');
+  if (app) {
+    mkdirSync(join(root, '.claude'));
+    writeFileSync(join(root, '.claude', 'claudalisk.json'), APP_CONFIG);
+  }
   for (const path of [MIGRATION, SNAPSHOT]) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), 'x');
@@ -83,6 +96,13 @@ test('ignores other tools, missing paths and paths outside the repository', () =
   assert.equal(decide({ cwd: root, tool_name: 'Edit', tool_input: {} }), null);
   assert.equal(decide({ cwd: root, tool_name: 'Edit' }), null);
   assert.equal(edit(root, 'Edit', join(tmpdir(), 'elsewhere', MIGRATION)), null);
+}));
+
+test('steps aside in a repository without an app config', () => withRepo({ app: false }, (root) => {
+  assert.equal(edit(root, 'Edit', join(root, MIGRATION)), null);
+  const run = spawnSync('node', [SCRIPT], { input: JSON.stringify({ cwd: root, tool_name: 'Edit', tool_input: { file_path: join(root, MIGRATION) } }), encoding: 'utf8' });
+  assert.equal(run.status, 0);
+  assert.equal(run.stdout, '');
 }));
 
 test('allows when git itself fails', () => {

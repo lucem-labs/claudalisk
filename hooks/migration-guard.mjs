@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMigrationFile } from '../packages/scripts/src/migration-files.mjs';
+import * as appConfig from '../tools/app-config.mjs';
+import { findConfig } from './guardrail.mjs';
 
 const TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 
@@ -16,6 +18,14 @@ const deny = (path) => ({
 function realGit(cwd, args) {
   const result = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
   return { code: result.status ?? 1, stdout: result.stdout ?? '' };
+}
+
+function realInApp(folder) {
+  try {
+    return findConfig(folder, appConfig) !== null;
+  } catch {
+    return true;
+  }
 }
 
 function existingFolder(path, exists) {
@@ -34,6 +44,7 @@ export function decide(input, deps = {}) {
     const path = resolve(input.cwd ?? process.cwd(), given);
     if (!path.endsWith('.cs') || !path.split(/[\\/]/).includes('Migrations')) return null;
     const folder = existingFolder(path, exists);
+    if (!(deps.inApp ?? realInApp)(folder)) return null;
     const prefix = git(folder, ['rev-parse', '--show-prefix']);
     if (prefix.code !== 0) return null;
     const repoPath = prefix.stdout.trim() + relative(folder, path).split(sep).join('/');
