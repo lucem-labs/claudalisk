@@ -57,10 +57,10 @@ describe('generateApp', () => {
     assert.deepEqual(config.ports, { devDb: 5433, apiLocal: 5100 })
   })
 
-  it('turns Artifacts off and sets nothing else in the project settings', async () => {
+  it('turns Artifacts off and the plugin on, and sets nothing else in the project settings', async () => {
     const { target } = await generated()
     const settings = JSON.parse(readFileSync(join(target, '.claude', 'settings.json'), 'utf8'))
-    assert.deepEqual(settings, { enableArtifact: false })
+    assert.deepEqual(settings, { enableArtifact: false, enabledPlugins: { 'claudalisk@claudalisk': true } })
   })
 
   it('tells sessions where design work for the app lives', async () => {

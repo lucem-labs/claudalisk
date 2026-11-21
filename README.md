@@ -39,6 +39,14 @@ The repository is its own plugin marketplace:
 /plugin install claudalisk --marketplace lucem-labs/claudalisk
 ```
 
+Then turn it off in your user settings, so it loads only in apps ([CLA-0097](adr/0097-plugin-enabled-per-app.md)):
+
+```json
+{ "enabledPlugins": { "claudalisk@claudalisk": false } }
+```
+
+A generated app turns it on in its own `.claude/settings.json`. An existing app adds `"enabledPlugins": { "claudalisk@claudalisk": true }` there.
+
 ## Security
 
 Hooks from this repo run with full access on your machine. **Pin a released version. Never track `main`.**

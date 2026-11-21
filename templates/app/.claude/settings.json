@@ -1,3 +1,6 @@
 {
-  "enableArtifact": false
+  "enableArtifact": false,
+  "enabledPlugins": {
+    "claudalisk@claudalisk": true
+  }
 }
