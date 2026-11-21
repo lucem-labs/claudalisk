@@ -637,8 +637,10 @@ function nested(name, args, seg, shell, ctx, depth) {
     if (at >= 0 && args[at + 1] !== undefined) evaluate(args[at + 1], 'bash', ctx, depth + 1);
   } else if (PS_SHELLS.has(name)) {
     const at = args.findIndex((a) => /^[-/]c/i.test(a) && 'command'.startsWith(a.slice(1).toLowerCase()));
+    const file = args.findIndex((a) => /^[-/]f(ile)?$/i.test(a));
     if (at >= 0) evaluate(args.slice(at + 1).join(' '), 'powershell', ctx, depth + 1);
-    else if (!args.some((a) => /^[-/]f(ile)?$/i.test(a))) evaluate(args.filter((a) => !a.startsWith('-')).join(' '), 'powershell', ctx, depth + 1);
+    else if (file >= 0) evaluate(args.slice(file + 1).join(' '), 'powershell', ctx, depth + 1);
+    else evaluate(args.filter((a) => !a.startsWith('-')).join(' '), 'powershell', ctx, depth + 1);
   } else if (name === 'cmd') {
     const at = args.findIndex((a) => /^\/[ck]$/i.test(a));
     if (at >= 0) evaluate(args.slice(at + 1).join(' '), undefined, ctx, depth + 1);
