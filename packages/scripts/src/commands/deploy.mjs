@@ -83,7 +83,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   console.log(`Deploying ${environment} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
 
   const versionEnv = { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref }
-  const build = () => composeChecked(runner, settings, ['build'], { inherit: true, env: versionEnv })
+  const build = () => composeChecked(runner, settings, ['--profile', 'migrate', 'build'], { inherit: true, env: versionEnv })
 
   let backupFolder = null
   const source = uat ? sourceMigrations(appRoot) : null

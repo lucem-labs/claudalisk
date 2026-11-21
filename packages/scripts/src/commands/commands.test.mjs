@@ -185,6 +185,27 @@ test('a uat deploy reads the approved edits from origin/main through git', async
   assert.equal(callsMatching(runner, /show origin\/main:approved-migration-edits\.txt$/).length, 1)
 })
 
+const profilesOf = (args) => args.flatMap((arg, index) => (args[index - 1] === '--profile' ? [arg] : []))
+const composeVerbOf = (args) => args.find((arg, index) => ['build', 'run', 'up'].includes(arg) && args[index - 1] !== '--profile')
+
+for (const environment of ['dev', 'uat']) {
+  test(`a ${environment} deploy builds every Compose profile it later runs, so the migrate image is never stale`, async () => {
+    const setup = environment === 'uat' ? uatSetup() : makeApp()
+    const runner = setup.runner ?? docker({ state: setup.state })
+    await deploy({ appRoot: setup.root, argv: ['--environment', environment], env: setup.env, runner, health: healthy, guard: approvedGuard, now: when })
+    const composeCalls = runner.calls.filter((call) => call.command === 'docker' && call.args[0] === 'compose')
+    const builds = composeCalls.filter((call) => composeVerbOf(call.args) === 'build')
+    assert.equal(builds.length, 1)
+    const built = new Set(profilesOf(builds[0].args))
+    const buildIndex = runner.calls.indexOf(builds[0])
+    const started = composeCalls.filter((call) => runner.calls.indexOf(call) > buildIndex && ['run', 'up'].includes(composeVerbOf(call.args)))
+    assert.ok(started.some((call) => call.args.includes('migrate')))
+    for (const call of started) {
+      for (const profile of profilesOf(call.args)) assert.ok(built.has(profile), `${call.line} runs profile '${profile}', which the build skipped`)
+    }
+  })
+}
+
 const uatDeploy = (setup, argv = []) => deploy({ appRoot: setup.root, argv: ['--environment', 'uat', ...argv], env: setup.env, runner: setup.runner, health: healthy, guard: approvedGuard, now: when })
 
 test('a uat deploy refuses an applied migration that is neither recorded nor on origin/main, and --adopt-unrecorded-migrations records it', async () => {
