@@ -17,7 +17,7 @@ Rejected option: keeping design folders in each app repository with Artifacts on
 ## Decision
 
 - **Design source lives outside app repositories.** The owner keeps one private design repository with a folder per product. It holds the design systems, screens, mockups, source images and snapshots of the live artifacts.
-- **Apps turn Artifacts off.** A generated app's `.claude/settings.json` sets `"enableArtifact": false`, and nothing else.
+- **Apps turn Artifacts off.** A generated app's `.claude/settings.json` sets `"enableArtifact": false`, next to the plugin setting of CLA-0097.
 - **Design sessions start in the design repository**, which leaves Artifacts on. A design session that needs the app's real tokens or components adds the app repository as an extra folder.
 - **App sessions read the design from disk.** An app session reads the snapshot in the design repository and cannot open the artifact.
 - **A design that needs an app change becomes an issue** in the app's repository and follows the app's flow (CLA-0021).

@@ -88,6 +88,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0094](0094-no-loop-guard.md) | No loop guard, because agent loops cost about half a percent of spend | accepted | workflow |
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 | [CLA-0096](0096-design-work-in-a-design-repository.md) | Design work lives in a separate design repository, and apps turn Artifacts off | accepted | workflow |
+| [CLA-0097](0097-plugin-enabled-per-app.md) | The plugin is off at user scope, and each app turns it on in its project settings | accepted | workflow |
 
 ## Format
 
