@@ -6,7 +6,6 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from '@typescript/typescript6'
 import { apiEnvironment, startApi } from '../e2e/harness/api.mjs'
-import { freePorts } from '../e2e/harness/ports.mjs'
 import { startPostgres } from '../e2e/harness/postgres.mjs'
 import { runToEnd } from '../e2e/harness/processes.mjs'
 
@@ -39,11 +38,10 @@ try {
   await runToEnd('dotnet', ['build', join(backend, `${root}.Api`, `${root}.Api.csproj`), '-nodeReuse:false', '-o', build], { cwd: join(backend, '..') })
   const dll = join(build, `${root}.Api.dll`)
   postgres = await startPostgres()
-  const [port] = await freePorts(1)
-  const settings = { connectionString: postgres.connectionString, port, workers: false }
+  const settings = { connectionString: postgres.connectionString, workers: false }
   await runToEnd('dotnet', [dll, '--initialize-databases'], { env: apiEnvironment(settings) })
   api = await startApi({ dll, ...settings })
-  const response = await fetch(`http://127.0.0.1:${port}/openapi/v1.json`)
+  const response = await fetch(`${api.url}/openapi/v1.json`)
   if (!response.ok) throw new Error(`/openapi/v1.json returned ${response.status}.`)
   const document = await response.json()
   writeFileSync(output, withoutComments(astToString(await openapiTS(document))))

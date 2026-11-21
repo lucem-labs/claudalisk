@@ -2,11 +2,25 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { LogLatch } from '../templates/app/frontend/e2e/harness/log-latch.mjs'
 import { playwrightArgs, runProjects } from '../templates/app/frontend/e2e/harness/playwright-runs.mjs'
-import { freePorts, resolvePorts } from '../templates/app/frontend/e2e/harness/ports.mjs'
+import { createServer } from 'node:net'
+import { OS_ASSIGNED, portOf, resolvePorts } from '../templates/app/frontend/e2e/harness/ports.mjs'
+import { startUntilLogged } from '../templates/app/frontend/e2e/harness/processes.mjs'
 import { startStubs } from '../templates/app/frontend/e2e/harness/stubs.mjs'
-import { apiEnvironment } from '../templates/app/frontend/e2e/harness/api.mjs'
+import { apiEnvironment, LISTENING } from '../templates/app/frontend/e2e/harness/api.mjs'
+import { VITE_LISTENING } from '../templates/app/frontend/e2e/harness/vite.mjs'
 
-const LISTENING = /Now listening on:/
+function holdPort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer()
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => resolve(server))
+  })
+}
+
+const SERVER_ON_PORT_ZERO = `
+const server = require('node:http').createServer((request, response) => response.end('up'))
+server.listen(0, '127.0.0.1', () => console.log('info: Microsoft.Hosting.Lifetime[14]\\n      Now listening on: http://127.0.0.1:' + server.address().port))
+`
 
 test('the latch holds after the listening line has been trimmed from the tail', async () => {
   const latch = new LogLatch(LISTENING, { limit: 5 })
@@ -66,23 +80,60 @@ test('only a filtered run or the serial project may find no tests', () => {
   assert.ok(playwrightArgs('parallel', ['e2e/one.spec.ts']).includes('--pass-with-no-tests'))
 })
 
-test('a port from the environment wins and the others are picked', async () => {
-  const ports = await resolvePorts(['A', 'B', 'C'], { B: '4100' }, async (count) => {
-    assert.equal(count, 2)
-    return [5001, 5002]
-  })
-  assert.deepEqual(ports, { A: 5001, B: 4100, C: 5002 })
+test('a port from the environment wins and every other port is left to the OS', () => {
+  assert.equal(OS_ASSIGNED, 0)
+  assert.deepEqual(resolvePorts(['A', 'B', 'C'], { B: '4100' }), { A: OS_ASSIGNED, B: 4100, C: OS_ASSIGNED })
 })
 
-test('a port that is not a number is refused', async () => {
-  await assert.rejects(resolvePorts(['A'], { A: 'abc' }, async () => []), /A must be a port number/)
+test('a port that is not a number is refused', () => {
+  assert.throws(() => resolvePorts(['A'], { A: 'abc' }), /A must be a port number/)
+  assert.throws(() => resolvePorts(['A'], { A: '70000' }), /A must be a port number/)
 })
 
-test('free ports are distinct and can be bound', async () => {
-  const ports = await freePorts(3)
-  assert.equal(new Set(ports).size, 3)
-  const server = await startStubs({}, ports[0])
-  await server.stop()
+test('the API is told to bind port 0 unless a port is given', () => {
+  assert.equal(apiEnvironment({ connectionString: 'c', workers: false }).ASPNETCORE_URLS, 'http://127.0.0.1:0')
+  assert.equal(apiEnvironment({ connectionString: 'c', port: 4100, workers: false }).ASPNETCORE_URLS, 'http://127.0.0.1:4100')
+})
+
+test('stubs bind a port the OS picks and report it, beside ports already taken', async () => {
+  const held = await Promise.all([holdPort(), holdPort()])
+  const servers = await Promise.all([startStubs({}), startStubs({})])
+  try {
+    const ports = servers.map((server) => portOf(server.url))
+    const taken = held.map((server) => server.address().port)
+    assert.ok(ports.every((port) => port > 0 && !taken.includes(port)))
+    assert.notEqual(ports[0], ports[1])
+    assert.equal((await fetch(`${servers[0].url}/none`)).status, 502)
+  } finally {
+    await Promise.all(servers.map((server) => server.stop()))
+    await Promise.all(held.map((server) => new Promise((resolve) => server.close(resolve))))
+  }
+})
+
+test('the API URL comes from its listening line, so the port the OS picked is the one used', async () => {
+  const api = await startUntilLogged({ name: 'Fake API', command: process.execPath, args: ['-e', SERVER_ON_PORT_ZERO], ready: LISTENING })
+  try {
+    assert.match(api.url, /^http:\/\/127\.0\.0\.1:\d+$/)
+    assert.ok(portOf(api.url) > 0)
+    assert.equal(await (await fetch(api.url)).text(), 'up')
+  } finally {
+    await api.stop()
+  }
+})
+
+test('the API listening line in a JSON log still yields the URL', () => {
+  const latch = new LogLatch(LISTENING)
+  latch.write('{"Message":"Now listening on: http://127.0.0.1:41234","Level":"Information"}\n')
+  assert.equal(latch.match.groups.url, 'http://127.0.0.1:41234')
+})
+
+test('the Vite URL comes from its Local line and not from the ready line', () => {
+  const latch = new LogLatch(VITE_LISTENING)
+  latch.write('  VITE v8.3.6  ready in 1522 ms\n\n')
+  assert.equal(latch.latched, false)
+  latch.write('  ➜  \x1b[1mLocal\x1b[0m:   http://127.0.0.1:\x1b[1m52529\x1b[0m/\n')
+  assert.equal(latch.latched, true)
+  assert.equal(portOf(latch.match.groups.url), 52529)
 })
 
 test('the API runs with workers and schedules off unless a test turns them on', () => {
@@ -93,8 +144,7 @@ test('the API runs with workers and schedules off unless a test turns them on', 
 })
 
 test('a stub answers under its name and an unknown stub is a 502', async () => {
-  const [port] = await freePorts(1)
-  const server = await startStubs({ rates: (_, response, path) => response.end(path) }, port)
+  const server = await startStubs({ rates: (_, response, path) => response.end(path) })
   try {
     assert.equal(await (await fetch(`${server.url}/rates/today`)).text(), '/today')
     assert.equal((await fetch(`${server.url}/other/x`)).status, 502)

@@ -8,6 +8,7 @@ export class LogLatch {
   #partial = ''
   #release
   latched = false
+  match = null
 
   constructor(pattern, { limit = 200 } = {}) {
     this.#pattern = pattern
@@ -39,8 +40,11 @@ export class LogLatch {
   }
 
   #check(line) {
-    if (this.latched || !this.#pattern.test(line.replace(ANSI, ''))) return
+    if (this.latched) return
+    const match = this.#pattern.exec(line.replace(ANSI, ''))
+    if (!match) return
     this.latched = true
+    this.match = match
     this.#release()
   }
 }
