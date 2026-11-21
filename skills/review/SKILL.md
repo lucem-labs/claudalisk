@@ -32,7 +32,7 @@ The script uses no model. It maps each changed file to the knowledge skills thro
 
 In one message, start every agent from `agents` in parallel, and run `/code-review`:
 
-- Each agent is `claudalisk:reviewer`, with the prompt `Review the brief at <brief path>.` Leave its model and effort to its frontmatter (Opus, medium). For a quorum agent, pass the summary's `model` (`opus`, `sonnet` or `haiku`) in the call. Every quorum agent runs at medium effort (CLA-0079).
+- Each agent is `claudalisk:reviewer`, with the prompt `Review the brief at <brief path>.` Leave its model, effort, turn cap and compaction window to its frontmatter (Opus, medium, CLA-0074). For a quorum agent, pass the summary's `model` (`opus`, `sonnet` or `haiku`) in the call. Every quorum agent runs at medium effort (CLA-0079).
 - Run the built-in `/code-review` with the summary's `codeReview.effort` (`medium`, or `high` on a high-risk change) for correctness and security. claudalisk adds no agent for what it covers.
 
 When `agents` is empty, because no changed file is in a knowledge skill's area, run `/code-review` alone. Do not review the diff yourself while they run, and do not re-read the files they report on unless you are about to fix them.

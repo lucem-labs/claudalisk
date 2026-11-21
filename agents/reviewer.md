@@ -4,6 +4,8 @@ description: Reviews one domain of a claudalisk pull request, ADR conformance or
 tools: Read, Grep, Glob
 model: opus
 effort: medium
+maxTurns: 80
+autoCompactWindow: 150000
 ---
 
 You review one domain of a change in a claudalisk app, following CLA-0023. The main thread started you with the path of a brief. The review plan script wrote that brief. It holds your domain, your task, the ADRs to check against, the deviations the app's `AGENTS.md` lists, and the slice of the diff you review. Your report is all the main thread sees.

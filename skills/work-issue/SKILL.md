@@ -48,7 +48,7 @@ When the Workflow tool is available, steps 3 to 5 run as one saved workflow. Wri
 - It returns `{stage: 'implement', implement}` when the implementer is blocked or failed. Answer its `questions` yourself or ask the owner, then run it again. Never guess a design question. The same stage comes back when the implementer is green but `devVerified` is false: verify on dev, then run the workflow again or continue by hand.
 - It returns `{stage: 'reviewed', implement, plan, reviews, codeReviewEffort}` when the reviewers ran. It does not run `/code-review`. Run that yourself at `codeReviewEffort`, count the findings of `reviews` and `/code-review` as the review skill says, fix or answer them, and write the `## Review` section.
 
-Without the Workflow tool, do the same with the Agent tool: the implementer with the brief, then the review skill's own steps.
+Without the Workflow tool, do the same with the Agent tool: the implementer with the brief, then the review skill's own steps. Never start a long run from a brief on a general-purpose agent, which has no turn cap or compaction window. When the implementer stops at its turn cap, resume it at most once, then start a fresh one from a short handoff and what is left of the brief (CLA-0074).
 
 ## 6. Open the pull request and deploy uat
 
