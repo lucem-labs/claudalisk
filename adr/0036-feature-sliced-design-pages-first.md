@@ -26,6 +26,7 @@ The backend is a modular monolith so that a vibe-coded app does not turn into sp
 - **Pages first.** New code starts in the page that needs it. It moves down to a widget, feature or entity only when a second page needs it. Never create a slice for code used in only one place. Entity slices are the exception: an entity slice exists from the first use of its backend module, because it mirrors that module (CLA-0037).
 - `app` and `shared` have no slices, and their segments may import each other.
 - **[Steiger](https://github.com/feature-sliced/steiger), the official FSD linter, runs over `frontend/src` as a CI job** next to oxlint (CLA-0014). An error fails CI. It catches imports that go up a layer or across slices, imports that skip a public API, and slices or segments in the wrong place.
+- **`fsd/insignificant-slice` is off for `entities`.** The template's Steiger config turns it off there, because the rule flags a slice that only one page or feature uses, and an entity slice exists from its module's first use. It stays on for every other layer, where it enforces pages first.
 - **`fsd/inconsistent-naming` stays on.** It needs the slices on a layer to be all singular or all plural, and entity slices take the singular module names (CLA-0001). An app whose entity slices fail it renames the module. Until the rename lands, the app may turn the rule off for `entities` only, as a deviation that names the rename issue (CLA-0028). Any other rule an app turns off is turned off in the Steiger config and listed in `AGENTS.md`.
 
 ## Consequences
