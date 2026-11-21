@@ -52,6 +52,54 @@ test('init creates the dev env file and volume from the config', async () => {
   await assert.rejects(init({ appRoot: root, argv: ['--environment', 'prod'], env, runner }), /dev or uat/)
 })
 
+test('init --adopt-volume takes the password from --password, or asks for it when it is not given', async () => {
+  for (const [argv, prompted] of [[['--password', 'given-pw'], []], [[], ['Password the volume shop-dev_postgres-data was created with: ']]]) {
+    const { root, state, env } = makeApp()
+    const runner = docker({ state, volumes: ['shop-dev_postgres-data'] })
+    const questions = []
+    const prompt = async (question) => {
+      questions.push(question)
+      return 'given-pw'
+    }
+    await init({ appRoot: root, argv: ['--environment', 'dev', '--adopt-volume', ...argv], env, runner, prompt })
+    assert.ok(readFileSync(join(state, 'dev.env'), 'utf8').includes('POSTGRES_PASSWORD=given-pw'))
+    assert.deepEqual(questions, prompted)
+    assert.equal(callsMatching(runner, /--entrypoint psql --env PGPASSWORD db --host db/).length, 1)
+    assert.equal(callsMatching(runner, /volume (create|rm)/).length, 0)
+  }
+})
+
+test('init refuses --password without --adopt-volume, before it runs anything', async () => {
+  const { root, env } = makeApp()
+  const runner = docker({ state: makeApp().state })
+  await assert.rejects(init({ appRoot: root, argv: ['--environment', 'dev', '--password', 'pw'], env, runner }), /--password is only for --adopt-volume/)
+  assert.equal(runner.calls.length, 0)
+})
+
+test('a dev deploy that finds a dev volume without dev.env refuses before building, unless --recreate-dev-volume is passed', async () => {
+  const refused = makeApp()
+  const refusedRunner = docker({ state: refused.state, volumes: ['shop-dev_postgres-data'] })
+  await assert.rejects(deploy({ appRoot: refused.root, argv: ['--environment', 'dev'], env: refused.env, runner: refusedRunner, health: healthy, guard: noGuard }), /would remove the volume and its data\. Nothing was changed\..*--adopt-volume.*--recreate-dev-volume/)
+  assert.equal(callsMatching(refusedRunner, /volume (create|rm)| down | build$/).length, 0)
+  assert.equal(existsSync(join(refused.state, 'dev.env')), false)
+
+  const recreated = makeApp()
+  const runner = docker({ state: recreated.state, volumes: ['shop-dev_postgres-data'] })
+  await deploy({ appRoot: recreated.root, argv: ['--environment', 'dev', '--recreate-dev-volume'], env: recreated.env, runner, health: healthy, guard: noGuard })
+  const lines = runner.calls.map((call) => call.line)
+  const at = (pattern) => lines.findIndex((line) => pattern.test(line))
+  assert.ok(at(/volume rm shop-dev_postgres-data$/) < at(/volume create shop-dev_postgres-data$/))
+  assert.ok(at(/volume create shop-dev_postgres-data$/) < at(/ build$/))
+  assert.ok(existsSync(join(recreated.state, 'dev.env')))
+})
+
+test('a uat deploy refuses --recreate-dev-volume before it runs anything', async () => {
+  const { root, state, env } = makeApp()
+  const runner = docker({ state })
+  await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'uat', '--recreate-dev-volume'], env, runner, health: healthy, guard: approvedGuard }), /--recreate-dev-volume is only for dev/)
+  assert.equal(callsMatching(runner, /^docker /).length, 0)
+})
+
 test('a dev deploy initialises, builds, migrates, starts and waits for health', async () => {
   const { root, state, env } = makeApp()
   const runner = docker({ state })

@@ -55,10 +55,12 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
     environment: { type: 'string' },
     confirm: { type: 'string' },
     'adopt-unrecorded-migrations': { type: 'boolean', default: false },
+    'recreate-dev-volume': { type: 'boolean', default: false },
   }, argv)
   const environment = options.environment
   assertEnvironment(environment)
   const uat = environment === 'uat'
+  if (uat && options['recreate-dev-volume']) throw new Error('--recreate-dev-volume is only for dev.')
   const app = readApp(appRoot)
 
   let guarded = null
@@ -70,7 +72,7 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
     throw new Error('--adopt-unrecorded-migrations is only for uat.')
   }
   await requireProxyRunning(runner, expectedProxyPort(env))
-  await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env) })
+  await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env), recreateDevVolume: options['recreate-dev-volume'] })
 
   const settings = loadEnvironment(environment, { app, env })
   if (uat && !existsSync(settings.backupDir)) mkdirSync(settings.backupDir, { recursive: true })

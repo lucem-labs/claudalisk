@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { parseEnvFile } from './environment.mjs'
 import { fakeRunner } from './fake-runner.mjs'
-import { ensureInitialised, initEnvironment } from './init.mjs'
+import { adoptVolume, ensureInitialised, initEnvironment } from './init.mjs'
 import { sampleApp } from '../test/sample-app.mjs'
 
 function withState(body) {
@@ -110,9 +110,19 @@ test('the first dev deploy runs init', withState(async (stateDir, app) => {
   assert.ok(runner.calls.some((call) => call.line === `docker volume create ${devVolume}`))
 }))
 
-test('dev with a volume but no dev.env stops the stack, removes only the dev volume and runs init', withState(async (stateDir, app) => {
+test('a dev deploy with a volume but no dev.env refuses, keeps the volume and names both ways forward', withState(async (stateDir, app) => {
   const runner = dockerWith([devVolume])
-  await ensureInitialised(runner, app, 'dev', options(stateDir))
+  await assert.rejects(
+    ensureInitialised(runner, app, 'dev', options(stateDir)),
+    /dev volume shop-dev_postgres-data exists but .*dev\.env does not.*Nothing was changed.*--environment dev --adopt-volume.*--recreate-dev-volume/,
+  )
+  assert.ok(!runner.calls.some((call) => /volume (create|rm)|down/.test(call.line)))
+  assert.equal(existsSync(join(stateDir, 'dev.env')), false)
+}))
+
+test('dev with a volume but no dev.env and --recreate-dev-volume stops the stack, removes only the dev volume and runs init', withState(async (stateDir, app) => {
+  const runner = dockerWith([devVolume])
+  await ensureInitialised(runner, app, 'dev', { ...options(stateDir), recreateDevVolume: true })
   const lines = runner.calls.map((call) => call.line).filter((line) => /compose|volume (rm|create)/.test(line))
   assert.deepEqual(lines, [
     'docker compose --project-name shop-dev down --remove-orphans',
@@ -128,6 +138,68 @@ test('dev with a dev.env but no volume replaces the file and runs init', withSta
   await ensureInitialised(runner, app, 'dev', options(stateDir))
   assert.equal(parseEnvFile(readFileSync(join(stateDir, 'dev.env'), 'utf8')).POSTGRES_PASSWORD, 'pw-123')
   assert.ok(runner.calls.some((call) => call.line === `docker volume create ${devVolume}`))
+}))
+
+function adoptingDocker(initial, { connects = true } = {}) {
+  const volumes = new Set(initial)
+  return fakeRunner((call) => {
+    if (call.line.startsWith('docker volume ls')) {
+      const name = call.args.at(-1).slice(6, -1)
+      return { stdout: volumes.has(name) ? `${name}\n` : '' }
+    }
+    if (call.line.includes(' run --rm --no-deps --entrypoint psql ') && !connects) {
+      return { code: 2, stderr: 'psql: error: password authentication failed for user "app"' }
+    }
+    return {}
+  })
+}
+
+const adopt = (stateDir, password = 'old-pw') => ({ env: { PROXY_PORT: '80' }, stateDir, askPassword: async () => password })
+
+test('init --adopt-volume writes dev.env with the given password, then checks it connects over the network', withState(async (stateDir, app) => {
+  const runner = adoptingDocker([devVolume])
+  const envFile = await adoptVolume(runner, app, 'dev', adopt(stateDir))
+  const values = parseEnvFile(readFileSync(envFile, 'utf8'))
+  assert.equal(values.POSTGRES_PASSWORD, 'old-pw')
+  assert.equal(values.DEV_POSTGRES_PORT, '5440')
+  assert.equal(values.ConnectionStrings__Shop, 'Host=db;Database=shop;Password=old-pw')
+  const composeCalls = runner.calls.filter((call) => call.args[0] === 'compose')
+  assert.match(composeCalls[0].line, /--project-name shop-dev .* up --detach --wait db$/)
+  const check = composeCalls[1]
+  assert.match(check.line, / run --rm --no-deps --entrypoint psql --env PGPASSWORD db --host db --username app --dbname shop .*SELECT 1$/)
+  assert.ok(!check.line.includes('old-pw'))
+  assert.equal(check.options.env.PGPASSWORD, 'old-pw')
+  assert.ok(!runner.calls.some((call) => /volume (create|rm)|down/.test(call.line)))
+}))
+
+test('init --adopt-volume removes dev.env and leaves the volume when the password does not connect', withState(async (stateDir, app) => {
+  const runner = adoptingDocker([devVolume], { connects: false })
+  await assert.rejects(adoptVolume(runner, app, 'dev', adopt(stateDir, 'wrong')), /password authentication failed[\s\S]*Could not adopt the volume shop-dev_postgres-data, so .*dev\.env was removed/)
+  assert.equal(existsSync(join(stateDir, 'dev.env')), false)
+  assert.ok(runner.calls.some((call) => / stop db$/.test(call.line)))
+  assert.ok(!runner.calls.some((call) => /volume (create|rm)|down/.test(call.line)))
+}))
+
+test('init --adopt-volume refuses without asking for a password when there is nothing to adopt, or dev.env exists', withState(async (stateDir, app) => {
+  const asked = []
+  const askPassword = async (volume) => {
+    asked.push(volume)
+    return 'pw'
+  }
+  await assert.rejects(adoptVolume(adoptingDocker([]), app, 'dev', { stateDir, askPassword }), /volume shop-dev_postgres-data does not exist, so there is nothing to adopt.*without --adopt-volume/)
+  writeFileSync(join(stateDir, 'dev.env'), 'KEEP=1\n')
+  await assert.rejects(adoptVolume(adoptingDocker([devVolume]), app, 'dev', { stateDir, askPassword }), /already exists; init changes nothing/)
+  assert.equal(readFileSync(join(stateDir, 'dev.env'), 'utf8'), 'KEEP=1\n')
+  assert.deepEqual(asked, [])
+}))
+
+test('init --adopt-volume refuses uat and an empty password, and changes nothing', withState(async (stateDir, app) => {
+  const runner = adoptingDocker([devVolume, uatVolume])
+  await assert.rejects(adoptVolume(runner, app, 'uat', adopt(stateDir)), /--adopt-volume is only for dev/)
+  await assert.rejects(adoptVolume(runner, app, 'dev', adopt(stateDir, '')), /needs the password the volume shop-dev_postgres-data was created with/)
+  assert.equal(existsSync(join(stateDir, 'dev.env')), false)
+  assert.equal(existsSync(join(stateDir, 'uat.env')), false)
+  assert.ok(!runner.calls.some((call) => call.args[0] === 'compose'))
 }))
 
 test('init names the missing example file', withState(async (stateDir, app) => {

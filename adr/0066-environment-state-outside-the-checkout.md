@@ -25,7 +25,8 @@ A deploy that writes a missing env file with a new password breaks the database 
 - **An init script creates each environment.** The app's init script (`node scripts/init.mjs --environment <env>`) generates the database password and writes it into every variable of `<env>.env` that needs it, such as `POSTGRES_PASSWORD` and the connection string, so the file is complete when it is written. It then creates the data volume with that password.
   - The owner runs it for uat (CLA-0029). The first dev deploy runs it for dev.
   - It refuses when the env file or the volume already exists, so it never invents a password for a volume that has one.
-- **No deploy writes an env file.** A deploy refuses when the env file or the volume exists without the other, and uat never falls back to an example file. dev's volume is disposable, so a dev deploy that finds a volume without `dev.env` removes the volume and runs the init script.
+  - For a dev volume that has no `dev.env`, `--adopt-volume` writes `dev.env` with the volume's existing password, given with `--password` or at a prompt. It keeps the file only after that password connects.
+- **No deploy writes an env file.** A deploy refuses when the env file or the volume exists without the other, and uat never falls back to an example file. A dev deploy that finds a volume without `dev.env` stops and names the adopt path. It removes the volume and runs the init script only with `--recreate-dev-volume`.
 - Deployment records are GitHub deployments, not local files (CLA-0030).
 - An issue's worktree is removed after the owner merges its pull request.
 
