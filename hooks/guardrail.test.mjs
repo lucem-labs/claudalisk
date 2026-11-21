@@ -421,6 +421,31 @@ test('git -C runs the git lookups in that directory', () => {
   assert.ok(seen.every((cwd) => cwd === join(root, 'sub')), seen.join(','));
 });
 
+test('rules 5 and 6 step aside in a repository without an app config', () => {
+  const notApp = (cwd) => cwd !== join(root, 'app');
+  const noApp = { inApp: (cwd) => !notApp(cwd), git: unreachable('git'), gh: unreachable('gh') };
+  for (const tool of TOOLS) {
+    for (const command of [
+      'git push origin main',
+      'git push origin HEAD:main',
+      'git push --all',
+      'gh pr create --title t --body b',
+      'gh pr merge 5 --squash',
+      'gh api -X PUT repos/o/r/pulls/5/merge',
+      'curl -X PUT https://api.github.com/repos/o/r/pulls/5/merge',
+    ]) {
+      assert.equal(verdict(call(command, { tool, deps: noApp })), 'allow', `${tool}: ${command}`);
+    }
+    assert.equal(verdict(call('gh pr merge 5', { tool, cwd: join(root, 'app'), deps: noApp })), 'deny', tool);
+    assert.equal(verdict(call(`cd ${join(root, 'app').split(String.fromCharCode(92)).join('/')} && gh pr merge 5`, { tool: 'Bash', deps: noApp })), 'deny');
+    assert.equal(verdict(call(`git -C ${join(root, 'app').split(String.fromCharCode(92)).join('/')} push origin main`, { tool, deps: { ...noApp, git: pushGit({}) } })), 'deny', tool);
+    assert.equal(verdict(call('docker volume rm x', { tool, deps: noApp })), 'deny', tool);
+    assert.equal(verdict(call('cd $X && gh pr merge 5', { tool: 'Bash', deps: noApp })), 'deny');
+  }
+  const broken = { inApp: () => { throw new Error('unreadable config'); } };
+  assert.equal(verdict(call('gh pr merge 5', { deps: broken })), 'deny');
+});
+
 const okRuns = (...runs) => JSON.stringify({ workflow_runs: runs });
 const finished = (conclusion, name = 'ci') => ({ name, status: 'completed', conclusion });
 
@@ -1002,7 +1027,15 @@ test('the script allows with no output and denies through stdout, always exiting
   assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny');
   assert.equal(denied.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(parsed(hook('docker volume rm x', { userHome }, 'PowerShell')).hookSpecificOutput.permissionDecision, 'deny');
-  assert.equal(parsed(hook('gh pr merge 5', { userHome })).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(parsed(hook('gh pr merge 5', { userHome, cwd: repoWith(CONFIG('mergeapp')) })).hookSpecificOutput.permissionDecision, 'deny');
+});
+
+test('the script leaves rules 5 and 6 out of a repository without an app config', () => {
+  const userHome = registryHome(REGISTRY);
+  for (const command of ['git push origin main', 'gh pr create --title t --body b', 'gh pr merge 5']) {
+    assert.equal(parsed(hook(command, { userHome })), null, command);
+  }
+  assert.equal(parsed(hook('docker volume rm x', { userHome })).hookSpecificOutput.permissionDecision, 'deny');
 });
 
 test('a missing registry protects nothing but the rules that need no names', () => {
@@ -1084,7 +1117,7 @@ test('an unexpected failure inside decide asks', () => {
 
 test('the script writes the answer for subagents too', () => {
   const userHome = registryHome(REGISTRY);
-  const answer = parsed(spawnHook({ tool_name: 'Bash', tool_input: { command: 'gh pr merge 5' }, cwd: plain, agent_id: 'sub-1' }, { userHome }));
+  const answer = parsed(spawnHook({ tool_name: 'Bash', tool_input: { command: 'gh pr merge 5' }, cwd: repoWith(CONFIG('subapp')), agent_id: 'sub-1' }, { userHome }));
   assert.equal(answer.hookSpecificOutput.permissionDecision, 'deny');
 });
 

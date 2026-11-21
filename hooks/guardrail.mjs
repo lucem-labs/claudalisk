@@ -129,7 +129,20 @@ export async function realDeps() {
       }
       return { names: protectedNames(registry, config), config, configDirs: (registry.runners ?? []).map((stack) => stack.configDir).filter(Boolean) };
     },
+    inApp(cwd) {
+      if (failure) throw failure;
+      return findConfig(cwd, tools.appConfig) !== null;
+    },
   };
+}
+
+function inApp(ctx, cwd) {
+  if (!cwd) return true;
+  try {
+    return ctx.deps.inApp(cwd) !== false;
+  } catch {
+    return true;
+  }
 }
 
 function protection(ctx) {
@@ -372,10 +385,11 @@ function ghApi(args, ctx) {
   const { positionals, method, fields } = parseApi(args);
   const path = (positionals[0] ?? '').replace(/^https:\/\/api\.github\.com\//i, '').replace(/^\/+/, '');
   const bare = path.split('?')[0];
-  if (positionals.some((p) => MERGE_PATH.test(p)) || /\/merges$/.test(bare)) {
+  const app = inApp(ctx, ctx.cwd);
+  if (app && (positionals.some((p) => MERGE_PATH.test(p)) ||/\/merges$/.test(bare))) {
     flag(ctx, 'deny', 5, `${path} merges through the API. The owner merges pull requests (CLA-0024); report that the pull request is ready instead.`);
   }
-  if (path === 'graphql' && /mergePullRequest|enablePullRequestAutoMerge/i.test(args.join(' '))) {
+  if (app && path === 'graphql' && /mergePullRequest|enablePullRequestAutoMerge/i.test(args.join(' '))) {
     flag(ctx, 'deny', 5, 'this GraphQL call merges a pull request. The owner merges (CLA-0024); report that the pull request is ready instead.');
   }
   if (/orgs\/[^/]+\/actions\/runner-groups/.test(path) && ((method && method.toUpperCase() !== 'GET') || fields)) {
@@ -422,6 +436,7 @@ function prCreate(g, ctx, cwd) {
 
 function gh(args, ctx, cwd) {
   const g = parseGh(args);
+  if (g.group === 'pr' && (g.verb === 'merge' || g.verb === 'create') && !inApp(ctx, cwd)) return;
   if (g.group === 'pr' && g.verb === 'merge') flag(ctx, 'deny', 5, 'gh pr merge is not for the agent. The owner merges (CLA-0024); report that the pull request is ready instead.');
   else if (g.group === 'pr' && g.verb === 'create') prCreate(g, ctx, cwd);
   else if (g.group === 'api') ghApi(g.afterGroup, ctx);
@@ -742,9 +757,9 @@ function segment(whole, shell, ctx, depth) {
   else if (name === 'gh') gh(args, ctx, ctx.cwd);
   else if (name === 'git') {
     const g = parseGit(args, ctx.cwd, ctx);
-    if (g.sub === 'push') push(g.rest, ctx, g.dir);
+    if (g.sub === 'push' && inApp(ctx, g.dir)) push(g.rest, ctx, g.dir);
     else if (g.sub === 'add') gitAdd(g.rest, ctx);
-  } else if (FETCHERS.has(name) && MERGE_PATH.test(args.join(' '))) {
+  } else if (FETCHERS.has(name) && MERGE_PATH.test(args.join(' ')) && inApp(ctx, ctx.cwd)) {
     flag(ctx, 'deny', 5, 'this request merges a pull request through the API. The owner merges (CLA-0024); report that the pull request is ready instead.');
   }
   nested(name, args, seg, shell, ctx, depth);
@@ -783,6 +798,7 @@ export function decide(input, deps = {}) {
       git: realGit,
       gh: realGh,
       protect: () => { throw new Error('the protected resources were not loaded'); },
+      inApp: () => true,
       ...deps,
     };
     const start = input.cwd ?? process.cwd();
