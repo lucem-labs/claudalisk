@@ -625,15 +625,28 @@ function dangerousPaths(text, ctx) {
 
 const cleanToken = (token) => token.replace(/\\/g, '/').replace(/^\.\//, '');
 
+function argumentWords(words, foldFlags) {
+  const set = new Set();
+  for (const word of words) {
+    const eq = /^(--?[A-Za-z][\w-]*)=([\s\S]*)$/.exec(word);
+    for (const piece of eq ? [eq[1], eq[2]] : [word]) {
+      const clean = cleanToken(piece);
+      set.add(foldFlags && clean.startsWith('-') ? clean.toLowerCase() : clean);
+    }
+  }
+  return set;
+}
+
 function configCommands(name, args, ctx) {
   const state = protection(ctx);
   const config = state.config ?? state.error?.config;
   if (!config) return;
-  const tokens = [name, ...args];
   const matches = (entry) => {
     const parts = String(entry).trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0 || normalize(parts[0]) !== tokens[0]) return false;
-    return parts.slice(1).every((part, k) => tokens[k + 1] !== undefined && cleanToken(part) === cleanToken(tokens[k + 1]));
+    if (parts.length === 0 || normalize(parts[0]) !== name) return false;
+    const ps = parts.some((part) => /\.ps1$/i.test(part));
+    const present = argumentWords(args, ps);
+    return [...argumentWords(parts.slice(1), ps)].every((word) => present.has(word));
   };
   if ((config.ownerOnlyCommands ?? []).some(matches)) ctx.findings.push({ decision: 'deny', reason: 'Config: this command is on the owner-only list of the app config (CLA-0082). Ask the owner to run it.' });
   else if ((config.askCommands ?? []).some(matches)) ctx.findings.push({ decision: 'ask', reason: 'Config: this command is on the ask list of the app config (CLA-0082). Ask the owner before running it.' });

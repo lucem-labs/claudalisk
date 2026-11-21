@@ -866,6 +866,35 @@ test('commands from the config deny or ask, compared by tokens', () => {
   }
 });
 
+test('an entry from the config names a command and a set of arguments', () => {
+  const config = { ownerOnlyCommands: ['node scripts/danger.mjs --apply', './scripts/danger.ps1 -Apply', 'node scripts/keep.mjs --keep=5'], askCommands: [] };
+  const deps = { protect: () => ({ ...FIXTURE, config }) };
+  for (const [tool, command, expected] of [
+    ['Bash', 'node scripts/danger.mjs --apply', 'deny'],
+    ['Bash', 'node ./scripts/danger.mjs --apply', 'deny'],
+    ['Bash', 'node scripts/danger.mjs --keep 5 --apply', 'deny'],
+    ['Bash', 'node --apply scripts/danger.mjs', 'deny'],
+    ['Bash', 'node scripts/danger.mjs', 'allow'],
+    ['Bash', 'node scripts/danger.mjs --APPLY', 'allow'],
+    ['Bash', 'node scripts/other.mjs --apply', 'allow'],
+    ['PowerShell', './scripts/danger.ps1 -Apply', 'deny'],
+    ['PowerShell', './scripts/danger.ps1 -Keep 5 -Apply', 'deny'],
+    ['PowerShell', './scripts/danger.ps1 -apply', 'deny'],
+    ['PowerShell', './scripts/danger.ps1 -Keep 5', 'allow'],
+    ['PowerShell', 'pwsh -File scripts/danger.ps1 -Apply', 'deny'],
+    ['Bash', 'pwsh -File scripts/danger.ps1 -Apply', 'deny'],
+    ['Bash', 'powershell -file ./scripts/danger.ps1 -APPLY', 'deny'],
+    ['Bash', 'pwsh -File scripts/danger.ps1', 'allow'],
+    ['Bash', 'node scripts/keep.mjs --keep=5', 'deny'],
+    ['Bash', 'node scripts/keep.mjs --keep 5', 'deny'],
+    ['Bash', 'node scripts/keep.mjs --keep 6', 'allow'],
+  ]) {
+    const result = call(command, { tool, deps });
+    assert.equal(verdict(result), expected, `${tool}: ${command}`);
+    if (expected === 'deny') assert.match(reason(result), /owner-only list/, `${tool}: ${command}`);
+  }
+});
+
 deny([
   'bash -c "docker volume rm x"',
   "sh -c 'gh pr merge 5'",
