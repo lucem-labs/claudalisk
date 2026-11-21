@@ -30,6 +30,12 @@ The plugin's hooks, registered in `hooks.json`. Each has tests beside it, and CI
   - From the PowerShell tool, that is the whole command.
   - From the Bash tool, that is the text a PowerShell host gets: `pwsh <script>`, `pwsh -Command "<script>"` and `pwsh -File <script>`, also as `powershell` or `powershell.exe`, with `-f` or `-File` in any case.
   - A `.sh`, `.cmd` or `.bat` script that bash, sh or `cmd /c` runs is not covered, from either tool. Rule 4 covers the plugin's Node scripts. An app whose dangerous scripts are not Node lists that as a deviation in its `AGENTS.md` (CLA-0028).
+- **An entry of `ownerOnlyCommands` or `askCommands` names a command and a set of arguments** (CLA-0082).
+  - The first word is the command, compared by file name without `.exe`, in any case.
+  - Every further word must appear among the command's arguments, in any order, with others between them. Each word is matched on its own, so `--keep 5` needs `--keep` and `5`.
+  - `--flag=value` counts as `--flag value`, in the entry and in the command. A leading `./` and backslashes are ignored.
+  - When the entry names a `.ps1` script, parameter names match in any case, as PowerShell binds them.
+  - A script entry also matches the script run through `pwsh -File` or `powershell -File`.
 - Rule 15, for `--adopt-unrecorded-migrations`, matches only a command or argument named `deploy` or `deploy.mjs`.
 
 ## What the guardrail does not see
