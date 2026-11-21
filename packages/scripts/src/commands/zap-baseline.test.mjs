@@ -4,20 +4,21 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  DEFAULT_PROXY_HOST, REPORT_MARKER, UsageError, ZAP_IMAGE, ZAP_SCRIPT,
-  baseline, devTarget, dockerArgs, isPrivateAddress, main, parseArgs, rulesReader, splitReport, verdict,
+  DEFAULT_PROXY, DEFAULT_PROXY_HOST, REPORT_MARKER, UsageError, ZAP_IMAGE, ZAP_SCRIPT,
+  baseline, devTarget, dockerArgs, isPrivateAddress, main, parseArgs, proxyContainerAddress, registryProxy, rulesReader, splitReport, verdict,
 } from './zap-baseline.mjs';
 
 const target = 'http://shop.dev.localhost';
-const options = { target, proxyHost: DEFAULT_PROXY_HOST };
+const options = { target, proxyHost: undefined };
 
-function fakes({ address = '192.168.65.254', code = 0, stdout = `crawled\n${REPORT_MARKER}\n# Report\n`, stderr = '' } = {}) {
-  const seen = { reads: 0, hosts: [], docker: [], summary: [], log: [], error: [] };
+function fakes({ proxy = null, address = '192.168.65.254', code = 0, stdout = `crawled\n${REPORT_MARKER}\n# Report\n`, stderr = '' } = {}) {
+  const seen = { reads: 0, finds: 0, hosts: [], docker: [], summary: [], log: [], error: [] };
   return {
     seen,
     io: {
       readRules: () => { seen.reads++; return '10109\tINFO\t(Modern Web Application)\n'; },
       resolveHost: async (host) => { seen.hosts.push(host); return address; },
+      findProxy: async () => { seen.finds++; return proxy; },
       docker: (args, input) => { seen.docker.push({ args, input }); return { code, stdout, stderr }; },
       summary: (report) => seen.summary.push(report),
       log: (text) => seen.log.push(text),
@@ -37,10 +38,11 @@ test('devTarget accepts only a dev origin', () => {
   }
 });
 
-test('parseArgs needs a target, defaults the proxy host and takes only an IPv4 address instead', () => {
+test('parseArgs needs a target, leaves the proxy host to the registry and takes only an IPv4 address or the host name instead', () => {
   assert.throws(() => parseArgs([]), /\nUsage: node scripts\/zap-baseline\.mjs/);
   assert.deepEqual(parseArgs(['--target', target]), options);
   assert.equal(parseArgs(['--target', target, '--proxy-host', '192.168.65.254']).proxyHost, '192.168.65.254');
+  assert.equal(parseArgs(['--target', target, '--proxy-host', DEFAULT_PROXY_HOST]).proxyHost, DEFAULT_PROXY_HOST);
   for (const argv of [['--proxy-host'], ['--proxy-host', 'uat.example.com'], ['--image', 'evil']]) {
     assert.throws(() => parseArgs(['--target', target, ...argv]), UsageError, argv.join(' '));
   }
@@ -73,6 +75,91 @@ test('dockerArgs mounts nothing, passes the target in the environment and maps d
   ]);
 });
 
+test('dockerArgs attaches ZAP to the proxy network when it has one', () => {
+  const args = dockerArgs({ target, address: '172.18.0.3', network: 'traefik' });
+  assert.deepEqual(args.slice(0, 5), ['run', '--rm', '-i', '--network', 'traefik']);
+  assert.ok(args.includes('shop.dev.localhost:172.18.0.3'));
+});
+
+test('registryProxy reads the proxy from the machine-wide registry and defaults to traefik', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'zap-baseline-home-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  assert.deepEqual(DEFAULT_PROXY, { composeProject: 'traefik', network: 'traefik' });
+  assert.deepEqual(registryProxy({ home }), DEFAULT_PROXY);
+  mkdirSync(join(home, '.claudalisk'));
+  const path = join(home, '.claudalisk', 'apps.json');
+  writeFileSync(path, JSON.stringify({ apps: [] }));
+  assert.deepEqual(registryProxy({ home }), DEFAULT_PROXY);
+  writeFileSync(path, '\uFEFF' + JSON.stringify({ apps: [], proxy: { composeProject: 'edge', network: 'edge-net', port: 8080 } }));
+  assert.deepEqual(registryProxy({ home }), { composeProject: 'edge', network: 'edge-net' });
+  writeFileSync(path, '{');
+  assert.throws(() => registryProxy({ home }), /apps\.json is not valid JSON/);
+});
+
+function fakeDocker(responses) {
+  const calls = [];
+  const docker = (args) => {
+    calls.push(args);
+    const key = args[0] === 'ps' ? 'ps' : `inspect ${args.at(-1)}`;
+    return responses[key] ?? { code: 1, stdout: '', stderr: 'no such object' };
+  };
+  return { calls, docker };
+}
+
+const networks = (entries) => ({ code: 0, stdout: `${JSON.stringify(entries)}\n`, stderr: '' });
+
+test('proxyContainerAddress lists the running proxy containers and reads their address on the proxy network', () => {
+  const { calls, docker } = fakeDocker({
+    ps: { code: 0, stdout: 'aaa\r\nbbb\n', stderr: '' },
+    'inspect aaa': networks({ bridge: { IPAddress: '172.17.0.2' } }),
+    'inspect bbb': networks({ traefik: { IPAddress: '172.18.0.3' } }),
+  });
+  assert.deepEqual(proxyContainerAddress(DEFAULT_PROXY, docker), { address: '172.18.0.3', network: 'traefik' });
+  assert.deepEqual(calls, [
+    ['ps', '--filter', 'label=com.docker.compose.project=traefik', '--filter', 'status=running', '--format', '{{.ID}}'],
+    ['inspect', '--format', '{{json .NetworkSettings.Networks}}', 'aaa'],
+    ['inspect', '--format', '{{json .NetworkSettings.Networks}}', 'bbb'],
+  ]);
+});
+
+test('proxyContainerAddress finds nothing when docker fails, no proxy runs or it has no IPv4 address on its network', () => {
+  for (const responses of [
+    { ps: { code: 1, stdout: '', stderr: 'daemon down' } },
+    { ps: { code: 0, stdout: '\n', stderr: '' } },
+    { ps: { code: 0, stdout: 'aaa\n', stderr: '' } },
+    { ps: { code: 0, stdout: 'aaa\n', stderr: '' }, 'inspect aaa': { code: 0, stdout: 'not json', stderr: '' } },
+    { ps: { code: 0, stdout: 'aaa\n', stderr: '' }, 'inspect aaa': networks({ traefik: { IPAddress: '' } }) },
+    { ps: { code: 0, stdout: 'aaa\n', stderr: '' }, 'inspect aaa': networks({ other: { IPAddress: '172.19.0.2' } }) },
+  ]) {
+    assert.equal(proxyContainerAddress(DEFAULT_PROXY, fakeDocker(responses).docker), null, JSON.stringify(responses));
+  }
+});
+
+test('baseline reaches dev through the proxy container on its network when no proxy host is given', async () => {
+  const { seen, io } = fakes({ proxy: { address: '172.18.0.3', network: 'traefik' } });
+  assert.match(await baseline(options, io), /passed/);
+  assert.equal(seen.finds, 1);
+  assert.deepEqual(seen.hosts, []);
+  assert.deepEqual(seen.docker[0].args.slice(0, 5), ['run', '--rm', '-i', '--network', 'traefik']);
+  assert.ok(seen.docker[0].args.includes('shop.dev.localhost:172.18.0.3'));
+});
+
+test('baseline skips the registry when a proxy host is given', async () => {
+  for (const proxyHost of ['192.168.65.254', DEFAULT_PROXY_HOST]) {
+    const { seen, io } = fakes({ proxy: { address: '172.18.0.3', network: 'traefik' } });
+    assert.match(await baseline({ target, proxyHost }, io), /passed/);
+    assert.equal(seen.finds, 0);
+    assert.deepEqual(seen.hosts, [proxyHost]);
+    assert.ok(!seen.docker[0].args.includes('--network'));
+  }
+});
+
+test('baseline refuses a public proxy container address before docker', async () => {
+  const { seen, io } = fakes({ proxy: { address: '8.8.8.8', network: 'traefik' } });
+  await assert.rejects(baseline(options, io), /proxy container on traefik is 8\.8\.8\.8, not a loopback or private address/);
+  assert.equal(seen.docker.length, 0);
+});
+
 test('splitReport separates the log from the report', () => {
   assert.deepEqual(splitReport(`log\n${REPORT_MARKER}\nreport`), { log: 'log\n', report: 'report' });
   assert.deepEqual(splitReport(`log\r\n${REPORT_MARKER}\r\nreport`), { log: 'log\r\n', report: 'report' });
@@ -89,7 +176,9 @@ test('verdict maps the baseline exit codes', () => {
 test('baseline pipes the rules in and prints the report to the log and the summary', async () => {
   const { seen, io } = fakes();
   assert.match(await baseline(options, io), /passed/);
+  assert.equal(seen.finds, 1);
   assert.deepEqual(seen.hosts, [DEFAULT_PROXY_HOST]);
+  assert.ok(!seen.docker[0].args.includes('--network'));
   assert.equal(seen.docker.length, 1);
   assert.equal(seen.docker[0].input, '10109\tINFO\t(Modern Web Application)\n');
   assert.ok(seen.docker[0].args.includes('shop.dev.localhost:192.168.65.254'));
@@ -98,9 +187,13 @@ test('baseline pipes the rules in and prints the report to the log and the summa
 });
 
 test('baseline refuses before docker when the proxy host does not resolve or is public', async () => {
-  for (const [address, message] of [[null, /Cannot resolve.*--proxy-host/], ['8.8.8.8', /not a loopback or private address/]]) {
+  for (const [proxyHost, address, message] of [
+    [undefined, null, /proxy container was not found, and host\.docker\.internal does not resolve.*--proxy-host/],
+    [DEFAULT_PROXY_HOST, null, /^Error: Cannot resolve host\.docker\.internal\..*--proxy-host/],
+    [undefined, '8.8.8.8', /not a loopback or private address/],
+  ]) {
     const { seen, io } = fakes({ address });
-    await assert.rejects(baseline(options, io), message);
+    await assert.rejects(baseline({ target, proxyHost }, io), message);
     assert.equal(seen.docker.length, 0);
   }
 });
