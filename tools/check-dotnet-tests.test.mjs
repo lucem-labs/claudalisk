@@ -8,6 +8,10 @@ test('testTotal reads the last total of a Microsoft.Testing.Platform summary', (
   assert.equal(testTotal(`${summary(5)}\r\n${summary(78)}`), 78)
 })
 
+test('testTotal reads a total behind terminal colour codes', () => {
+  assert.equal(testTotal('\x1b[m  total: 95\n\x1b[32m  failed: 0\x1b[m\n'), 95)
+})
+
 test('testTotal is null when the run printed no summary', () => {
   assert.equal(testTotal('No test projects were found.'), null)
 })

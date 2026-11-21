@@ -7,7 +7,8 @@ import { spawnArguments } from './registry.mjs'
 const NO_SUCH_TEST = 'NoTestHasThisName'
 
 export function testTotal(output) {
-  const totals = [...output.matchAll(/^\s*total:\s*(\d+)\s*$/gm)]
+  const plain = output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '')
+  const totals = [...plain.matchAll(/^\s*total:\s*(\d+)\s*$/gm)]
   return totals.length ? Number(totals.at(-1)[1]) : null
 }
 
