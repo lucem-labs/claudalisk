@@ -24,6 +24,8 @@ public static partial class Rules
 
     private static readonly string[] MappingLibraries = ["AutoMapper", "Mapster", "Riok.Mapperly", "Mapperly"];
 
+    private static readonly string[] PackageTags = ["Host", "Jobs"];
+
     public static IEnumerable<string> SingularModuleNames(IEnumerable<Type> modules) =>
         modules.Select(type => type.Name.Replace("Module", "", StringComparison.Ordinal))
             .Where(name => name.EndsWith('s') && !SingularNounsEndingInS.Any(noun => name.EndsWith(noun, StringComparison.Ordinal)))
@@ -114,7 +116,7 @@ public static partial class Rules
         from project in moduleCode
         let own = Naming.ToSnakeCase(naming.ModuleOf(project.Name)!)
         from schema in schemas.Where(schema => schema != own)
-        let pattern = new Regex($"\"{schema}\"|\\b(FROM|JOIN|INTO|UPDATE|TABLE)\\s+\"?{schema}\"?\\.", RegexOptions.IgnoreCase)
+        let pattern = SchemaMetadata(Regex.Escape(schema))
         from source in project.Sources
         where pattern.IsMatch(source.Text)
         select $"{project.Name}/{source.Path} names the schema {schema}.";
@@ -131,7 +133,7 @@ public static partial class Rules
 
     public static IEnumerable<string> OperationsHaveTheirModulesTag(JsonDocument document, IReadOnlyCollection<string> modules) =>
         from operation in Operations(document)
-        where operation.Tags.Count != 1 || (operation.Tags[0] != "Host" && !modules.Contains(operation.Tags[0]))
+        where operation.Tags.Count != 1 || (!PackageTags.Contains(operation.Tags[0]) && !modules.Contains(operation.Tags[0]))
         select $"{operation.Name} has the tags [{string.Join(", ", operation.Tags)}], not its module's.";
 
     public static IEnumerable<string> FeaturesDoNotReferenceEachOther(IEnumerable<ProjectFile> implementations) =>
@@ -142,7 +144,7 @@ public static partial class Rules
         from other in features.Where(candidate => candidate.Key != feature.Key)
         let names = other.SelectMany(source => DeclaredType().Matches(source.Text)).Select(match => match.Groups["name"].Value).ToArray()
         from source in feature
-        where source.Text.Contains($".Features.{other.Key}", StringComparison.Ordinal)
+        where Regex.IsMatch(source.Text, $@"\.Features\.{Regex.Escape(other.Key)}\b")
             || names.Any(name => Regex.IsMatch(source.Text, $@"\b{name}\b"))
         select $"{project.Name}/{source.Path} references the feature {other.Key}.";
 
@@ -356,6 +358,15 @@ public static partial class Rules
 
     public static IEnumerable<Type> ModuleClasses(IEnumerable<Type> types) =>
         types.Where(type => type.IsAssignableTo(typeof(IModule)) && !type.IsAbstract);
+
+    private static Regex SchemaMetadata(string schema) => new(
+        $$"""
+        \b(schema|principalSchema)\s*:\s*"{{schema}}"
+        |\b(HasDefaultSchema|EnsureSchema|DropSchema)\(\s*(name\s*:\s*)?"{{schema}}"
+        |\bToTable\(\s*"[^"]*"\s*,\s*(schema\s*:\s*)?"{{schema}}"
+        |\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+"?{{schema}}"?\.
+        """,
+        RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
     [GeneratedRegex(@"\b(class|record|interface|enum|struct)\s+(?<name>[A-Z]\w+)")]
     private static partial Regex DeclaredType();

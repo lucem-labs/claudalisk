@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Claudalisk.Modules;
 using <Root>.ArchitectureTests.BadExamples;
@@ -72,11 +73,25 @@ public sealed class RuleGuardTests
     public void CLA0007_NoForeignKeysAcrossSchemas() => Flags(Rules.NoForeignKeysAcrossSchemas([Bad]));
 
     [Fact]
-    public void CLA0012_NoCodeNamesAnotherModulesSchema() =>
+    public void CLA0012_NoCodeNamesAnotherModulesSchema()
+    {
         Flags(Rules.NoCodeNamesAnotherModulesSchema(
             [Project("App.Modules.A.Persistence", sources: [Source("migrationBuilder.Sql(\"DELETE FROM b.rows\");")])],
             ["a", "b"],
             Naming));
+        Flags(Rules.NoCodeNamesAnotherModulesSchema(
+            [Project("App.Modules.A.Persistence", sources: [Source("migrationBuilder.EnsureSchema(name: \"b\");")])],
+            ["a", "b"],
+            Naming));
+        Flags(Rules.NoCodeNamesAnotherModulesSchema(
+            [Project("App.Modules.A.Persistence", sources: [Source("builder.ToTable(\"rows\", \"b\");")])],
+            ["a", "b"],
+            Naming));
+        Flags(Rules.NoCodeNamesAnotherModulesSchema(
+            [Project("App.Modules.A.Persistence", sources: [Source("principalSchema: \"b\",")])],
+            ["a", "b"],
+            Naming));
+    }
 
     [Fact]
     public void CLA0044_SuccessResponsesCarryLinksAndActions()
@@ -166,6 +181,40 @@ public sealed class RuleGuardTests
     [Fact]
     public void CLA0070_NoFakesOfStoresDispatcherOrContext() =>
         Flags(Rules.NoFakesOfStoresDispatcherOrContext([Source("internal sealed class FakeStore : IOrderStore { }")]));
+
+    [Fact]
+    public void CompilerGeneratedTypesAreNotScanned()
+    {
+        static bool IsCompilerGenerated(Type type) =>
+            type.IsDefined(typeof(CompilerGeneratedAttribute), false) || type.Name.Contains('<', StringComparison.Ordinal);
+
+        var assembly = typeof(RuleGuardTests).Assembly;
+        Assert.Contains(assembly.GetTypes(), IsCompilerGenerated);
+        Assert.DoesNotContain(AppModel.TypesOf(assembly), IsCompilerGenerated);
+    }
+
+    [Fact]
+    public void AFeatureNamedAfterAnotherFeaturesPrefixIsItsOwnFeature() =>
+        Assert.Empty(Rules.FeaturesDoNotReferenceEachOther([Project("App.Modules.A", sources: [
+            Source("namespace App.Modules.A.Features.GetListing; record GetListingQuery;", "Features/GetListing/GetListingQuery.cs"),
+            Source("namespace App.Modules.A.Features.GetListingPrices; record GetListingPricesQuery;", "Features/GetListingPrices/GetListingPricesQuery.cs"),
+        ])]));
+
+    [Fact]
+    public void ALinkRelationNamedAfterASchemaIsNotASchemaReference() =>
+        Assert.Empty(Rules.NoCodeNamesAnotherModulesSchema(
+            [Project("App.Modules.A", sources: [Source("links.Add(\"portfolio\", new Link(\"/portfolios/1\"));")])],
+            ["a", "portfolio"],
+            Naming));
+
+    [Fact]
+    public void PackageOwnedTagsNeedNoModule()
+    {
+        using var document = JsonDocument.Parse("""
+            {"paths":{"/jobs":{"get":{"tags":["Jobs"],"responses":{}}},"/health":{"get":{"tags":["Host"],"responses":{}}}}}
+            """);
+        Assert.Empty(Rules.OperationsHaveTheirModulesTag(document, ["A"]));
+    }
 
     [Fact]
     public void AnEmptyScanFailsTheRule() =>
