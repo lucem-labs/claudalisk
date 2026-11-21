@@ -25,7 +25,10 @@ The plugin's hooks, registered in `hooks.json`. Each has tests beside it, and CI
   - After `cd -`, `popd` or a target built from a variable, the directory is unknown. A command that depends on it is then denied: a push with no explicit refspec, `gh pr create`, a relative env file write, or a uat script. A later `cd` to a known absolute path clears it.
   - A `cd` that ends in `||`, and a piped `cd` in PowerShell, leave the directory unknown.
 - A line continuation inside a word asks, because it can hide a command. A line that ends in a backslash with no space before it, inside an unquoted heredoc or `$((`, asks even when it is harmless. A quoted delimiter such as `<<'EOF'` avoids that.
-- Rule 12 asks for a command that only mentions a script path in PowerShell, because PowerShell would run it.
+- **Rule 12 is about PowerShell running a bare path.** It asks when a dangerous script path appears anywhere in PowerShell text, because PowerShell would run it.
+  - From the PowerShell tool, that is the whole command.
+  - From the Bash tool, that is the text a PowerShell host gets: `pwsh <script>`, `pwsh -Command "<script>"` and `pwsh -File <script>`, also as `powershell` or `powershell.exe`, with `-f` or `-File` in any case.
+  - A `.sh`, `.cmd` or `.bat` script that bash, sh or `cmd /c` runs is not covered, from either tool. Rule 4 covers the plugin's Node scripts. An app whose dangerous scripts are not Node lists that as a deviation in its `AGENTS.md` (CLA-0028).
 - Rule 15, for `--adopt-unrecorded-migrations`, matches only a command or argument named `deploy` or `deploy.mjs`.
 
 ## What the guardrail does not see

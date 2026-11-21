@@ -798,6 +798,29 @@ test('rule 12 applies to PowerShell text reached from another shell', () => {
   assert.match(reason(call('./scripts/merge.mjs', { tool: 'PowerShell' })), /Rule 12/);
 });
 
+test('rule 12 treats a PowerShell host from the Bash tool the same for a script, -Command and -File', () => {
+  for (const [tool, command, expected] of [
+    ['PowerShell', './scripts/restore.ps1 -Environment uat', 'ask'],
+    ['PowerShell', 'pwsh -File scripts/restore.ps1 -Environment uat', 'ask'],
+    ['Bash', 'pwsh scripts/restore.ps1 -Environment uat', 'ask'],
+    ['Bash', 'pwsh -Command "./scripts/restore.ps1 -Environment uat"', 'ask'],
+    ['Bash', 'pwsh -File scripts/restore.ps1 -Environment uat', 'ask'],
+    ['Bash', 'pwsh -f scripts/restore.ps1 -Environment uat', 'ask'],
+    ['Bash', 'PWSH -FILE ./scripts/merge.ps1', 'ask'],
+    ['Bash', 'pwsh -NoProfile -File scripts/init.ps1', 'ask'],
+    ['Bash', 'powershell -File scripts/restore.ps1', 'ask'],
+    ['Bash', 'powershell.exe -File ./scripts/prune-backups.ps1 -Apply', 'ask'],
+    ['Bash', 'pwsh -File scripts/deploy.ps1 -Environment dev', 'allow'],
+    ['Bash', 'pwsh -File x.ps1', 'allow'],
+    ['Bash', 'bash scripts/restore.sh uat', 'allow'],
+    ['Bash', './scripts/restore.sh uat', 'allow'],
+  ]) {
+    const result = call(command, { tool });
+    assert.equal(verdict(result), expected, `${tool}: ${command}`);
+    if (expected === 'ask') assert.match(reason(result), /Rule 12/, `${tool}: ${command}`);
+  }
+});
+
 test('commands from the config deny or ask, compared by tokens', () => {
   for (const command of [
     'node scripts/restore.mjs',
