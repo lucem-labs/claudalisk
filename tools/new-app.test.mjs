@@ -63,6 +63,13 @@ describe('generateApp', () => {
     assert.deepEqual(settings, { enableArtifact: false, enabledPlugins: { 'claudalisk@claudalisk': true } })
   })
 
+  it('turns the insignificant-slice rule off for entities only in the Steiger config', async () => {
+    const { target } = await generated()
+    const config = readFileSync(join(target, 'frontend', 'steiger.config.ts'), 'utf8')
+    assert.match(config, /\.\.\.fsd\.configs\.recommended,\s*\{\s*files: \['\.\/src\/entities\/\*\*'\],\s*rules: \{\s*'fsd\/insignificant-slice': 'off',\s*\},\s*\},\s*\]/)
+    assert.equal(config.match(/'off'/g).length, 1)
+  })
+
   it('tells sessions where design work for the app lives', async () => {
     const { target } = await generated()
     assert.match(readFileSync(join(target, 'AGENTS.md'), 'utf8'), /^Design work for this app lives in the owner's design repository.*`acme-shop` folder.*CLA-0096/m)
