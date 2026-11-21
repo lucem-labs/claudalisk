@@ -10,7 +10,7 @@ Files that belong in a claudalisk app, laid out as they sit in the app's reposit
 | `app/scripts/no-comments.mjs` | `node scripts/no-comments.mjs [<root>] [--skip <path>]...`: fails when a tracked file has a comment ([CLA-0035](../adr/0035-no-code-comments.md)) |
 | `app/scripts/install-security-tools.mjs` | `node scripts/install-security-tools.mjs --tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a pinned release, refuses a download whose SHA-256 differs, installs into a new folder under `RUNNER_TEMP` unless `--destination` names one, and adds the folder to `GITHUB_PATH` ([CLA-0071](../adr/0071-security-scans.md)) |
 | `app/scripts/scan-images.mjs` | `node scripts/scan-images.mjs [--build] [--scan] --image <name>=<Dockerfile>...`: builds the images, then scans each one with Trivy from a `docker save` archive. The build context is the Dockerfile's top folder, `backend` or `frontend` |
-| `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
+| `app/scripts/zap-baseline.mjs` | `node scripts/zap-baseline.mjs --target http://<app>.dev.localhost [--proxy-host <IPv4 address>]` (without it, the proxy container on its network, else `host.docker.internal`): runs the ZAP baseline against dev with `.zap/rules.tsv`, and refuses any other target and a proxy address outside loopback and the private ranges |
 | `app/scripts/deploy.mjs`, `backup.mjs`, `restore.mjs`, `prune-backups.mjs`, `refresh-dev.mjs`, `init.mjs`, `migrate.mjs`, `check-migrations.mjs` | The environment entry scripts ([CLA-0084](../adr/0084-environment-scripts-package.md)). Each only calls `runMain` with the function of the same name from `@claudalisk/scripts`, so the guards, backups and restores live in the package, not in the app. See Environment scripts below |
 | `app/scripts/base-status.mjs` | `node scripts/base-status.mjs [--open-pulls]`: sets the commit status `up to date with main` through the GitHub API with Node's `fetch`, and exits 1 when the commit is behind (CLA-0034). With `--open-pulls` it sets it on every open pull request into `main` and exits 0 whatever they show |
 | `app/scripts/free-ports.mjs` | `node scripts/free-ports.mjs NAME...`: appends `NAME=<free port>` for each name to `GITHUB_ENV` (CLA-0019) |
@@ -175,7 +175,7 @@ The weekly `security.yml` repeats the dependency scans, builds and scans the ima
 
 - The image scan fails on fixable HIGH and CRITICAL vulnerabilities in the images, in their OS packages and in the libraries the app ships (`--severity HIGH,CRITICAL --ignore-unfixed`). A finding with no fixed release can't be acted on until one exists. When one appears, the next weekly run fails.
 - The base images are tagged by major version, not by digest, and `--pull` takes the latest patch each week. Dependabot raises the major version in a pull request of its own (CLA-0072).
-- The `zap` job runs only on the self-hosted `ci` runner on the owner's PC, where dev and the proxy run, so it doesn't read `CI_RUNS_ON` and never falls back to GitHub-hosted runners. dev may hold data refreshed from uat (CLA-0032), and the report quotes what ZAP saw, so the job summary may show it. The runners serve only private repositories (CLA-0033).
+- The `zap` job runs only on the self-hosted `ci` runner on the owner's PC, where dev and the proxy run, so it doesn't read `CI_RUNS_ON` and never falls back to GitHub-hosted runners. It reaches dev through the machine-wide proxy container on the proxy's Docker network, on the Docker daemon the runner shares with dev. It needs no published port and no `host.docker.internal`, so it passes with a proxy bound only to `127.0.0.1` and on a runner that runs in a container. dev may hold data refreshed from uat (CLA-0032), and the report quotes what ZAP saw, so the job summary may show it. The runners serve only private repositories (CLA-0033).
 - GitHub dispatches a workflow only once it is on the default branch. To try a change to it before the merge, push it to a throwaway branch with a temporary `push` trigger, and delete the branch afterwards.
 
 ## Images
@@ -218,10 +218,10 @@ Trivy's config scan fails on a container that runs as root and on an image witho
 
 ## Running the ZAP baseline by hand
 
-In CI the script reaches dev through `host.docker.internal`, which the containers resolve to the machine-wide proxy (CLA-0033). On a Windows host with Docker Desktop that name resolves inside containers but not on the host, and the proxy listens only on `127.0.0.1`, so the host's LAN address doesn't work either. Pass the address Docker Desktop gives containers for the host, read in the same pinned image the script runs (`ZAP_IMAGE` in the script):
+The script finds the proxy the way it does in CI: it reads the proxy's Compose project and network from `~/.claudalisk/apps.json` (`traefik` for both when the registry names none), takes the running proxy container's IPv4 address on that network from `docker inspect`, starts ZAP on that network and maps the dev host name to that address. So by hand it needs only the target:
 
 ```powershell
-$image = 'ghcr.io/zaproxy/zaproxy:2.17.0@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238'
-$proxy = (docker run --rm --entrypoint getent $image hosts host.docker.internal).Split(' ')[0]
-node scripts/zap-baseline.mjs --target http://<app>.dev.localhost --proxy-host $proxy
+node scripts/zap-baseline.mjs --target http://<app>.dev.localhost
 ```
+
+When no proxy container runs on this Docker daemon, the script falls back to `host.docker.internal`. `--proxy-host <IPv4 address>` skips the lookup and maps dev to that address, and `--proxy-host host.docker.internal` keeps the old route. Either way ZAP starts on the default network.
