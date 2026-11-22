@@ -89,6 +89,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0095](0095-no-tool-output-compression.md) | No tool-output compression, because the output it could filter is a small share of context | accepted | workflow |
 | [CLA-0096](0096-design-work-in-a-design-repository.md) | Design work lives in a separate design repository, and apps turn Artifacts off | accepted | workflow |
 | [CLA-0097](0097-plugin-enabled-per-app.md) | The plugin is off at user scope, and each app turns it on in its project settings | accepted | workflow |
+| [CLA-0098](0098-artifacts-follow-semantic-versioning.md) | Every claudalisk artifact follows Semantic Versioning | accepted | workflow |
 
 ## Format
 
@@ -123,7 +124,7 @@ Claude reads an ADR before it acts on it, so every sentence costs tokens on ever
 
 ## Retired ids
 
-A retired id has no file and is never reused. An app's `AGENTS.md` deviation that cites one moves to the ADR named here.
+A retired id has no file and is never reused. An app's `AGENTS.md` deviation that cites one moves to the ADR named here, so retiring an id is a breaking change of the plugin ([CLA-0098](0098-artifacts-follow-semantic-versioning.md)).
 
 - CLA-0016: merged into CLA-0070
 - CLA-0017: merged into CLA-0018

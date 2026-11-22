@@ -1,6 +1,6 @@
 # App templates
 
-Files that belong in a claudalisk app, laid out as they sit in the app's repository (CLA-0064). Until the scaffold generates them, an app copies them in.
+Files that belong in a claudalisk app, laid out as they sit in the app's repository (CLA-0064). `/claudalisk:new-app` copies them into a new app, and an existing app copies them in by hand.
 
 | File | What it is |
 |---|---|

@@ -13,7 +13,7 @@ Every app needs the same pieces that connect the UI to claudalisk's API conventi
 ## Decision
 
 - **Claudalisk publishes a shadcn registry** from `registry/` in this repository. `shadcn build` builds it into `registry/public/r`, which is committed.
-- **It is served from GitHub at the release tag:** `https://raw.githubusercontent.com/lucem-labs/claudalisk/v<version>/registry/public/r/{name}.json`, where `<version>` is the plugin's version. A tag never moves, so an app gets the same items until it moves to a newer release. The release workflow makes the tag and checks that every item resolves at it (CLA-0081).
+- **It is served from GitHub at the release tag:** `https://raw.githubusercontent.com/lucem-labs/claudalisk/v<version>/registry/public/r/{name}.json`, where `<version>` is the plugin's version. The registry has no version of its own, and its items are part of the plugin's public API (CLA-0098). A tag never moves, so an app gets the same items until it moves to a newer release. The release workflow makes the tag and checks that every item resolves at it (CLA-0081).
 - **It holds the theme and the base components every app needs,** with the helpers they share. They include the theme tokens (CLA-0054), the app shell, Problem Details fields and alerts (CLA-0045), a paged table (CLA-0042), an action button (CLA-0044), query states (CLA-0038) and the job component (CLA-0060). `base` installs all of them. `registry/README.md` lists every item and what it does.
 - **`table` and `badge` replace shadcn's files of the same names** with added variants. They are updated only from `@claudalisk`, never from `@shadcn` (CLA-0053).
 - **Apps reference it under the `@claudalisk` namespace** in `components.json`, next to the default shadcn registry.

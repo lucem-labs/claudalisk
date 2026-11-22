@@ -17,7 +17,7 @@ The security scans report a vulnerable package or an outdated base image, but so
   - `github-actions` in `/`, which also updates SHA-pinned actions;
   - `docker` and `docker-compose` for the base images.
 - **Security updates are on.** Dependabot opens one as soon as an advisory affects a package in use.
-- **Version updates run weekly,** with one group per ecosystem for minor and patch versions. A major version gets its own pull request, because it can need code changes.
+- **Version updates run weekly,** with one group per ecosystem for minor and patch versions. A major version gets its own pull request, because it can need code changes. A claudalisk package at 0.y.z can break in a minor version (CLA-0098), and that update arrives in the group.
 - **A Dependabot pull request is its own issue.** It is the one exception to "every change starts from an issue" (CLA-0021).
 - **Nothing auto-merges.** The owner reviews and merges every Dependabot pull request, like any other (CLA-0024). The repository has no auto-merge workflow for them.
 - **The agent fixes a failing update.**

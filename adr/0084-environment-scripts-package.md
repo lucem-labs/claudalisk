@@ -26,6 +26,7 @@ Rejected: running the scripts from the plugin.
 
   Each is tested with `node:test` over an injected command runner (CLA-0027). One exact version brings a fix or a scanner pin bump to every app.
 - **Each app keeps a thin entry script at a stable path,** `scripts/<name>.mjs`, copied from `templates/app/scripts/`. It only calls `runMain` with the package's function of the same name, so a fix never needs an edit in the app. The package's README lists the entries.
+- **The package has its own version,** apart from the plugin's, and it follows CLA-0098.
 - **An app pins an exact version** in `package.json`, so the lockfile fixes what a deploy runs. CI and the owner install it with `npm ci`. A fix reaches an app as a version bump in a normal pull request.
 - **Publishing goes only through the release workflow** (CLA-0081).
 - **App values come from `.claude/claudalisk.json`** (CLA-0082). The package names a missing field, and a test fails when the fields it requires drift from the schema. Everything else is a fixed convention, which the package's README lists.
