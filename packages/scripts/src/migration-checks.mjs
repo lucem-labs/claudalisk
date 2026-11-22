@@ -142,7 +142,11 @@ export function pasteEntries(ids, source, schemas = new Map()) {
 
 export async function checkUatMigrations(runner, settings, { source, approved, main = new Map(), adoptUnrecorded = false }) {
   const { found, applied } = await uatSchemas(runner, settings)
-  if (!found) return { firstDeploy: true }
+  if (!found) {
+    const [newest] = (await listBackups(settings.backupDir)).complete
+    if (!newest) return { firstDeploy: true }
+    throw new Error(`Refusing to deploy uat: no uat database has a schema, but ${settings.backupDir} holds complete backups (newest ${newest.name}, taken ${newest.manifest.createdAtUtc}). An empty database next to backups is the wrong volume or a lost one, not a first deploy. The owner checks that the volume ${settings.app.uat.volume} exists and is the one compose.uat.yml mounts into db (docker volume ls, docker inspect on the db container). If the data is gone, the owner runs node scripts/restore.mjs --environment uat --backup ${newest.name} --owner-approved --no-start --confirm 'restore uat ${newest.name}', then deploys again. If uat is meant to start empty, the owner moves the backups out of that folder first. Nothing was changed.`)
+  }
   if (applied.length > 0 && source.size === 0) {
     throw new Error('Refusing to deploy uat: uat has applied migrations, but no migration was found under backend/**/Migrations/ (bin and obj skipped). Nothing was changed.')
   }

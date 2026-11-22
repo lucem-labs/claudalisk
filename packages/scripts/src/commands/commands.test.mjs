@@ -322,6 +322,14 @@ test('a first uat deploy has nothing to back up', async () => {
   assert.deepEqual(readdirSync(join(state, 'backups')), [])
 })
 
+test('a uat deploy of an empty database next to a complete backup refuses before it builds', async () => {
+  const { root, state, env, runner } = uatSetup({ hasSchema: false, applied: [] })
+  writeBackup(state, '20261028T100000Z-aaaaaaa', { createdAt: '2026-10-28T10:00:00Z', migrations: ['app/20260101000000_A'] })
+  await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when }), /no uat database has a schema, but .*newest 20261028T100000Z-aaaaaaa.*Nothing was changed\.$/s)
+  assert.equal(callsMatching(runner, / build$|pg_dump|run --rm migrate|image tag|\/deployments/).length, 0)
+  assert.deepEqual(readdirSync(join(state, 'backups')), ['20261028T100000Z-aaaaaaa'])
+})
+
 test('a failed migration is reported with the pre-deploy backup and nothing is started', async () => {
   const { root, env, runner } = uatSetup({ failOn: ['run --rm migrate'] })
   const errors = []
