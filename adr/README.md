@@ -90,6 +90,7 @@ An app's `AGENTS.md` wins where it differs. It lists each deliberate deviation b
 | [CLA-0096](0096-design-work-in-a-design-repository.md) | Design work lives in a separate design repository, and apps turn Artifacts off | accepted | workflow |
 | [CLA-0097](0097-plugin-enabled-per-app.md) | The plugin is off at user scope, and each app turns it on in its project settings | accepted | workflow |
 | [CLA-0098](0098-artifacts-follow-semantic-versioning.md) | Every claudalisk artifact follows Semantic Versioning | accepted | workflow |
+| [CLA-0099](0099-apps-carry-a-version.md) | Every app carries a semantic version, and deploys and backups record it | accepted | workflow |
 
 ## Format
 

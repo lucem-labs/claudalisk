@@ -9,11 +9,10 @@ export const requiredFields = {
 }
 
 export const allowedKeys = {
-  app: ['$schema', 'name', 'hostPrefix', 'repo', 'databases', 'ports', 'uat', 'backup', 'askCommands', 'ownerOnlyCommands', 'runnerLabel', 'review'],
+  app: ['$schema', 'name', 'hostPrefix', 'repo', 'databases', 'ports', 'uat', 'askCommands', 'ownerOnlyCommands', 'runnerLabel', 'review'],
   database: ['role', 'envVar'],
   ports: ['devDb', 'apiLocal'],
   uat: ['composeProject', 'volume', 'protectedVolumes'],
-  backup: ['keep'],
   review: ['uatData', 'security'],
 }
 
@@ -71,11 +70,7 @@ export function parseAppConfig(text, file = '.claude/claudalisk.json') {
   for (const field of requiredFields.uat) {
     if (!isText(config.uat[field])) throw new Error(`${file}: "uat.${field}" must be a non-empty string.`)
   }
-  if (config.backup !== undefined) rejectUnknownKeys(config.backup, allowedKeys.backup, 'backup', file)
   if (config.review !== undefined) rejectUnknownKeys(config.review, allowedKeys.review, 'review', file)
-  if (config.backup?.keep !== undefined && !(Number.isInteger(config.backup.keep) && config.backup.keep >= 1)) {
-    throw new Error(`${file}: "backup.keep" must be a whole number of at least 1.`)
-  }
   return config
 }
 

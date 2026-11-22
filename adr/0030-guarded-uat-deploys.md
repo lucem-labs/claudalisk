@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** the deploy script of `@claudalisk/scripts` and its guards (CLA-0084); guardrail hook (no uat Compose commands, restores or SQL by hand)
-- **Issue:** #64, #66
+- **Issue:** #64, #66, #273
 
 ## Context
 
@@ -29,7 +29,9 @@ Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted 
   5. Back up uat (CLA-0031), except on the first deploy to an empty database.
   6. Migrate with the same image (CLA-0008), and record the migrations' fingerprints at once, even if a later step fails.
   7. Start the built image without rebuilding it, and check health.
-  8. Record a GitHub deployment for `uat`.
+  8. Record a GitHub deployment for `uat`, with the app's version (CLA-0099).
+  9. Remove the older images (below).
+- **A deploy keeps two sets of images per environment,** the current and the previous one, on dev as on uat. Before it builds, it holds the image each service runs under a `replaced` tag, because an image store may drop an image as soon as a build takes its tag. After the health check passes, it moves that hold to `<project>-<service>:previous` and removes the untagged images that carry the environment's Compose project label. It never removes a volume or another project's image, and a failure here is a warning, not a failed deploy. A deploy that fails removes nothing.
 - **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit lacks a migration that uat already applied, as when a pull request was abandoned or replaced on uat, the deploy refuses and changes nothing. It names the newest backup that holds only migrations the commit knows, and prints the owner's restore command (CLA-0031). The deploy never restores uat. Only schemas the commit migrates count, so a retired schema is not missing.
 - **A failed migration stops the deploy.** The old version keeps running, and the script prints the pre-deploy backup for the owner to decide on.
 

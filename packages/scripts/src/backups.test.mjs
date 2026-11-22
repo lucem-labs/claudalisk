@@ -134,20 +134,22 @@ test('unmerged migrations are the ones uat has and main does not', () => {
   assert.deepEqual(unmerged, ['orders/20261021120000_B'])
 })
 
-test('pruning keeps the newest backups by count', () => {
+test('pruning keeps the current and the previous backup', () => {
   const backups = [backup('a', '2026-10-01'), backup('b', '2026-10-02'), backup('c', '2026-10-03')]
-  assert.deepEqual([...selectBackupsToKeep(backups, 2).keep].sort(), ['b', 'c'])
+  assert.deepEqual([...selectBackupsToKeep(backups).keep].sort(), ['b', 'c'])
+  assert.deepEqual([...selectBackupsToKeep(backups.slice(0, 1)).keep], ['a'])
 })
 
-test('pruning keeps the newest backup taken before each unmerged migration', () => {
+test('pruning also keeps the newest backup taken before each unmerged migration', () => {
   const backups = [
     backup('old', '2026-10-01', ['orders/A']),
     backup('before', '2026-10-02', ['orders/A']),
     backup('after-1', '2026-10-03', ['orders/A', 'orders/B']),
     backup('after-2', '2026-10-04', ['orders/A', 'orders/B']),
+    backup('after-3', '2026-10-05', ['orders/A', 'orders/B']),
   ]
-  const selection = selectBackupsToKeep(backups, 1, ['orders/B'])
-  assert.deepEqual([...selection.keep].sort(), ['after-2', 'before'])
+  const selection = selectBackupsToKeep(backups, ['orders/B'])
+  assert.deepEqual([...selection.keep].sort(), ['after-2', 'after-3', 'before'])
   assert.deepEqual(selection.protectedFor, { 'orders/B': 'before' })
 })
 
@@ -159,8 +161,8 @@ test('a restore point holds none of the missing migrations and only migrations t
 })
 
 test('a backup without a migration list is never taken as a restore point', () => {
-  const selection = selectBackupsToKeep([backup('legacy', '2026-10-01'), backup('new', '2026-10-02', ['orders/B'])], 1, ['orders/B'])
-  assert.deepEqual([...selection.keep], ['new'])
+  const selection = selectBackupsToKeep([backup('legacy', '2026-10-01'), backup('new-1', '2026-10-02', ['orders/B']), backup('new-2', '2026-10-03', ['orders/B'])], ['orders/B'])
+  assert.deepEqual([...selection.keep].sort(), ['new-1', 'new-2'])
   assert.deepEqual(selection.protectedFor, {})
 })
 

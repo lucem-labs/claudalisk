@@ -20,6 +20,7 @@ The security scans report a vulnerable package or an outdated base image, but so
 - **Version updates run weekly,** with one group per ecosystem for minor and patch versions. A major version gets its own pull request, because it can need code changes. A claudalisk package at 0.y.z can break in a minor version (CLA-0098), and that update arrives in the group.
 - **A Dependabot pull request is its own issue.** It is the one exception to "every change starts from an issue" (CLA-0021).
 - **Nothing auto-merges.** The owner reviews and merges every Dependabot pull request, like any other (CLA-0024). The repository has no auto-merge workflow for them.
+- **The agent raises the app's version on each update.** `check-version` fails a Dependabot pull request like any other, so the agent pushes a patch bump to its branch (CLA-0099).
 - **The agent fixes a failing update.**
   - When CI fails on a Dependabot pull request, the agent pushes the fix to that branch, such as a changed API call or an updated test.
   - After that push, Dependabot stops rebasing the branch, so the agent merges `origin/main` into it when needed.

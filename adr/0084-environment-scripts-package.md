@@ -20,7 +20,7 @@ Rejected: running the scripts from the plugin.
 ## Decision
 
 - **The scripts' logic is the npm package `@claudalisk/scripts`**, in `packages/scripts` of this repository. It is public, MIT, ESM and uses only Node's standard library. It holds:
-  - the deploy and its guards (CLA-0030) and the migration checks (CLA-0010);
+  - the deploy and its guards (CLA-0030), the migration checks (CLA-0010) and the app version check (CLA-0099);
   - backups and restores (CLA-0031), the dev refresh (CLA-0032), init (CLA-0066) and migrate (CLA-0008);
   - the scripts CI runs, such as the comment check (CLA-0035), the locator check (CLA-0070), the security tools with their pinned SHA-256 checksums (CLA-0071) and the TRX annotations (CLA-0076).
 
@@ -30,8 +30,8 @@ Rejected: running the scripts from the plugin.
 - **An app pins an exact version** in `package.json`, so the lockfile fixes what a deploy runs. CI and the owner install it with `npm ci`. A fix reaches an app as a version bump in a normal pull request.
 - **Publishing goes only through the release workflow** (CLA-0081).
 - **App values come from `.claude/claudalisk.json`** (CLA-0082). The package names a missing field, and a test fails when the fields it requires drift from the schema. Everything else is a fixed convention, which the package's README lists.
-- **Every command that changes an environment refuses to run in CI.** `assertHandRun` fails when `CI` or `GITHUB_ACTIONS` is set, before anything is read or run, and a test runs each command with each variable set. The CI-run scripts and `check-migrations` run in CI by design.
-- **The owner gate for `prune-backups --apply` is guardrail rule 4** (CLA-0083), together with the script's refusal in CI and its protection of restore points (CLA-0031).
+- **Every command that changes an environment is built the same way and refuses to run in CI.** `environmentCommand` wraps each one: it calls `assertHandRun`, which fails when `CI` or `GITHUB_ACTIONS` is set, before anything is read or run, then parses the options and reads the app config, and only then runs the command's own steps. A test runs each command with each variable set. The CI-run scripts and `check-migrations` run in CI by design.
+- **Cleanup belongs to the command that makes the artifact.** A backup prunes the older backups (CLA-0031) and a deploy removes the older images (CLA-0030). There is no separate cleanup command and no owner gate for one.
 
 ## Consequences
 

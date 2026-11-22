@@ -12,7 +12,7 @@ An app's settings were spread over its scripts and prose: its name, its ports, t
 
 ## Decision
 
-- **An app describes itself in `.claude/claudalisk.json`.** `tools/app-config.schema.json` is the one definition of its shape: the app name, host prefix, repository, databases, dev ports, uat project and volumes, backup count, command lists, runner label and review globs.
+- **An app describes itself in `.claude/claudalisk.json`.** `tools/app-config.schema.json` is the one definition of its shape: the app name, host prefix, repository, databases, dev ports, uat project and volumes, command lists, runner label and review globs.
   - **Unknown keys are an error at every level.** The file holds safety settings, and a typo such as `protectedVolume` would otherwise be skipped without a word.
   - `tools/app-config.mjs` validates a file against the schema and reads it. A broken or invalid file throws, listing every problem with its path.
 - **`name` is the one source of the app name.** Per-app state lives in `~/.claudalisk/apps/<name>/` (CLA-0066), so a clone in a differently named folder does not split it. It matches `^[a-z0-9][a-z0-9-]*$`, so it cannot build a path outside that folder. An app without a config keeps the name of its repository folder.

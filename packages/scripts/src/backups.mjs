@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { createReadStream, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
+export const keptBackups = 2
+
 export function backupName(createdAt, sha) {
   const short = /^[0-9a-fA-F]{7}/.test(sha ?? '') ? sha.slice(0, 7).toLowerCase() : 'unknown'
   const stamp = createdAt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
@@ -22,13 +24,14 @@ export function sha256File(path) {
   })
 }
 
-export function createManifest({ environment, reason, createdAt, deployedSha, deployedRef, databases, migrations }) {
+export function createManifest({ environment, reason, createdAt, deployedSha, deployedRef, deployedVersion, databases, migrations }) {
   return {
     environment,
     reason,
     createdAtUtc: createdAt.toISOString(),
     deployedSha: deployedSha ?? null,
     deployedRef: deployedRef ?? null,
+    deployedVersion: deployedVersion ?? null,
     databases: databases.map(({ role, database, file, sizeBytes, sha256 }) => ({ role, database, file, sizeBytes, sha256 })),
     migrations: [...migrations].sort(),
   }
@@ -124,9 +127,9 @@ export function restorePointFor(newestFirst, migrations, known = () => true) {
   ) ?? null
 }
 
-export function selectBackupsToKeep(backups, keep, unmerged = []) {
+export function selectBackupsToKeep(backups, unmerged = []) {
   const newestFirst = [...backups].sort((a, b) => b.createdAt - a.createdAt)
-  const kept = new Set(newestFirst.slice(0, keep).map((backup) => backup.name))
+  const kept = new Set(newestFirst.slice(0, keptBackups).map((backup) => backup.name))
   const protectedFor = {}
   for (const migration of unmerged) {
     const restorePoint = restorePointFor(newestFirst, [migration])

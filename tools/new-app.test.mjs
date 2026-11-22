@@ -180,8 +180,8 @@ describe('choosePorts', () => {
 
 describe('appConfig', () => {
   it('keeps the template settings it does not derive', () => {
-    const config = appConfig({ backup: { keep: 10 }, uat: { protectedVolumes: [] } }, { name: 'a', repo: 'o/a', ports: {} })
-    assert.deepEqual(config.backup, { keep: 10 })
+    const config = appConfig({ runnerLabel: 'ci', uat: { protectedVolumes: [] } }, { name: 'a', repo: 'o/a', ports: {} })
+    assert.equal(config.runnerLabel, 'ci')
     assert.deepEqual(config.uat.protectedVolumes, [])
   })
 })

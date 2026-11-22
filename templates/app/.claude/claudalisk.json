@@ -12,7 +12,6 @@
     "volume": "example-app-uat-data",
     "protectedVolumes": []
   },
-  "backup": { "keep": 10 },
   "askCommands": [],
   "ownerOnlyCommands": [],
   "runnerLabel": "ci",

@@ -122,7 +122,6 @@ test('the scripts package and the template entry scripts are uat data, wherever 
     'templates/app/scripts/init.mjs',
     'templates/app/scripts/migrate.mjs',
     'templates/app/scripts/backup.mjs',
-    'templates/app/scripts/prune-backups.mjs',
     'templates/app/scripts/restore.mjs',
     'templates/app/scripts/refresh-dev.mjs',
     'scripts/deploy.mjs',

@@ -1,8 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { assertHandRun, parseOptions } from '../cli.mjs'
-import { readApp } from '../app-config.mjs'
-import { devConnectionString, loadEnvironment } from '../environment.mjs'
+import { devConnectionString } from '../environment.mjs'
+import { environmentCommand } from '../environment-command.mjs'
 import { runChecked } from '../process.mjs'
 
 export function findApiProject(appRoot) {
@@ -18,17 +17,19 @@ export function findApiProject(appRoot) {
   return found[0]
 }
 
-export async function migrate({ appRoot, argv, env, runner }) {
-  assertHandRun('migrate.mjs', 'migrates the dev databases from this machine', env)
-  const options = parseOptions({ project: { type: 'string' } }, argv)
-  const app = readApp(appRoot)
-  const dev = loadEnvironment('dev', { app, env })
-  const project = options.project ?? findApiProject(appRoot)
-  const connections = Object.fromEntries(dev.databases.map((database) => [database.envVar, devConnectionString(app, dev.values, database.name)]))
-  await runChecked(runner, 'dotnet', ['run', '--project', project, '--', '--initialize-databases'], {
-    cwd: appRoot,
-    inherit: true,
-    env: connections,
-    what: 'Database migration',
-  })
-}
+export const migrate = environmentCommand({
+  script: 'migrate.mjs',
+  changes: 'migrates the dev databases from this machine',
+  options: { project: { type: 'string' } },
+  run: async ({ app, appRoot, options, runner, settings }) => {
+    const dev = settings('dev')
+    const project = options.project ?? findApiProject(appRoot)
+    const connections = Object.fromEntries(dev.databases.map((database) => [database.envVar, devConnectionString(app, dev.values, database.name)]))
+    await runChecked(runner, 'dotnet', ['run', '--project', project, '--', '--initialize-databases'], {
+      cwd: appRoot,
+      inherit: true,
+      env: connections,
+      what: 'Database migration',
+    })
+  },
+})

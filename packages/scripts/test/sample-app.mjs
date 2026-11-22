@@ -5,7 +5,6 @@ export const sampleConfig = {
   databases: [{ role: 'app', envVar: 'ConnectionStrings__Shop' }],
   ports: { devDb: 5440, apiLocal: 5180 },
   uat: { composeProject: 'shop-uat', volume: 'shop-uat_postgres-data', protectedVolumes: [] },
-  backup: { keep: 5 },
 }
 
 export const sampleApp = { ...sampleConfig, root: '/repo' }

@@ -28,4 +28,4 @@ Recurring workers on timers, written separately in each app, repeat the same cod
 - The scheduler depends on the dispatcher and the jobs library. It knows the commands it sends, not the logic behind them.
 - A scheduled run is visible like any other job.
 - dev and uat can run different schedules, and changing one needs no commit.
-- A refresh that goes wrong on uat is undone only by the owner, who restores the newest backup taken before it (CLA-0031). Nothing ties that backup to the refresh, so it can be weeks old, and everything entered since it is lost from uat; the restore first backs up the current data. Retention by count may prune it after later deploys, so the owner checks a uat refresh soon after it first runs.
+- A refresh that goes wrong on uat is undone only by the owner, who restores the newest backup taken before it (CLA-0031). Nothing ties that backup to the refresh, so it can be weeks old, and everything entered since it is lost from uat; the restore first backs up the current data. Only the current and the previous backup are kept, so the second backup after the refresh deletes it, and the owner checks a uat refresh soon after it first runs.

@@ -1,15 +1,37 @@
 import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { assertRestoreAllowed, backupName, createManifest, listBackups, readBackup, sha256File, writeManifest } from './backups.mjs'
+import { assertRestoreAllowed, backupName, createManifest, listBackups, migrationsToProtect, readBackup, selectBackupsToKeep, sha256File, writeManifest } from './backups.mjs'
 import { appliedMigrations, dumpDatabase, restoreDatabase } from './database.mjs'
-import { compose, composeChecked, deployedVersion, runningContainer } from './environment.mjs'
+import { compose, composeChecked, deployedEnv, deployedVersion, runningContainer } from './environment.mjs'
 import { waitForHealth } from './http.mjs'
+import { fetchMain, readMainMigrations } from './migration-checks.mjs'
 
 export function timestamp(date) {
   return date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
 }
 
-export async function takeBackup(runner, settings, { reason = 'manual', now = () => new Date() } = {}) {
+async function mainMigrations(runner, root) {
+  await fetchMain(runner, root)
+  return readMainMigrations(runner, root)
+}
+
+export async function pruneBackups(runner, settings, { applied, alsoKeep = [], main }) {
+  const { complete } = await listBackups(settings.backupDir)
+  const merged = new Set((main ?? (await mainMigrations(runner, settings.app.root))).keys())
+  const selection = selectBackupsToKeep(complete, migrationsToProtect(applied, merged))
+  for (const name of alsoKeep) selection.keep.add(name)
+  for (const [migration, name] of Object.entries(selection.protectedFor)) {
+    console.log(`  keeping ${name}: the restore point from before ${migration}, which ${settings.environment} has and main does not.`)
+  }
+  const removed = complete.filter((backup) => !selection.keep.has(backup.name))
+  for (const backup of removed) {
+    rmSync(backup.path, { recursive: true, force: true })
+    console.log(`  deleted ${backup.name}`)
+  }
+  return removed.map((backup) => backup.name)
+}
+
+export async function takeBackup(runner, settings, { reason = 'manual', now = () => new Date(), alsoKeep = [], main } = {}) {
   const container = await runningContainer(runner, settings, 'db')
   if (!container) throw new Error(`The ${settings.environment} database is not running; deploy ${settings.environment} first.`)
   const deployed = await deployedVersion(runner, settings)
@@ -19,9 +41,9 @@ export async function takeBackup(runner, settings, { reason = 'manual', now = ()
   if (existsSync(folder)) throw new Error(`Backup folder ${folder} already exists; wait a second and retry.`)
   mkdirSync(folder, { recursive: true })
   console.log(`Backing up ${settings.environment} into ${folder}`)
+  const migrations = new Set()
   try {
     const databases = []
-    const migrations = new Set()
     for (const { role, name: database } of settings.databases) {
       const file = `${database}.dump`
       const entries = await dumpDatabase(runner, { container, database, containerPath: `/backups/${name}/${file}` })
@@ -37,6 +59,7 @@ export async function takeBackup(runner, settings, { reason = 'manual', now = ()
       createdAt,
       deployedSha: deployed?.sha,
       deployedRef: deployed?.ref,
+      deployedVersion: deployed?.version,
       databases,
       migrations,
     }))
@@ -44,7 +67,12 @@ export async function takeBackup(runner, settings, { reason = 'manual', now = ()
     rmSync(folder, { recursive: true, force: true })
     throw error
   }
-  console.log(`Backup complete: ${name}`)
+  console.log(`Backup complete: ${name}${deployed?.version ? ` (version ${deployed.version})` : ''}`)
+  try {
+    await pruneBackups(runner, settings, { applied: migrations, alsoKeep, main })
+  } catch (error) {
+    console.warn(`Warning: the older backups were not pruned, so all of them are kept (${error.message}).`)
+  }
   return folder
 }
 
@@ -52,7 +80,7 @@ export async function migrate(runner, settings, deployed) {
   console.log(`Applying pending migrations to the ${settings.environment} database.`)
   await composeChecked(runner, settings, ['--profile', 'migrate', 'run', '--rm', 'migrate'], {
     inherit: true,
-    env: { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref },
+    env: deployedEnv(deployed),
     what: `Applying migrations to ${settings.environment}`,
   })
 }
@@ -69,7 +97,8 @@ export async function selectBackup(directory, backup) {
 export async function restore(runner, target, { backup, confirm, ownerApproved = false, noStart = false, now = () => new Date() }) {
   assertRestoreAllowed({ environment: target.environment, backup, confirm, ownerApproved })
   const selected = await selectBackup(target.backupDir, backup)
-  console.log(`Backup ${selected.name} (taken ${selected.manifest.createdAtUtc}, deployed ${selected.manifest.deployedSha ?? 'unknown'}) verified.`)
+  const version = selected.manifest.deployedVersion ? `version ${selected.manifest.deployedVersion}, ` : ''
+  console.log(`Backup ${selected.name} (taken ${selected.manifest.createdAtUtc}, ${version}deployed ${selected.manifest.deployedSha ?? 'unknown'}) verified.`)
   const container = await runningContainer(runner, target, 'db')
   if (!container) throw new Error(`The ${target.environment} database is not running; deploy ${target.environment} first.`)
 
@@ -86,7 +115,7 @@ export async function restore(runner, target, { backup, confirm, ownerApproved =
   if (target.environment === 'uat') {
     console.log("Taking a backup of uat's current data first.")
     try {
-      preRestoreNote = ` Backup of the replaced data: ${await takeBackup(runner, target, { reason: 'pre-restore', now })}`
+      preRestoreNote = ` Backup of the replaced data: ${await takeBackup(runner, target, { reason: 'pre-restore', now, alsoKeep: [selected.name] })}`
     } catch (error) {
       console.error(`The backup of the current uat data failed, so nothing was changed. Starting the API again.`)
       await compose(runner, target, ['start', 'api'])
