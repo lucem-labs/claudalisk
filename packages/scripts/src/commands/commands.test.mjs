@@ -459,6 +459,46 @@ test('a uat deploy names the version in the GitHub deployment', async () => {
   assert.equal(JSON.parse(created.options.input).description, 'Local deploy of 1.4.0 from feature')
 })
 
+test('a deploy refuses, before it holds or builds anything, when a built service names its own image', async () => {
+  const { root, state, env } = makeApp()
+  writeEnvFile(state, 'dev')
+  const services = { api: { build: { context: '.' }, image: 'shop:1234567' }, web: { build: { context: '.' }, image: 'shop-web:1234567' }, db: { image: 'postgres:18' } }
+  const runner = docker({ state, volumes: ['shop-dev_postgres-data'], services, extra: images() })
+  await assert.rejects(
+    deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy }),
+    /Refusing to deploy dev: the Compose files name the image of a service they build: api \(image: shop:1234567\), web \(image: shop-web:1234567\)\. .*default name, shop-dev-<service>.*Remove the image key.*Nothing was changed\.$/,
+  )
+  assert.equal(callsMatching(runner, / build$| up |^docker (tag|image) /).length, 0)
+  const [read] = callsMatching(runner, / config /)
+  assert.match(read.line, / --profile migrate config --format json$/)
+  assert.equal(read.options.env.DEPLOYED_SHA, sha)
+})
+
+test('a built service may spell out the default image name, and a pulled image may have any name', async () => {
+  const { root, state, env } = makeApp()
+  writeEnvFile(state, 'dev')
+  const services = { api: { build: { context: '.' }, image: 'shop-dev-api' }, migrate: { build: { context: '.' }, image: 'shop-dev-migrate:latest' }, db: { image: 'postgres:18' } }
+  const runner = docker({ state, volumes: ['shop-dev_postgres-data'], services })
+  await deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy })
+  assert.equal(callsMatching(runner, / build$/).length, 1)
+})
+
+test('a uat deploy with a named built image refuses before the database starts', async () => {
+  const { root, state, env } = makeApp()
+  writeEnvFile(state, 'uat')
+  const runner = docker({ state, volumes: ['shop-uat_postgres-data'], services: { api: { build: {}, image: 'shop:abc' } } })
+  await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when }), /Refusing to deploy uat: .*shop-uat-<service>.*Nothing was changed\.$/)
+  assert.equal(callsMatching(runner, / up | build$|pg_dump/).length, 0)
+})
+
+test('a Compose config that cannot be read stops the deploy before it changes anything', async () => {
+  const { root, state, env } = makeApp()
+  writeEnvFile(state, 'dev')
+  const runner = docker({ state, volumes: ['shop-dev_postgres-data'], failOn: [' config '] })
+  await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy }), /Reading the Compose config/)
+  assert.equal(callsMatching(runner, / build$| up /).length, 0)
+})
+
 test('a first deploy has no image to hold', async () => {
   const { root, state, env } = makeApp()
   const runner = docker({ state })
