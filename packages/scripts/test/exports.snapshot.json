@@ -1,0 +1,140 @@
+{
+  "./backup": [
+    "backup"
+  ],
+  "./base-status": [
+    "STATUS_CONTEXT",
+    "baseStatus",
+    "commitsBehindMain",
+    "githubClient",
+    "openPullHeads",
+    "setBaseStatus",
+    "statusFor"
+  ],
+  "./check-e2e-locators": [
+    "check",
+    "checkE2eLocators",
+    "findViolations",
+    "format",
+    "sourceFiles"
+  ],
+  "./check-forbidden-files": [
+    "checkForbiddenFiles",
+    "forbiddenReason"
+  ],
+  "./check-migrations": [
+    "checkMigrationsAgainstMain"
+  ],
+  "./check-source-hygiene": [
+    "checkSourceHygiene",
+    "inFixtures",
+    "isBinary",
+    "suspectCharacters"
+  ],
+  "./check-suppressions": [
+    "MAX_DAYS",
+    "checkSuppressions",
+    "csharpSuppressions",
+    "dayNumber",
+    "expiryProblem",
+    "findSuppressionProblems"
+  ],
+  "./cli": [
+    "assertHandRun",
+    "parseOptions",
+    "runMain"
+  ],
+  "./deploy": [
+    "currentVersion",
+    "deploy"
+  ],
+  "./fake-runner": [
+    "fakeRunner"
+  ],
+  "./free-ports": [
+    "exportFreePorts"
+  ],
+  "./init": [
+    "init",
+    "promptHidden"
+  ],
+  "./install-security-tools": [
+    "SECURITY_TOOLS",
+    "USAGE",
+    "UsageError",
+    "download",
+    "installSecurityTools",
+    "installTool",
+    "main",
+    "parseArgs"
+  ],
+  "./migrate": [
+    "findApiProject",
+    "migrate"
+  ],
+  "./no-comments": [
+    "SYNTAX_BY_EXTENSION",
+    "SYNTAX_BY_NAME",
+    "findCommentLines",
+    "findComments",
+    "isGenerated",
+    "main",
+    "noComments",
+    "parseArgs",
+    "syntaxOf",
+    "trackedFiles"
+  ],
+  "./package.json": [],
+  "./prune-backups": [
+    "defaultKeep",
+    "pruneBackups"
+  ],
+  "./refresh-dev": [
+    "refreshDev"
+  ],
+  "./restore": [
+    "restore"
+  ],
+  "./scan-images": [
+    "USAGE",
+    "UsageError",
+    "buildImages",
+    "main",
+    "parseArgs",
+    "parseImage",
+    "runner",
+    "scanImages",
+    "scanSavedImages"
+  ],
+  "./trx-annotations": [
+    "STEP_ERROR_LIMIT",
+    "annotations",
+    "failedTests",
+    "location",
+    "report",
+    "summary",
+    "trxAnnotations"
+  ],
+  "./zap-baseline": [
+    "DEFAULT_PROXY",
+    "DEFAULT_PROXY_HOST",
+    "REPORT_MARKER",
+    "USAGE",
+    "UsageError",
+    "ZAP_IMAGE",
+    "ZAP_SCRIPT",
+    "baseline",
+    "devTarget",
+    "dockerArgs",
+    "isPrivateAddress",
+    "main",
+    "parseArgs",
+    "proxyContainerAddress",
+    "proxyRoute",
+    "registryProxy",
+    "rulesReader",
+    "splitReport",
+    "verdict",
+    "zapBaseline"
+  ]
+}

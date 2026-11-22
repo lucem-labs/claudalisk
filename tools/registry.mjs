@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseVersion } from './semver.mjs';
 
 export const repositoryRoot = resolve(fileURLToPath(import.meta.url), '..', '..');
 export const registryRoot = join(repositoryRoot, 'registry');
@@ -35,7 +36,11 @@ export function shadcnVersion(root = repositoryRoot) {
 
 export function pluginVersion(root = repositoryRoot) {
   const version = readJson(join(root, '.claude-plugin', 'plugin.json')).version;
-  if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) throw new Error('.claude-plugin/plugin.json must have a version');
+  try {
+    parseVersion(version);
+  } catch (error) {
+    throw new Error(`.claude-plugin/plugin.json must have a version: ${error.message}`);
+  }
   return version;
 }
 

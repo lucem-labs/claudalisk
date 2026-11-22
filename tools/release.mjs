@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pluginVersion, readJson, registryRoot, releaseRegistryUrl, repositoryRoot } from './registry.mjs';
+import { parseVersion } from './semver.mjs';
 
 export const scriptsPackageDir = 'packages/scripts';
 
@@ -24,6 +25,11 @@ export function scriptsPackage(root = repositoryRoot) {
   const path = join(root, scriptsPackageDir, 'package.json');
   if (!existsSync(path)) return null;
   const { name, version } = readJson(path);
+  try {
+    parseVersion(version);
+  } catch (error) {
+    throw new Error(`${scriptsPackageDir}/package.json must have a version: ${error.message}`);
+  }
   return { name, version, dir: scriptsPackageDir };
 }
 

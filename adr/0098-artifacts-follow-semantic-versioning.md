@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-11-22
 - **Area:** workflow
-- **Enforced by:** `tools/registry.mjs` and `release.yml` (CLA-0081); `scripts/release-version.mjs` and package validation in lucem-labs/claudalisk-dotnet; reviewer for the size of a bump. Not built yet: the checks for version order, changed package content and breaks against the last release (#270, lucem-labs/claudalisk-dotnet#58)
+- **Enforced by:** `tools/semver.mjs` for validity and precedence; `tools/check-versions.mjs` in CI for version order and changed scripts package content against the last release tag, and in `release.yml` (CLA-0081) before a tag is made; `packages/scripts/test/exports.test.mjs` for the scripts package's exports; `scripts/release-version.mjs` and package validation in lucem-labs/claudalisk-dotnet; reviewer for the size of a bump. Not built yet in claudalisk-dotnet: the checks for version order and breaks against the last release (lucem-labs/claudalisk-dotnet#58)
 - **Issue:** #269
 
 ## Context

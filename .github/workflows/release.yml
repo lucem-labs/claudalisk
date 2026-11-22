@@ -33,6 +33,7 @@ jobs:
             echo "released=true" >> "$GITHUB_OUTPUT"
             echo "$tag is already tagged, so there is nothing to release."
           else
+            node tools/check-versions.mjs --release
             echo "released=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Tag the release
