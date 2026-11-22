@@ -223,6 +223,31 @@ test('a first deploy has nothing to check', async () => {
   assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map() }), { firstDeploy: true })
 })
 
+test('an empty database next to complete backups is refused, naming the volume and the newest backup', async () => {
+  const { settings, runner, stateDir } = uatWith({
+    applied: [],
+    hasSchema: false,
+    backups: [
+      ['20261001T000000Z-aaaaaaa', '2026-10-01T00:00:00Z', ['app/20260101000000_A']],
+      ['20261002T000000Z-bbbbbbb', '2026-10-02T00:00:00Z', ['app/20260101000000_A']],
+    ],
+  })
+  await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), (error) => {
+    assert.match(error.message, /^Refusing to deploy uat: no uat database has a schema, but .*backups holds complete backups \(newest 20261002T000000Z-bbbbbbb, taken 2026-10-02T00:00:00\.000Z\)/)
+    assert.match(error.message, /the volume shop-uat_postgres-data exists/)
+    assert.match(error.message, /restore\.mjs --environment uat --backup 20261002T000000Z-bbbbbbb --owner-approved --no-start --confirm 'restore uat 20261002T000000Z-bbbbbbb'/)
+    assert.match(error.message, /Nothing was changed\.$/)
+    return true
+  })
+  assert.ok(!existsSync(join(stateDir, 'uat-migrations.json')))
+})
+
+test('an empty database next to only an incomplete backup is still a first deploy', async () => {
+  const { settings, runner, stateDir } = uatWith({ applied: [], hasSchema: false })
+  mkdirSync(join(stateDir, 'backups', '20261001T000000Z-aaaaaaa'), { recursive: true })
+  assert.deepEqual(await checkUatMigrations(runner, settings, { source, approved: new Map() }), { firstDeploy: true })
+})
+
 test('a changed applied migration is refused before anything is written', async () => {
   const { settings, runner } = uatWith({ applied: ['app/20260101000000_A'], recorded: { '20260101000000_A': 'h0' } })
   await assert.rejects(checkUatMigrations(runner, settings, { source, approved: new Map() }), /20260101000000_A changed after uat applied it \(CLA-0010\)\. Fix forward/)

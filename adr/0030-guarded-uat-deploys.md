@@ -4,13 +4,13 @@
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** the deploy script of `@claudalisk/scripts` and its guards (CLA-0084); guardrail hook (no uat Compose commands, restores or SQL by hand)
-- **Issue:** #64, #66, #273
+- **Issue:** #64, #66, #273, #276
 
 ## Context
 
 The owner uses uat to decide whether to merge, so uat needs only the pull request under review. dev is the agent's working environment, and only the agent knows which commit it needs there.
 
-Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted runner with the host's Docker socket. For one owner on localhost it cost more than it gave. Such a runner is effectively root on the owner's machine, and on GitHub's free plan only a runner-side hook keeps other workflows off it. It is a second runner stack, and its triggers are ones the workflow scanner flags (CLA-0071). The agent already opens the pull request and verifies dev, so it is there to deploy, and the guards below enforce what a workflow would. An app that needs unattended deploys lists that as a deviation (CLA-0028) until an ADR describes it.
+Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted runner with the host's Docker socket. For one owner on localhost it cost more than it gave. Such a runner is effectively root on the owner's machine, it is a second runner stack, and its triggers are ones the workflow scanner flags (CLA-0071). The agent already opens the pull request and verifies dev, so it is there to deploy, and the guards below enforce what a workflow would. An app that needs unattended deploys lists that as a deviation (CLA-0028) until an ADR describes it.
 
 ## Decision
 
@@ -23,16 +23,16 @@ Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted 
   - every CI job succeeded on the commit, including `up to date with main` (CLA-0034).
 - **Steps, in order:**
   1. Start the database, and compare the migrations uat has applied with the commit's.
-  2. Refuse a changed applied migration (CLA-0010), with nothing changed.
-  3. Refuse migrations the commit lacks (below), with nothing changed.
-  4. Build the images, only after those refusals.
-  5. Back up uat (CLA-0031), except on the first deploy to an empty database.
-  6. Migrate with the same image (CLA-0008), and record the migrations' fingerprints at once, even if a later step fails.
-  7. Start the built image without rebuilding it, and check health.
-  8. Record a GitHub deployment for `uat`, with the app's version (CLA-0099).
-  9. Remove the older images (below).
-- **A deploy keeps two sets of images per environment,** the current and the previous one, on dev as on uat. Before it builds, it holds the image each service runs under a `replaced` tag, because an image store may drop an image as soon as a build takes its tag. After the health check passes, it moves that hold to `<project>-<service>:previous` and removes the untagged images that carry the environment's Compose project label. It never removes a volume or another project's image, and a failure here is a warning, not a failed deploy. A deploy that fails removes nothing.
+  2. Refuse, with nothing changed, a changed applied migration (CLA-0010), migrations the commit lacks, or an empty database next to complete backups.
+  3. Build the images, only after those refusals.
+  4. Back up uat (CLA-0031), except on the first deploy to an empty database.
+  5. Migrate with the same image (CLA-0008), and record the migrations' fingerprints at once, even if a later step fails.
+  6. Start the built image without rebuilding it, and check health.
+  7. Record a GitHub deployment for `uat`, with the app's version (CLA-0099).
+  8. Remove the older images.
+- **A deploy keeps two sets of images per environment,** the current and the previous one, on dev as on uat. After the health check passes, the image each service ran becomes `<project>-<service>:previous`, and the untagged images with the environment's Compose project label are removed. It never removes a volume or another project's image, and a failure here is a warning, not a failed deploy. A deploy that fails removes nothing.
 - **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit lacks a migration that uat already applied, as when a pull request was abandoned or replaced on uat, the deploy refuses and changes nothing. It names the newest backup that holds only migrations the commit knows, and prints the owner's restore command (CLA-0031). The deploy never restores uat. Only schemas the commit migrates count, so a retired schema is not missing.
+- **An empty database next to complete backups is not a first deploy.** It is the wrong volume or a lost one, and migrating it would leave a healthy-looking empty uat. The deploy refuses, changes nothing, and names uat's volume, the newest backup and the owner's restore command (CLA-0031).
 - **A failed migration stops the deploy.** The old version keeps running, and the script prints the pre-deploy backup for the owner to decide on.
 
 ## Consequences
