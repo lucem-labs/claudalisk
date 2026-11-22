@@ -144,11 +144,12 @@ export async function runningContainer(runner, settings, service) {
 export function deployedVersionFromEnv(lines) {
   const variables = {}
   for (const line of lines.split(/\r?\n/)) {
-    const match = /^(DEPLOYED_SHA|DEPLOYED_REF)=(.*)$/.exec(line)
+    const match = /^(DEPLOYED_SHA|DEPLOYED_REF|DEPLOYED_VERSION)=(.*)$/.exec(line)
     if (match) variables[match[1]] = match[2]
   }
   if (!variables.DEPLOYED_SHA || variables.DEPLOYED_SHA === 'unknown') return null
-  return { sha: variables.DEPLOYED_SHA, ref: variables.DEPLOYED_REF ?? null }
+  const version = variables.DEPLOYED_VERSION && variables.DEPLOYED_VERSION !== 'unknown' ? variables.DEPLOYED_VERSION : null
+  return { sha: variables.DEPLOYED_SHA, ref: variables.DEPLOYED_REF ?? null, version }
 }
 
 const envFormat = '{{range .Config.Env}}{{println .}}{{end}}'
@@ -163,6 +164,10 @@ export async function deployedVersion(runner, settings) {
   }
   const image = await runner('docker', ['image', 'inspect', '--format', envFormat, `${settings.project}-api`])
   return image.code === 0 ? deployedVersionFromEnv(image.stdout) : null
+}
+
+export function deployedEnv(deployed) {
+  return { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref, DEPLOYED_VERSION: deployed.version ?? 'unknown' }
 }
 
 export async function requireProxyRunning(runner, proxyPort) {

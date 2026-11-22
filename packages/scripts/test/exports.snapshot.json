@@ -39,6 +39,9 @@
     "expiryProblem",
     "findSuppressionProblems"
   ],
+  "./check-version": [
+    "checkVersion"
+  ],
   "./cli": [
     "assertHandRun",
     "parseOptions",
@@ -85,10 +88,6 @@
     "trackedFiles"
   ],
   "./package.json": [],
-  "./prune-backups": [
-    "defaultKeep",
-    "pruneBackups"
-  ],
   "./refresh-dev": [
     "refreshDev"
   ],

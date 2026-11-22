@@ -105,6 +105,15 @@ test('a backup is named by UTC time and commit and records the reason, databases
   assert.equal(manifest.databases[0].sha256, createHash('sha256').update('dump-shop').digest('hex'))
 })
 
+test('a backup records the version the API container was deployed with, or null when it carries none', async () => {
+  const settings = freshSettings(sampleApp, sampleValues)
+  const versioned = backupRunner(settings, { apiEnv: 'DEPLOYED_SHA=1234567abcdef\nDEPLOYED_REF=feature\nDEPLOYED_VERSION=1.4.0\n' })
+  const first = await takeBackup(versioned, settings, { now: () => when })
+  assert.equal(JSON.parse(readFileSync(join(first, 'manifest.json'), 'utf8')).deployedVersion, '1.4.0')
+  const second = await takeBackup(backupRunner(settings), settings, { now: () => new Date(when.getTime() + 1000) })
+  assert.equal(JSON.parse(readFileSync(join(second, 'manifest.json'), 'utf8')).deployedVersion, null)
+})
+
 test('a backup works while the API is down, reading the commit from its stopped container', async () => {
   const settings = freshSettings(sampleApp, sampleValues)
   const runner = backupRunner(settings)

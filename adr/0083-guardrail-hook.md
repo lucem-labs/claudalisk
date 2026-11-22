@@ -24,7 +24,7 @@ Rejected: a hand-written `permissions.deny` list of command prefixes per app. Ev
 | 1 | Tokenizing: quotes, escapes, separators, assignments | n/a | CLA-0083 |
 | 2 | Compose project from `-p`, `COMPOSE_PROJECT_NAME` and the `-f` set | deny | CLA-0029 |
 | 3 | A container tool or database client naming a protected resource, or pointing into a registered runners config folder | deny | CLA-0029, CLA-0033, CLA-0086 |
-| 4 | Guarded uat scripts: only deploy and backup run against uat; restore, init and `prune-backups --apply` are the owner's | deny | CLA-0030, CLA-0031, CLA-0066 |
+| 4 | Guarded uat scripts: only deploy and backup run against uat; restore and init are the owner's | deny | CLA-0030, CLA-0031, CLA-0066 |
 | 5 | Merging: `gh pr merge`, the merge API, pushes to the default branch | deny | CLA-0024 |
 | 6 | `gh pr create` only when CI succeeded on the head commit | deny | CLA-0023 |
 | 7 | Destructive verbs: `volume rm\|prune`, `system prune`, `down -v`, `rm -v` | deny | CLA-0029 |

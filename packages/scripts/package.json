@@ -1,7 +1,7 @@
 {
   "name": "@claudalisk/scripts",
   "version": "0.2.0",
-  "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, prune-backups, refresh-dev, init, migrate, check-migrations) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions).",
+  "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, refresh-dev, init, migrate, check-migrations, check-version) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions).",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -26,11 +26,11 @@
     "./deploy": "./src/commands/deploy.mjs",
     "./backup": "./src/commands/backup.mjs",
     "./restore": "./src/commands/restore.mjs",
-    "./prune-backups": "./src/commands/prune-backups.mjs",
     "./refresh-dev": "./src/commands/refresh-dev.mjs",
     "./init": "./src/commands/init.mjs",
     "./migrate": "./src/commands/migrate.mjs",
     "./check-migrations": "./src/commands/check-migrations.mjs",
+    "./check-version": "./src/commands/check-version.mjs",
     "./no-comments": "./src/commands/no-comments.mjs",
     "./check-e2e-locators": "./src/commands/check-e2e-locators.mjs",
     "./install-security-tools": "./src/commands/install-security-tools.mjs",

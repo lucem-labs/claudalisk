@@ -69,6 +69,10 @@ jobs:
       - name: Migrations on main are unchanged
         run: node scripts/check-migrations.mjs
 
+      - name: The app version is higher than main's
+        if: ${{ !cancelled() }}
+        run: node scripts/check-version.mjs
+
       - name: Build
         id: build
         if: ${{ !cancelled() }}

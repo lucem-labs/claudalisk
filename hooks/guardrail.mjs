@@ -12,7 +12,7 @@ export const RULES = [
   { id: 1, decision: 'n/a', adr: 'CLA-0083', enforcedBy: [HOOK], summary: 'Tokenizing: split on separators, strip quotes and escapes, keep assignments, look inside substitutions and nested shells.' },
   { id: 2, decision: 'deny', adr: 'CLA-0029', enforcedBy: [HOOK], summary: 'Project resolution: the Compose project comes from -p, COMPOSE_PROJECT_NAME and the -f files.' },
   { id: 3, decision: 'deny', adr: 'CLA-0029, CLA-0033', enforcedBy: [HOOK, 'structural'], summary: 'A container tool or database client may not name a protected uat, proxy or runners resource, or point into a registered runners config folder.' },
-  { id: 4, decision: 'deny', adr: 'CLA-0030, CLA-0031, CLA-0066', enforcedBy: ['guarded by the script', HOOK], summary: 'Only the guarded deploy and backup scripts run against uat; restore, init and prune-backups --apply are the owner\'s.' },
+  { id: 4, decision: 'deny', adr: 'CLA-0030, CLA-0031, CLA-0066', enforcedBy: ['guarded by the script', HOOK], summary: 'Only the guarded deploy and backup scripts run against uat; restore and init are the owner\'s.' },
   { id: 5, decision: 'deny', adr: 'CLA-0024', enforcedBy: [HOOK], summary: 'No merging: gh pr merge, the merge API and any push to the default branch.' },
   { id: 6, decision: 'deny', adr: 'CLA-0023', enforcedBy: [HOOK, 'prompt only'], summary: 'gh pr create only when CI succeeded on the head commit.' },
   { id: 7, decision: 'deny', adr: 'CLA-0029', enforcedBy: [HOOK, 'structural'], summary: 'Destructive verbs everywhere: volume rm|prune, system prune, down -v, rm -v.' },
@@ -565,8 +565,6 @@ function envWrites(name, args, redirects, local, ctx) {
   }
 }
 
-const isPrune = (text) => /^prune-backups(\.mjs)?$/i.test(lastSegment(text));
-
 function guardedScripts(name, args, ctx) {
   const uat = args.some((a, i) => /^--environment=uat$/i.test(a) || (a === '--environment' && /^uat$/i.test(args[i + 1] ?? '')));
   if (uat && !UAT_EXEMPT.has(name)) {
@@ -575,9 +573,6 @@ function guardedScripts(name, args, ctx) {
     const fold = (value) => (ctx.platform === 'win32' ? value.toLowerCase() : value);
     const allowed = name === 'node' && path && ['deploy.mjs', 'backup.mjs'].some((file) => fold(path) === fold(resolve(ctx.root, 'scripts', file)));
     if (!allowed) flag(ctx, 'deny', 4, 'only node scripts/deploy.mjs and node scripts/backup.mjs, run from the app root, may use --environment uat (CLA-0030, CLA-0031). Restore and init are the owner\'s (CLA-0066); ask the owner to run it.');
-  }
-  if ((isPrune(name) || args.some(isPrune)) && args.includes('--apply')) {
-    flag(ctx, 'deny', 4, 'prune-backups --apply deletes backups and is the owner\'s (CLA-0031). Run it without --apply to see what it would remove.');
   }
 }
 

@@ -75,7 +75,9 @@ test('uat never falls back to an example file', () => {
 })
 
 test('the deployed version comes from the API container environment', () => {
-  assert.deepEqual(deployedVersionFromEnv('PATH=/bin\nDEPLOYED_SHA=abc1234def\nDEPLOYED_REF=main\n'), { sha: 'abc1234def', ref: 'main' })
+  assert.deepEqual(deployedVersionFromEnv('PATH=/bin\nDEPLOYED_SHA=abc1234def\nDEPLOYED_REF=main\n'), { sha: 'abc1234def', ref: 'main', version: null })
+  assert.deepEqual(deployedVersionFromEnv('DEPLOYED_SHA=abc1234def\nDEPLOYED_REF=main\nDEPLOYED_VERSION=1.4.0\n'), { sha: 'abc1234def', ref: 'main', version: '1.4.0' })
+  assert.equal(deployedVersionFromEnv('DEPLOYED_SHA=abc1234def\nDEPLOYED_VERSION=unknown\n').version, null)
   assert.equal(deployedVersionFromEnv('DEPLOYED_SHA=unknown\n'), null)
   assert.equal(deployedVersionFromEnv('PATH=/bin\n'), null)
 })
@@ -123,14 +125,14 @@ const withEnv = 'PATH=/bin\nDEPLOYED_SHA=abc1234def\nDEPLOYED_REF=main\n'
 
 test('the deployed version is read from a stopped API container', async () => {
   const runner = fakeRunner((call) => (call.args.includes('ps') ? { stdout: 'c1\n' } : { stdout: withEnv }))
-  assert.deepEqual(await deployedVersion(runner, settings), { sha: 'abc1234def', ref: 'main' })
+  assert.deepEqual(await deployedVersion(runner, settings), { sha: 'abc1234def', ref: 'main', version: null })
   assert.ok(runner.calls[0].args.includes('--all'))
   assert.equal(runner.calls.length, 2)
 })
 
 test('with no container the deployed version is read from the API image', async () => {
   const runner = fakeRunner((call) => (call.args[0] === 'image' ? { stdout: withEnv } : {}))
-  assert.deepEqual(await deployedVersion(runner, settings), { sha: 'abc1234def', ref: 'main' })
+  assert.deepEqual(await deployedVersion(runner, settings), { sha: 'abc1234def', ref: 'main', version: null })
   assert.deepEqual(runner.calls.at(-1).args.slice(0, 2), ['image', 'inspect'])
   assert.equal(runner.calls.at(-1).args.at(-1), 'shop-uat-api')
 })

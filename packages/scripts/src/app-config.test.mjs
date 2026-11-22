@@ -27,9 +27,8 @@ test('the allowed keys match the schema properties at every closed level', () =>
   assert.deepEqual(sorted(allowedKeys.database), sorted(Object.keys(schema.properties.databases.items.properties)))
   assert.deepEqual(sorted(allowedKeys.ports), sorted(Object.keys(schema.properties.ports.properties)))
   assert.deepEqual(sorted(allowedKeys.uat), sorted(Object.keys(schema.properties.uat.properties)))
-  assert.deepEqual(sorted(allowedKeys.backup), sorted(Object.keys(schema.properties.backup.properties)))
   assert.deepEqual(sorted(allowedKeys.review), sorted(Object.keys(schema.properties.review.properties)))
-  for (const level of [schema, schema.properties.databases.items, schema.properties.ports, schema.properties.uat, schema.properties.backup, schema.properties.review]) {
+  for (const level of [schema, schema.properties.databases.items, schema.properties.ports, schema.properties.uat, schema.properties.review]) {
     assert.equal(level.additionalProperties, false)
   }
 })
@@ -39,7 +38,7 @@ test('an unknown key is rejected at each closed level and named', () => {
   assert.throws(() => parse({ ...sampleConfig, databases: [{ role: 'app', envVar: 'X', extra: 1 }] }), /"databases\[0\]\.extra" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, ports: { ...sampleConfig.ports, web: 1 } }), /"ports\.web" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, volum: 'v' } }), /"uat\.volum" is not a known setting/)
-  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 2, count: 3 } }), /"backup\.count" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 10 } }), /"backup" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, review: { uatdata: [] } }), /"review\.uatdata" is not a known setting/)
 })
 
@@ -62,7 +61,6 @@ test('wrong types and empty lists are rejected', () => {
   assert.throws(() => parse({ ...sampleConfig, databases: [] }), /at least one database/)
   assert.throws(() => parse({ ...sampleConfig, ports: { devDb: '5440', apiLocal: 1 } }), /"ports\.devDb" must be a whole number/)
   assert.throws(() => parse({ ...sampleConfig, uat: { composeProject: 1, volume: 'v' } }), /"uat\.composeProject" must be a non-empty string/)
-  assert.throws(() => parse({ ...sampleConfig, backup: { keep: 0 } }), /"backup\.keep"/)
   assert.throws(() => parse({ ...sampleConfig, ports: null }), /"ports" must be an object/)
   assert.throws(() => parseAppConfig('{', 'cfg.json'), /cfg\.json is not valid JSON/)
 })

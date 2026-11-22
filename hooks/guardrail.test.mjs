@@ -273,10 +273,6 @@ deny([
   'node elsewhere/deploy.mjs --environment uat',
   `node ${join(plain, 'scripts', 'deploy.mjs')} --environment uat`,
   'node ../scripts/deploy.mjs --environment uat',
-  'node scripts/prune-backups.mjs --apply',
-  'node scripts/prune-backups.mjs --apply --environment dev',
-  'node scripts/prune-backups --apply',
-  'node scripts/prune-backups.mjs --environment uat',
   'bash -c "node scripts/restore.mjs --environment uat"',
   'cd x; node scripts/restore.mjs --environment uat',
 ]);
@@ -292,7 +288,6 @@ allow([
 
 allow([
   'node scripts/init.mjs --environment dev',
-  'node scripts/prune-backups.mjs',
 ], { tools: ['Bash'] });
 
 test('an absolute path inside cwd to the guarded script is allowed', () => {

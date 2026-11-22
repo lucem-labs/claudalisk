@@ -1,21 +1,14 @@
 import { existsSync, mkdirSync } from 'node:fs'
-import { assertHandRun, parseOptions } from '../cli.mjs'
-import { readApp } from '../app-config.mjs'
-import {
-  assertEnvironment,
-  composeChecked,
-  expectedProxyPort,
-  loadEnvironment,
-  requireProxyRunning,
-  stateDirectory,
-} from '../environment.mjs'
+import { readAppVersion } from '../app-version.mjs'
+import { assertEnvironment, composeChecked, deployedEnv, expectedProxyPort, requireProxyRunning, stateDirectory } from '../environment.mjs'
+import { environmentCommand } from '../environment-command.mjs'
 import { assertUatDeployable } from '../guards.mjs'
 import { waitForHealth } from '../http.mjs'
+import { holdReplacedImages, keepCurrentAndPreviousImages } from '../images.mjs'
 import { ensureInitialised } from '../init.mjs'
 import { checkUatMigrations, fetchMain, readApprovedEdits, readMainMigrations, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
 import { migrate, takeBackup } from '../operations.mjs'
 import { runChecked } from '../process.mjs'
-import { pruneBackups } from './prune-backups.mjs'
 
 export async function currentVersion(runner, root) {
   const git = async (args) => (await runChecked(runner, 'git', ['-C', root, ...args])).stdout.trim()
@@ -32,11 +25,11 @@ export async function currentVersion(runner, root) {
   return { sha, ref, dirty }
 }
 
-async function recordDeployment(runner, app, settings, sha, ref) {
+async function recordDeployment(runner, app, settings, { sha, ref, version }) {
   try {
     const created = await runChecked(runner, 'gh', ['api', '--method', 'POST', `repos/${app.repo}/deployments`, '--input', '-'], {
       cwd: app.root,
-      input: JSON.stringify({ ref: sha, environment: settings.environment, auto_merge: false, required_contexts: [], description: `Local deploy of ${ref}` }),
+      input: JSON.stringify({ ref: sha, environment: settings.environment, auto_merge: false, required_contexts: [], description: `Local deploy of ${version ? `${version} from ` : ''}${ref}` }),
     })
     const id = JSON.parse(created.stdout).id
     await runChecked(runner, 'gh', ['api', '--method', 'POST', `repos/${app.repo}/deployments/${id}/statuses`, '--input', '-'], {
@@ -49,19 +42,32 @@ async function recordDeployment(runner, app, settings, sha, ref) {
   }
 }
 
-export async function deploy({ appRoot, argv, env, runner, health = waitForHealth, guard = assertUatDeployable, now }) {
-  assertHandRun('deploy.mjs', 'changes this machine\'s Docker environments', env)
-  const options = parseOptions({
+async function keepImages(runner, settings, held, version) {
+  try {
+    const reclaimed = await keepCurrentAndPreviousImages(runner, settings, held, version)
+    console.log(`Kept the current and previous ${settings.project} images and removed the older ones${reclaimed ? ` (${reclaimed} reclaimed)` : ''}.`)
+  } catch (error) {
+    console.warn(`Warning: the older ${settings.project} images were not removed (${error.message}).`)
+  }
+}
+
+export const deploy = environmentCommand({
+  script: 'deploy.mjs',
+  changes: "changes this machine's Docker environments",
+  options: {
     environment: { type: 'string' },
     confirm: { type: 'string' },
     'adopt-unrecorded-migrations': { type: 'boolean', default: false },
     'recreate-dev-volume': { type: 'boolean', default: false },
-  }, argv)
+  },
+  run: runDeploy,
+})
+
+async function runDeploy({ app, appRoot, env, options, runner, settings: settingsOf, health = waitForHealth, guard = assertUatDeployable, now }) {
   const environment = options.environment
   assertEnvironment(environment)
   const uat = environment === 'uat'
   if (uat && options['recreate-dev-volume']) throw new Error('--recreate-dev-volume is only for dev.')
-  const app = readApp(appRoot)
 
   let guarded = null
   if (uat) {
@@ -74,35 +80,42 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
   await requireProxyRunning(runner, expectedProxyPort(env))
   await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env), recreateDevVolume: options['recreate-dev-volume'] })
 
-  const settings = loadEnvironment(environment, { app, env })
+  const settings = settingsOf(environment)
   if (uat && !existsSync(settings.backupDir)) mkdirSync(settings.backupDir, { recursive: true })
 
   const version = await currentVersion(runner, appRoot)
   if (uat && (version.sha !== guarded || version.dirty)) {
     throw new Error(`Refusing to deploy uat: the working tree changed after the checks passed on ${String(guarded).slice(0, 7)} (now ${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}). Nothing was changed; deploy again.`)
   }
-  const deployed = { sha: version.dirty ? `${version.sha}-dirty` : version.sha, ref: version.ref }
-  console.log(`Deploying ${environment} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
+  const appVersion = readAppVersion(appRoot)
+  const deployed = { sha: version.dirty ? `${version.sha}-dirty` : version.sha, ref: version.ref, version: appVersion }
+  console.log(`Deploying ${environment}${appVersion ? ` ${appVersion}` : ''} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
 
-  const versionEnv = { DEPLOYED_SHA: deployed.sha, DEPLOYED_REF: deployed.ref }
-  const build = () => composeChecked(runner, settings, ['--profile', 'migrate', 'build'], { inherit: true, env: versionEnv })
+  const versionEnv = deployedEnv(deployed)
+  let held = []
+  const build = async () => {
+    held = await holdReplacedImages(runner, settings)
+    await composeChecked(runner, settings, ['--profile', 'migrate', 'build'], { inherit: true, env: versionEnv })
+  }
 
   let backupFolder = null
   const source = uat ? sourceMigrations(appRoot) : null
   if (uat) {
     await fetchMain(runner, appRoot, { strict: true })
     await composeChecked(runner, settings, ['up', '--detach', '--wait', 'db'], { inherit: true, env: versionEnv, what: 'Starting the uat database' })
+    const approved = await readApprovedEdits(runner, appRoot)
+    const main = await readMainMigrations(runner, appRoot)
     const { firstDeploy } = await checkUatMigrations(runner, settings, {
       source,
-      approved: await readApprovedEdits(runner, appRoot),
-      main: await readMainMigrations(runner, appRoot),
+      approved,
+      main,
       adoptUnrecorded: options['adopt-unrecorded-migrations'],
     })
     await build()
     if (firstDeploy) {
       console.log('First uat deploy: the uat database has no schema yet, so there is nothing to back up. Skipping the pre-deploy backup.')
     } else {
-      backupFolder = await takeBackup(runner, settings, { reason: 'deploy', now })
+      backupFolder = await takeBackup(runner, settings, { reason: 'deploy', now, main })
     }
   } else {
     await build()
@@ -125,12 +138,8 @@ export async function deploy({ appRoot, argv, env, runner, health = waitForHealt
 
   if (!(await health(settings))) throw new Error(`The ${environment} API did not become healthy at ${settings.baseUrl}/api/health.`)
 
-  if (uat) {
-    await recordDeployment(runner, app, settings, version.sha, version.ref)
-    if (settings.values.BACKUP_AUTO_PRUNE === 'true') {
-      await pruneBackups({ appRoot, argv: ['--apply'], env, runner })
-    }
-  }
+  if (uat) await recordDeployment(runner, app, settings, { sha: version.sha, ref: version.ref, version: appVersion })
+  await keepImages(runner, settings, held, appVersion)
 
   console.log(`Deployed ${environment} at ${settings.baseUrl}`)
 }

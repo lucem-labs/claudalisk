@@ -19,14 +19,14 @@ runMain(deploy)
 
 | Entry | Export | What it does |
 |---|---|---|
-| `scripts/deploy.mjs` | `@claudalisk/scripts/deploy` | `--environment dev\|uat [--confirm 'deploy uat <sha7>'] [--recreate-dev-volume]`: the guarded deploy (CLA-0030). `--recreate-dev-volume` lets a dev deploy remove a dev volume that has no `dev.env` |
-| `scripts/backup.mjs` | `@claudalisk/scripts/backup` | `[--reason <text>]`: a uat backup (CLA-0031) |
+| `scripts/deploy.mjs` | `@claudalisk/scripts/deploy` | `--environment dev\|uat [--confirm 'deploy uat <sha7>'] [--recreate-dev-volume]`: the guarded deploy (CLA-0030). `--recreate-dev-volume` lets a dev deploy remove a dev volume that has no `dev.env`. A deploy that ends healthy keeps the images it built and the ones it replaced, and removes the environment's older images |
+| `scripts/backup.mjs` | `@claudalisk/scripts/backup` | `[--reason <text>]`: a uat backup (CLA-0031). It then deletes every uat backup but itself, the one before it and the restore points pruning keeps |
 | `scripts/restore.mjs` | `@claudalisk/scripts/restore` | `--environment dev\|uat --backup <name\|latest> [--owner-approved --confirm '...'] [--no-start]` |
-| `scripts/prune-backups.mjs` | `@claudalisk/scripts/prune-backups` | `[--keep <n>] [--apply]`: dry run unless `--apply` |
 | `scripts/refresh-dev.mjs` | `@claudalisk/scripts/refresh-dev` | `[--backup <name\|latest>] [--fresh]` (CLA-0032) |
 | `scripts/init.mjs` | `@claudalisk/scripts/init` | `--environment dev\|uat [--adopt-volume [--password <password>]]`: env file and volume (CLA-0066). `--adopt-volume` writes `dev.env` for an existing dev volume and checks that the password connects |
 | `scripts/migrate.mjs` | `@claudalisk/scripts/migrate` | `[--project <csproj>]`: migrates the dev databases from a directly launched Host (CLA-0008) |
 | `scripts/check-migrations.mjs` | `@claudalisk/scripts/check-migrations` | Fails when a migration on `origin/main` is changed or missing on this branch, unless `approved-migration-edits.txt` on main covers its new content (CLA-0010). A branch is judged only on what it changed since its merge base with main |
+| `scripts/check-version.mjs` | `@claudalisk/scripts/check-version` | Fails when the root `package.json` has no Semantic Versioning `version`, or when it is not higher than the one on `origin/main` (CLA-0099). A commit that is already on `origin/main` passes |
 | `scripts/no-comments.mjs` | `@claudalisk/scripts/no-comments` | `[<root>] [--skip <path>]...`: fails when a tracked file has a comment (CLA-0035) |
 | `scripts/check-e2e-locators.mjs` | `@claudalisk/scripts/check-e2e-locators` | `[<folder>]`: fails on CSS and element locators in the end-to-end tests, `frontend/e2e` of the app by default (CLA-0070) |
 | `scripts/install-security-tools.mjs` | `@claudalisk/scripts/install-security-tools` | `--tool <name>[,<name>]... [--destination <folder>]`: downloads gitleaks, OSV-Scanner, Trivy, zizmor or uv at a release pinned in the package and refuses a download whose SHA-256 differs (CLA-0071) |
@@ -41,7 +41,7 @@ runMain(deploy)
 
 `@claudalisk/scripts/fake-runner` is the injectable command runner the library's own tests use, for an app's tests of its entries.
 
-The environment commands refuse to run when `CI` or `GITHUB_ACTIONS` is set. check-migrations and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions) run in CI.
+The environment commands refuse to run when `CI` or `GITHUB_ACTIONS` is set. check-migrations, check-version and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions) run in CI.
 
 ## Conventions
 
@@ -50,6 +50,9 @@ The values that differ between apps come from `.claude/claudalisk.json` (CLA-008
 - Env files: `.env.<env>.example` in the checkout is the template for `<env>.env`. `POSTGRES_USER` and `POSTGRES_PASSWORD` configure the `db` service. The placeholder `CHANGE_ME` is replaced by the generated password, and for dev `DEV_POSTGRES_PORT` is set from `ports.devDb`.
 - Databases: each entry of `databases` names the variable that holds its connection string. The database name is its `Database=` part. An app with one database may leave the variable out of the env file and set `POSTGRES_DB`.
 - Deployed commit: the API image sets `DEPLOYED_SHA` and `DEPLOYED_REF` in its environment. A backup reads them from the `api` container, running or not, or from the image `<compose project>-api`.
+- App version: the `version` of the root `package.json` (CLA-0099). A deploy passes it to the containers as `DEPLOYED_VERSION`, which `compose.base.yml` forwards like `DEPLOYED_SHA`, and tags the images it built with it. A backup reads it from the `api` container into `deployedVersion` of its manifest. An app without a version deploys as before.
+- Images: Compose names a built image `<compose project>-<service>`. A deploy tags the image each service runs as `<compose project>-<service>:replaced` before it builds. Once the deploy ends healthy, that tag becomes `<compose project>-<service>:previous`, and the project's untagged images are removed by their `com.docker.compose.project` label. A failed deploy leaves the `replaced` tag for the next one. Volumes and the build cache are left alone.
+- Backups: `backups/` holds the current and the previous uat backup, plus the newest one from before each migration uat has applied and `origin/main` lacks. Each backup deletes the rest once its manifest is written. A folder without a manifest is left alone.
 - `migrate` runs the single `backend/<Name>.Api/<Name>.Api.csproj`, or the one `--project` names, with each database's connection variable pointing at the dev database.
 - `approved-migration-edits.txt` in the app root, read from `origin/main` only, has one line per approved edit: `<schema>/<migration id> <sha256 of the file with LF endings> <what happened>. #<issue>`. An entry approves that one content of that migration.
 - `deploy.mjs --environment uat --adopt-unrecorded-migrations`: the owner records the fingerprints of migrations uat applied that are neither recorded nor on `origin/main`.

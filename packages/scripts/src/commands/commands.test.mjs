@@ -8,7 +8,6 @@ import { checkMigrationsAgainstMain } from './check-migrations.mjs'
 import { currentVersion, deploy } from './deploy.mjs'
 import { init } from './init.mjs'
 import { findApiProject, migrate } from './migrate.mjs'
-import { pruneBackups } from './prune-backups.mjs'
 import { refreshDev } from './refresh-dev.mjs'
 import { restore } from './restore.mjs'
 import { fakeRunner } from '../fake-runner.mjs'
@@ -27,7 +26,6 @@ const handRun = [
   ['deploy', deploy, ['--environment', 'dev']],
   ['backup', backup, []],
   ['restore', restore, ['--environment', 'dev', '--backup', 'latest']],
-  ['prune-backups', pruneBackups, []],
   ['refresh-dev', refreshDev, []],
   ['init', init, ['--environment', 'dev']],
   ['migrate', migrate, []],
@@ -192,7 +190,7 @@ function mainHas(files) {
 
 function uatSetup({ hasSchema = true, applied = ['app/20260101000000_A'], failOn = [], main = { [mainPath]: 'migration' } } = {}) {
   const fixture = makeApp()
-  writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=false\n')
+  writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\n')
   mkdirSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations'), { recursive: true })
   writeFileSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations', '20260101000000_A.cs'), 'migration')
   const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], hasSchema, applied, failOn, extra: mainHas(main) })
@@ -338,11 +336,140 @@ test('a failed migration is reported with the pre-deploy backup and nothing is s
   assert.equal(callsMatching(runner, /--remove-orphans/).length, 0)
 })
 
-test('a uat deploy prunes backups after it when the env file asks for it', async () => {
+test('a uat deploy deletes every backup but the current and the previous one', async () => {
   const { root, state, env, runner } = uatSetup()
-  writeEnvFile(state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=true\n')
+  for (const day of ['01', '02', '03']) {
+    writeBackup(state, `202610${day}T000000Z-aaaaaaa`, { createdAt: `2026-10-${day}T00:00:00Z`, migrations: ['app/20260101000000_A'] })
+  }
   await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
-  assert.equal(callsMatching(runner, /ls-tree -r --name-only origin\/main/).length, 2)
+  assert.deepEqual(readdirSync(join(state, 'backups')).sort(), ['20261003T000000Z-aaaaaaa', `20261029T100000Z-${sha.slice(0, 7)}`])
+})
+
+function images({ before = 'sha256:old', after = 'sha256:new', listed } = {}) {
+  const rows = listed ?? [['shop-dev-api', 'latest', after], ['shop-dev-migrate', 'latest', 'sha256:migrate']]
+  return (call) => {
+    const { args } = call
+    if (args[0] === 'image' && args[1] === 'ls') return { stdout: rows.map((row) => row.join('\t')).join('\n') }
+    if (args[0] === 'compose' && args.includes('ps') && !args.includes('api') && !args.includes('db')) return { stdout: 'api1\ndb1\n' }
+    if (args[0] === 'inspect' && args[2].includes('com.docker.compose.service')) return { stdout: `api\t${before}\ndb\tsha256:postgres\n` }
+    if (args[0] === 'image' && args[1] === 'inspect') {
+      if (args.includes('shop-dev-db')) return { code: 1, stderr: 'No such image' }
+      return { stdout: args.at(-1) === 'shop-dev-api:replaced' ? `${after}\n${before}\n` : `${before}\n` }
+    }
+    if (args[0] === 'image' && args[1] === 'rm') return {}
+    if (args[0] === 'image' && args[1] === 'prune') return { stdout: 'Deleted Images:\nsha256:older\n\nTotal reclaimed space: 386MB\n' }
+    return undefined
+  }
+}
+
+function devDeploy(extra, health = healthy, version) {
+  const { root, state, env } = makeApp()
+  if (version) writeFileSync(join(root, 'package.json'), JSON.stringify({ private: true, version }))
+  writeEnvFile(state, 'dev')
+  const runner = docker({ state, volumes: ['shop-dev_postgres-data'], extra })
+  return { runner, done: deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health }) }
+}
+
+const imageChanges = (runner) => callsMatching(runner, /^docker (tag|image rm|image prune|rmi|volume rm|volume prune|system prune) /).map((call) => call.line)
+
+test('a deploy holds the running image before it builds, keeps it as previous, then removes the older images of its project only', async () => {
+  const { runner, done } = devDeploy(images())
+  await done
+  assert.deepEqual(imageChanges(runner), [
+    'docker tag sha256:old shop-dev-api:replaced',
+    'docker tag shop-dev-api:replaced shop-dev-api:previous',
+    'docker image rm shop-dev-api:replaced',
+    'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
+  ])
+  const lines = runner.calls.map((call) => call.line)
+  const at = (pattern) => lines.findIndex((line) => pattern.test(line))
+  assert.ok(at(/^docker tag sha256:old /) < at(/ build$/))
+  assert.ok(at(/up --detach --no-build --remove-orphans --wait$/) < at(/^docker tag shop-dev-api:replaced /))
+})
+
+test('a deploy that rebuilt the same image leaves the previous tag where it is', async () => {
+  const { runner, done } = devDeploy(images({ before: 'sha256:same', after: 'sha256:same' }))
+  await done
+  assert.deepEqual(imageChanges(runner), [
+    'docker tag sha256:same shop-dev-api:replaced',
+    'docker image rm shop-dev-api:replaced',
+    'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
+  ])
+})
+
+test('a deploy that does not become healthy only holds the running image and removes nothing', async () => {
+  const { runner, done } = devDeploy(images(), unhealthy)
+  await assert.rejects(done, /did not become healthy/)
+  assert.deepEqual(imageChanges(runner), ['docker tag sha256:old shop-dev-api:replaced'])
+})
+
+test('a deploy of a versioned app passes the version on, tags what it built with it and drops the version tags of older images', async () => {
+  const listed = [
+    ['shop-dev-api', 'latest', 'sha256:new'],
+    ['shop-dev-api', 'previous', 'sha256:old'],
+    ['shop-dev-api', '1.3.2', 'sha256:old'],
+    ['shop-dev-api', '1.2.0', 'sha256:older'],
+    ['<none>', '<none>', 'sha256:dangling'],
+    ['shop-dev-migrate', 'latest', 'sha256:migrate'],
+    ['shop-dev-migrate', '1.3.2', 'sha256:migrate-old'],
+  ]
+  const { runner, done } = devDeploy(images({ listed }), healthy, '1.4.0')
+  await done
+  assert.deepEqual(imageChanges(runner), [
+    'docker tag sha256:old shop-dev-api:replaced',
+    'docker tag shop-dev-api:replaced shop-dev-api:previous',
+    'docker image rm shop-dev-api:replaced',
+    'docker tag shop-dev-api:latest shop-dev-api:1.4.0',
+    'docker image rm shop-dev-api:1.2.0',
+    'docker tag shop-dev-migrate:latest shop-dev-migrate:1.4.0',
+    'docker image rm shop-dev-migrate:1.3.2',
+    'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
+  ])
+  for (const pattern of [/ build$/, /--profile migrate run --rm migrate$/, /up --detach --no-build --remove-orphans --wait$/]) {
+    assert.equal(callsMatching(runner, pattern)[0].options.env.DEPLOYED_VERSION, '1.4.0', String(pattern))
+  }
+})
+
+test('a deploy of an app without a version passes unknown and adds no version tag', async () => {
+  const { runner, done } = devDeploy(images())
+  await done
+  assert.equal(callsMatching(runner, / build$/)[0].options.env.DEPLOYED_VERSION, 'unknown')
+  assert.equal(callsMatching(runner, /^docker tag shop-dev-\w+:latest /).length, 0)
+})
+
+test('a deploy refuses a version that is not Semantic Versioning before it builds', async () => {
+  const { runner, done } = devDeploy(images(), healthy, '1.4')
+  await assert.rejects(done, /"version" is "1\.4", which is not a Semantic Versioning 2\.0\.0 version/)
+  assert.equal(callsMatching(runner, / build$| up |^docker tag /).length, 0)
+})
+
+test('a uat deploy names the version in the GitHub deployment', async () => {
+  const { root, env, runner } = uatSetup()
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ private: true, version: '1.4.0' }))
+  await deploy({ appRoot: root, argv: ['--environment', 'uat'], env, runner, health: healthy, guard: approvedGuard, now: when })
+  const [created] = callsMatching(runner, /^gh api --method POST repos\/acme\/shop\/deployments --input -$/)
+  assert.equal(JSON.parse(created.options.input).description, 'Local deploy of 1.4.0 from feature')
+})
+
+test('a first deploy has no image to hold', async () => {
+  const { root, state, env } = makeApp()
+  const runner = docker({ state })
+  await deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy })
+  assert.equal(callsMatching(runner, /^docker (tag|image rm) /).length, 0)
+})
+
+test('a deploy succeeds when the older images cannot be removed', async () => {
+  const { runner, done } = devDeploy((call) => (call.line.startsWith('docker image prune') ? { code: 1, stderr: 'daemon busy' } : images()(call)))
+  const warnings = []
+  const original = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    await done
+  } finally {
+    console.warn = original
+  }
+  assert.ok(warnings.some((message) => /older shop-dev images were not removed.*daemon busy/.test(message)), warnings.join('\n'))
+  assert.equal(callsMatching(runner, /up --detach --no-build --remove-orphans --wait$/).length, 1)
 })
 
 test('a backup command names the reason in the manifest', async () => {
@@ -405,73 +532,73 @@ test('refresh-dev --fresh takes a uat backup first, and refuses to be combined w
   assert.ok(callsMatching(runner, /pg_restore -U/).length > 0)
 })
 
-function pruneSetup() {
+function backupsOf(state) {
+  return readdirSync(join(state, 'backups')).sort()
+}
+
+const newest = `20261029T100000Z-${sha.slice(0, 7)}`
+
+function threeBackups(migrationsOf = () => ['app/20260101000000_A']) {
   const fixture = makeApp()
   writeEnvFile(fixture.state, 'uat')
   for (const day of ['01', '02', '03']) {
-    writeBackup(fixture.state, `202610${day}T000000Z-aaaaaaa`, { createdAt: `2026-10-${day}T00:00:00Z`, migrations: ['app/20260101000000_A'] })
+    writeBackup(fixture.state, `202610${day}T000000Z-aaaaaaa`, { createdAt: `2026-10-${day}T00:00:00Z`, migrations: migrationsOf(day) })
   }
   return fixture
 }
 
-test('prune-backups is a dry run unless --apply, and keeps the newest by the configured count', async () => {
-  const { root, state, env } = pruneSetup()
-  const runner = docker({ state, dbRunning: false })
-  const dry = await pruneBackups({ appRoot: root, argv: ['--keep', '2'], env, runner })
-  assert.deepEqual(dry.removed, ['20261001T000000Z-aaaaaaa'])
-  assert.equal(readdirSync(join(state, 'backups')).length, 3)
-  await pruneBackups({ appRoot: root, argv: ['--keep', '2', '--apply'], env, runner })
-  assert.deepEqual(readdirSync(join(state, 'backups')).sort(), ['20261002T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa'])
+const mainHasOnlyA = (call) => {
+  if (call.line.includes('ls-tree')) return { stdout: 'backend/Shop.Api/Migrations/20261001000000_A.cs\n' }
+  if (call.line.includes('git -C') && call.line.includes(' show ')) return { stdout: '[Migration("20261001000000_A")]' }
+  return undefined
+}
+
+test('a backup deletes every backup but itself and the one before it', async () => {
+  const { root, state, env } = threeBackups()
+  await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20260101000000_A'], extra: mainHas({ [mainPath]: 'migration' }) }), now: when })
+  assert.deepEqual(backupsOf(state), ['20261003T000000Z-aaaaaaa', newest])
 })
 
-test('prune-backups uses backup.keep from the config when no count is given', async () => {
-  const { root, state, env } = pruneSetup()
-  const config = JSON.parse(readFileSync(join(root, '.claude', 'claudalisk.json'), 'utf8'))
-  writeFileSync(join(root, '.claude', 'claudalisk.json'), JSON.stringify({ ...config, backup: { keep: 1 } }))
-  const result = await pruneBackups({ appRoot: root, argv: [], env, runner: docker({ state, dbRunning: false }) })
-  assert.equal(result.kept.length, 1)
-  await assert.rejects(pruneBackups({ appRoot: root, argv: ['--keep', '0'], env, runner: docker({ state }) }), /whole number of at least 1/)
+test('a backup keeps the restore point from before a migration uat has and main lacks', async () => {
+  const { root, state, env } = threeBackups((day) => (day === '01' ? ['app/20261001000000_A'] : ['app/20261001000000_A', 'app/20261002000000_B']))
+  await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20261001000000_A', 'app/20261002000000_B'], extra: mainHasOnlyA }), now: when })
+  assert.deepEqual(backupsOf(state), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa', newest])
 })
 
-test('prune-backups keeps the restore point from before a migration uat has and main lacks', async () => {
-  const { root, state, env } = makeApp()
-  writeEnvFile(state, 'uat')
-  writeBackup(state, '20261001T000000Z-aaaaaaa', { createdAt: '2026-10-01T00:00:00Z', migrations: ['app/20261001000000_A'] })
-  writeBackup(state, '20261002T000000Z-aaaaaaa', { createdAt: '2026-10-02T00:00:00Z', migrations: ['app/20261001000000_A', 'app/20261002000000_B'] })
-  writeBackup(state, '20261003T000000Z-aaaaaaa', { createdAt: '2026-10-03T00:00:00Z', migrations: ['app/20261001000000_A', 'app/20261002000000_B'] })
-  const main = 'backend/Shop.Api/Migrations/20261001000000_A.cs'
-  const runner = docker({
-    state,
-    applied: ['app/20261001000000_A', 'app/20261002000000_B'],
-    extra: (call) => {
-      if (call.line.includes('ls-tree')) return { stdout: `${main}\n` }
-      if (call.line.includes('git -C') && call.line.includes(' show ')) return { stdout: '[Migration("20261001000000_A")]' }
-      return undefined
-    },
-  })
-  const result = await pruneBackups({ appRoot: root, argv: ['--keep', '1'], env, runner })
-  assert.deepEqual(result.removed, ['20261002T000000Z-aaaaaaa'])
-  assert.deepEqual(result.kept.sort(), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa'])
+test('a backup keeps the restore point before a migration in a schema main does not migrate at all', async () => {
+  const { root, state, env } = threeBackups((day) => (day === '01' ? ['app/20261001000000_A'] : ['app/20261001000000_A', 'billing/20261005000000_N']))
+  await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20261001000000_A', 'billing/20261005000000_N'], extra: mainHasOnlyA }), now: when })
+  assert.deepEqual(backupsOf(state), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa', newest])
 })
 
-test('prune-backups keeps the restore point before a migration in a schema main does not migrate at all', async () => {
-  const { root, state, env } = makeApp()
-  writeEnvFile(state, 'uat')
-  writeBackup(state, '20261001T000000Z-aaaaaaa', { createdAt: '2026-10-01T00:00:00Z', migrations: ['app/20261001000000_A'] })
-  writeBackup(state, '20261002T000000Z-aaaaaaa', { createdAt: '2026-10-02T00:00:00Z', migrations: ['app/20261001000000_A', 'billing/20261005000000_N'] })
-  writeBackup(state, '20261003T000000Z-aaaaaaa', { createdAt: '2026-10-03T00:00:00Z', migrations: ['app/20261001000000_A', 'billing/20261005000000_N'] })
-  const runner = docker({
-    state,
-    applied: ['app/20261001000000_A', 'billing/20261005000000_N'],
-    extra: (call) => {
-      if (call.line.includes('ls-tree')) return { stdout: 'backend/Shop.Api/Migrations/20261001000000_A.cs\n' }
-      if (call.line.includes('git -C') && call.line.includes(' show ')) return { stdout: '[Migration("20261001000000_A")]' }
-      return undefined
-    },
-  })
-  const result = await pruneBackups({ appRoot: root, argv: ['--keep', '1'], env, runner })
-  assert.deepEqual(result.removed, ['20261002T000000Z-aaaaaaa'])
-  assert.deepEqual(result.kept.sort(), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa'])
+test('a backup leaves an incomplete folder alone', async () => {
+  const { root, state, env } = threeBackups()
+  mkdirSync(join(state, 'backups', '20260901T000000Z-aaaaaaa'))
+  await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20260101000000_A'], extra: mainHas({ [mainPath]: 'migration' }) }), now: when })
+  assert.deepEqual(backupsOf(state), ['20260901T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa', newest])
+})
+
+test('a backup that cannot read origin/main deletes nothing and still succeeds', async () => {
+  const { root, state, env } = threeBackups()
+  const warnings = []
+  const original = console.warn
+  console.warn = (message) => warnings.push(message)
+  try {
+    await backup({ appRoot: root, argv: [], env, runner: docker({ state, failOn: ['ls-tree'] }), now: when })
+  } finally {
+    console.warn = original
+  }
+  assert.equal(backupsOf(state).length, 4)
+  assert.ok(warnings.some((message) => /older backups were not pruned, so all of them are kept/.test(message)), warnings.join('\n'))
+})
+
+test('a uat restore keeps the backup it restores, however old, while its own backup prunes the rest', async () => {
+  const { root, state, env } = threeBackups()
+  const runner = docker({ state, applied: ['app/20260101000000_A'], extra: mainHas({ [mainPath]: 'migration' }) })
+  const oldest = '20261001T000000Z-aaaaaaa'
+  await restore({ appRoot: root, argv: ['--environment', 'uat', '--backup', oldest, '--owner-approved', '--confirm', `restore uat ${oldest}`, '--no-start'], env, runner, now: when })
+  assert.deepEqual(backupsOf(state), [oldest, '20261003T000000Z-aaaaaaa', newest])
+  assert.ok(runner.calls.some((call) => (call.options.input ?? '').includes('RENAME TO "shop"')))
 })
 
 test('migrate finds the one API project and points each database variable at dev', async () => {
@@ -601,7 +728,7 @@ test('a check-migrations refusal gives the entry to paste for each changed migra
 
 test('a uat deploy refuses when the fetch of origin/main fails, before it starts the database', async () => {
   const fixture = makeApp()
-  writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\nBACKUP_AUTO_PRUNE=false\n')
+  writeEnvFile(fixture.state, 'uat', 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=pw\n')
   mkdirSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations'), { recursive: true })
   writeFileSync(join(fixture.root, 'backend', 'Shop.Persistence', 'Migrations', '20260101000000_A.cs'), 'migration')
   const runner = docker({ state: fixture.state, volumes: ['shop-uat_postgres-data'], applied: ['app/20260101000000_A'], extra: (call) => (call.line.includes('fetch --quiet origin main') ? { code: 1, stderr: 'no network' } : undefined) })

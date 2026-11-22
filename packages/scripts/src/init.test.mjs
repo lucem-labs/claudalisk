@@ -12,7 +12,7 @@ function withState(body) {
   return async () => {
     const stateDir = mkdtempSync(join(tmpdir(), 'shop-init-'))
     const root = mkdtempSync(join(tmpdir(), 'shop-root-'))
-    writeFileSync(join(root, '.env.uat.example'), 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=CHANGE_ME\nBACKUP_AUTO_PRUNE=false\n')
+    writeFileSync(join(root, '.env.uat.example'), 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=CHANGE_ME\nAPP_ENVIRONMENT=uat\n')
     writeFileSync(join(root, '.env.dev.example'), 'POSTGRES_DB=shop\nPOSTGRES_USER=app\nPOSTGRES_PASSWORD=CHANGE_ME\nConnectionStrings__Shop=Host=db;Database=shop;Password=CHANGE_ME\n')
     try {
       await body(stateDir, { ...sampleApp, root })
@@ -47,7 +47,7 @@ test('init writes the whole env file with the new password, then creates the vol
   const values = parseEnvFile(readFileSync(envFile, 'utf8'))
   assert.equal(values.POSTGRES_PASSWORD, 'pw-123')
   assert.equal(values.POSTGRES_DB, 'shop')
-  assert.equal(values.BACKUP_AUTO_PRUNE, 'false')
+  assert.equal(values.APP_ENVIRONMENT, 'uat')
   assert.equal(values.DEV_POSTGRES_PORT, undefined)
   if (process.platform !== 'win32') assert.equal(statSync(envFile).mode & 0o777, 0o600)
   assert.deepEqual(runner.calls.at(-1).args, ['volume', 'create', uatVolume])

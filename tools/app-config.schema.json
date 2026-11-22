@@ -65,14 +65,6 @@
         }
       }
     },
-    "backup": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "How uat backups are kept.",
-      "properties": {
-        "keep": { "type": "integer", "minimum": 1, "description": "How many backups to keep." }
-      }
-    },
     "askCommands": {
       "type": "array",
       "items": { "type": "string" },

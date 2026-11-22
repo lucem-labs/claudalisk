@@ -1,24 +1,25 @@
-import { assertHandRun, parseOptions } from '../cli.mjs'
-import { readApp } from '../app-config.mjs'
-import { assertEnvironment, loadEnvironment } from '../environment.mjs'
+import { assertEnvironment } from '../environment.mjs'
+import { environmentCommand } from '../environment-command.mjs'
 import { restore as restoreBackup } from '../operations.mjs'
 
-export async function restore({ appRoot, argv, env, runner, now }) {
-  assertHandRun('restore.mjs', 'replaces the data of an environment', env)
-  const options = parseOptions({
+export const restore = environmentCommand({
+  script: 'restore.mjs',
+  changes: 'replaces the data of an environment',
+  options: {
     environment: { type: 'string' },
     backup: { type: 'string' },
     confirm: { type: 'string' },
     'owner-approved': { type: 'boolean', default: false },
     'no-start': { type: 'boolean', default: false },
-  }, argv)
-  assertEnvironment(options.environment)
-  const app = readApp(appRoot)
-  await restoreBackup(runner, loadEnvironment(options.environment, { app, env }), {
-    backup: options.backup,
-    confirm: options.confirm,
-    ownerApproved: options['owner-approved'],
-    noStart: options['no-start'],
-    now,
-  })
-}
+  },
+  run: async ({ options, runner, settings, now }) => {
+    assertEnvironment(options.environment)
+    await restoreBackup(runner, settings(options.environment), {
+      backup: options.backup,
+      confirm: options.confirm,
+      ownerApproved: options['owner-approved'],
+      noStart: options['no-start'],
+      now,
+    })
+  },
+})

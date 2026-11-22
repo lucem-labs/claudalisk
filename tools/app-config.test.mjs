@@ -23,7 +23,6 @@ const full = () => ({
   ...minimal(),
   databases: [{ role: 'app', envVar: 'DB' }, { role: 'identity', envVar: 'ID_DB' }],
   uat: { composeProject: 'shop-uat', volume: 'shop-uat-data', protectedVolumes: ['shop-uat-files'] },
-  backup: { keep: 5 },
   askCommands: ['docker compose down'],
   ownerOnlyCommands: ['restore'],
   runnerLabel: 'ci',
@@ -124,9 +123,9 @@ test('ports out of range or not integers are problems', () => {
   assert.match(validateAppConfig(text)[0], /^\$\.ports\.devDb: must be integer/);
 });
 
-test('databases needs an item, and backup.keep at least 1', () => {
+test('databases needs an item, and the retired backup setting is rejected', () => {
   assert.deepEqual(validateAppConfig({ ...minimal(), databases: [] }), ['$.databases: needs at least 1 item(s)']);
-  assert.match(validateAppConfig({ ...minimal(), backup: { keep: 0 } })[0], /^\$\.backup\.keep/);
+  assert.deepEqual(validateAppConfig({ ...minimal(), backup: { keep: 10 } }), ['$.backup: is not a known key']);
 });
 
 test('wrong types are problems', () => {
