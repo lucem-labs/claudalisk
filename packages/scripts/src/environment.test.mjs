@@ -96,6 +96,13 @@ test('the uat project and volume come from the config and dev ones from the name
   assert.equal(volumeFor(sampleApp, 'dev'), 'shop-dev_postgres-data')
 })
 
+test('a configured dev volume replaces the default name, and never the uat one', () => {
+  const app = { ...sampleApp, dev: { volume: 'shop-dev_postgres-18' } }
+  assert.equal(volumeFor(app, 'dev'), 'shop-dev_postgres-18')
+  assert.equal(volumeFor(app, 'uat'), 'shop-uat_postgres-data')
+  assert.equal(volumeFor({ ...sampleApp, dev: {} }, 'dev'), 'shop-dev_postgres-data')
+})
+
 test('the example placeholder is replaced wherever it appears', () => {
   const text = envFileFromExample('ConnectionStrings__Shop=Host=db;Password=CHANGE_ME\nPOSTGRES_PASSWORD=CHANGE_ME\n', 'pw1', { DEV_POSTGRES_PORT: '5440' })
   assert.deepEqual(parseEnvFile(text), { ConnectionStrings__Shop: 'Host=db;Password=pw1', POSTGRES_PASSWORD: 'pw1', DEV_POSTGRES_PORT: '5440' })

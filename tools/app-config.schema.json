@@ -50,6 +50,14 @@
         "apiLocal": { "type": "integer", "minimum": 1024, "maximum": 65535, "description": "The host port of the API run locally." }
       }
     },
+    "dev": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The dev resources that differ from the defaults.",
+      "properties": {
+        "volume": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$", "description": "The Docker volume that holds dev's data, as compose.dev.yml names it. Defaults to <name>-dev_postgres-data." }
+      }
+    },
     "uat": {
       "type": "object",
       "additionalProperties": false,

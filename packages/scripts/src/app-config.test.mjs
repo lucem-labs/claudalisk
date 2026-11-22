@@ -26,9 +26,10 @@ test('the allowed keys match the schema properties at every closed level', () =>
   assert.deepEqual(sorted(allowedKeys.app), sorted(Object.keys(schema.properties)))
   assert.deepEqual(sorted(allowedKeys.database), sorted(Object.keys(schema.properties.databases.items.properties)))
   assert.deepEqual(sorted(allowedKeys.ports), sorted(Object.keys(schema.properties.ports.properties)))
+  assert.deepEqual(sorted(allowedKeys.dev), sorted(Object.keys(schema.properties.dev.properties)))
   assert.deepEqual(sorted(allowedKeys.uat), sorted(Object.keys(schema.properties.uat.properties)))
   assert.deepEqual(sorted(allowedKeys.review), sorted(Object.keys(schema.properties.review.properties)))
-  for (const level of [schema, schema.properties.databases.items, schema.properties.ports, schema.properties.uat, schema.properties.review]) {
+  for (const level of [schema, schema.properties.databases.items, schema.properties.ports, schema.properties.dev, schema.properties.uat, schema.properties.review]) {
     assert.equal(level.additionalProperties, false)
   }
 })
@@ -38,8 +39,19 @@ test('an unknown key is rejected at each closed level and named', () => {
   assert.throws(() => parse({ ...sampleConfig, databases: [{ role: 'app', envVar: 'X', extra: 1 }] }), /"databases\[0\]\.extra" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, ports: { ...sampleConfig.ports, web: 1 } }), /"ports\.web" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, volum: 'v' } }), /"uat\.volum" is not a known setting/)
+  assert.throws(() => parse({ ...sampleConfig, dev: { volum: 'v' } }), /"dev\.volum" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, backup: { keep: 10 } }), /"backup" is not a known setting/)
   assert.throws(() => parse({ ...sampleConfig, review: { uatdata: [] } }), /"review\.uatdata" is not a known setting/)
+})
+
+test('the dev volume is optional, must be a name, and is never a volume that holds uat data', () => {
+  assert.equal(parse(sampleConfig).dev, undefined)
+  assert.equal(parse({ ...sampleConfig, dev: {} }).dev.volume, undefined)
+  assert.equal(parse({ ...sampleConfig, dev: { volume: 'shop-dev_postgres-18' } }).dev.volume, 'shop-dev_postgres-18')
+  assert.throws(() => parse({ ...sampleConfig, dev: 'shop-dev_postgres-18' }), /cfg\.json: "dev" must be an object/)
+  assert.throws(() => parse({ ...sampleConfig, dev: { volume: '' } }), /"dev\.volume" must be a non-empty string/)
+  assert.throws(() => parse({ ...sampleConfig, dev: { volume: sampleConfig.uat.volume } }), /"dev\.volume" is shop-uat_postgres-data, a volume that holds uat data/)
+  assert.throws(() => parse({ ...sampleConfig, uat: { ...sampleConfig.uat, protectedVolumes: ['shop-old'] }, dev: { volume: 'shop-old' } }), /"dev\.volume" is shop-old, a volume that holds uat data/)
 })
 
 test('the sample config satisfies the schema it is checked against', () => {
