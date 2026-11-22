@@ -26,7 +26,7 @@ export function projectFor(app, environment) {
 
 export function volumeFor(app, environment) {
   assertEnvironment(environment)
-  return environment === 'uat' ? app.uat.volume : `${app.name}-dev_postgres-data`
+  return environment === 'uat' ? app.uat.volume : app.dev?.volume ?? `${app.name}-dev_postgres-data`
 }
 
 export function parseEnvFile(text) {

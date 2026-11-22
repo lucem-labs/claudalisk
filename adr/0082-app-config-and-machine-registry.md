@@ -4,7 +4,7 @@
 - **Date:** 2026-11-05
 - **Area:** environments
 - **Enforced by:** `tools/app-config.mjs`, `tools/app-registry.mjs` and their tests in CI's `adrs` job; the `name` check in `templates/app/scripts/verify.mjs`; guardrail hook (protected resources read from the registry, CLA-0083)
-- **Issue:** #8
+- **Issue:** #8, #277
 
 ## Context
 
@@ -14,6 +14,7 @@ An app's settings were spread over its scripts and prose: its name, its ports, t
 
 - **An app describes itself in `.claude/claudalisk.json`.** `tools/app-config.schema.json` is the one definition of its shape: the app name, host prefix, repository, databases, dev ports, uat project and volumes, command lists, runner label and review globs.
   - **Unknown keys are an error at every level.** The file holds safety settings, and a typo such as `protectedVolume` would otherwise be skipped without a word.
+  - **`dev.volume` is optional** and names the dev database volume when it is not `<name>-dev_postgres-data`, as after a PostgreSQL major upgrade. It is never a volume that holds uat data.
   - `tools/app-config.mjs` validates a file against the schema and reads it. A broken or invalid file throws, listing every problem with its path.
 - **`name` is the one source of the app name.** Per-app state lives in `~/.claudalisk/apps/<name>/` (CLA-0066), so a clone in a differently named folder does not split it. It matches `^[a-z0-9][a-z0-9-]*$`, so it cannot build a path outside that folder. An app without a config keeps the name of its repository folder.
 - **`~/.claudalisk/apps.json` is the machine-wide registry.** It lists each app's name, repository, host prefix, uat project and volumes and ports, the shared proxy, and a list of runners stacks, each with its Compose project, config folder, scope (organization or repository), target and runner group (CLA-0033, CLA-0086).

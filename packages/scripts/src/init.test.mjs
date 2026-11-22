@@ -132,6 +132,23 @@ test('dev with a volume but no dev.env and --recreate-dev-volume stops the stack
   assert.ok(existsSync(join(stateDir, 'dev.env')))
 }))
 
+test('with a configured dev volume, init checks, removes and creates that volume and leaves the default name alone', withState(async (stateDir, app) => {
+  const configured = { ...app, dev: { volume: 'shop-dev_postgres-18' } }
+  const refused = dockerWith([devVolume, 'shop-dev_postgres-18'])
+  await assert.rejects(ensureInitialised(refused, configured, 'dev', options(stateDir)), /dev volume shop-dev_postgres-18 exists but .*dev\.env does not/)
+  const runner = dockerWith([devVolume, 'shop-dev_postgres-18'])
+  await ensureInitialised(runner, configured, 'dev', { ...options(stateDir), recreateDevVolume: true })
+  assert.deepEqual(runner.calls.map((call) => call.line).filter((line) => /volume (rm|create)/.test(line)), [
+    'docker volume rm shop-dev_postgres-18',
+    'docker volume create shop-dev_postgres-18',
+  ])
+  const fresh = dockerWith([devVolume])
+  rmSync(join(stateDir, 'dev.env'))
+  await ensureInitialised(fresh, configured, 'dev', options(stateDir))
+  assert.ok(fresh.calls.some((call) => call.line === 'docker volume create shop-dev_postgres-18'))
+  assert.ok(!fresh.calls.some((call) => call.line.includes(`volume rm ${devVolume}`)))
+}))
+
 test('dev with a dev.env but no volume replaces the file and runs init', withState(async (stateDir, app) => {
   writeFileSync(join(stateDir, 'dev.env'), 'POSTGRES_PASSWORD=old\n')
   const runner = dockerWith([])

@@ -9,9 +9,10 @@ export const requiredFields = {
 }
 
 export const allowedKeys = {
-  app: ['$schema', 'name', 'hostPrefix', 'repo', 'databases', 'ports', 'uat', 'askCommands', 'ownerOnlyCommands', 'runnerLabel', 'review'],
+  app: ['$schema', 'name', 'hostPrefix', 'repo', 'databases', 'ports', 'dev', 'uat', 'askCommands', 'ownerOnlyCommands', 'runnerLabel', 'review'],
   database: ['role', 'envVar'],
   ports: ['devDb', 'apiLocal'],
+  dev: ['volume'],
   uat: ['composeProject', 'volume', 'protectedVolumes'],
   review: ['uatData', 'security'],
 }
@@ -69,6 +70,15 @@ export function parseAppConfig(text, file = '.claude/claudalisk.json') {
   rejectUnknownKeys(config.uat, allowedKeys.uat, 'uat', file)
   for (const field of requiredFields.uat) {
     if (!isText(config.uat[field])) throw new Error(`${file}: "uat.${field}" must be a non-empty string.`)
+  }
+  if (config.dev !== undefined) {
+    rejectUnknownKeys(config.dev, allowedKeys.dev, 'dev', file)
+    if (config.dev.volume !== undefined) {
+      if (!isText(config.dev.volume)) throw new Error(`${file}: "dev.volume" must be a non-empty string.`)
+      if ([config.uat.volume, ...(config.uat.protectedVolumes ?? [])].includes(config.dev.volume)) {
+        throw new Error(`${file}: "dev.volume" is ${config.dev.volume}, a volume that holds uat data. dev is disposable, so it needs a volume of its own.`)
+      }
+    }
   }
   if (config.review !== undefined) rejectUnknownKeys(config.review, allowedKeys.review, 'review', file)
   return config

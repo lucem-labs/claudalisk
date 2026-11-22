@@ -91,6 +91,14 @@ test('uat names that Docker cannot use are problems', () => {
   assert.notDeepEqual(uat({ protectedVolumes: ['bad name'] }), []);
 });
 
+test('the dev volume is optional and must be a name Docker can use', () => {
+  const dev = (value) => validateAppConfig({ ...minimal(), dev: value });
+  assert.deepEqual(dev({}), []);
+  assert.deepEqual(dev({ volume: 'shop-dev_postgres-18' }), []);
+  assert.notDeepEqual(dev({ volume: 'bad name' }), []);
+  assert.deepEqual(dev({ volumes: 'v' }), ['$.dev.volumes: is not a known key']);
+});
+
 test('verify.mjs checks a name with the same pattern as the schema', () => {
   assert.equal(APP_NAME.source, SCHEMA.properties.name.pattern);
 });
