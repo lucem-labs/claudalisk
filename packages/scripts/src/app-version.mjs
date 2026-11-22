@@ -7,7 +7,7 @@ export const versionFile = 'package.json'
 export function parseAppVersion(text, file = versionFile) {
   let manifest
   try {
-    manifest = JSON.parse(text.replace(/^﻿/, ''))
+    manifest = JSON.parse(text.replace(/^\uFEFF/, ''))
   } catch {
     throw new Error(`${file} is not valid JSON, so the app version cannot be read.`)
   }

@@ -67,7 +67,7 @@ test('an unreadable main fails instead of passing', async () => {
 })
 
 test('the app version is read past a byte order mark, and bad JSON is named', () => {
-  assert.equal(parseAppVersion('﻿{"version":"1.2.3"}'), '1.2.3')
+  assert.equal(parseAppVersion('\uFEFF{"version":"1.2.3"}'), '1.2.3')
   assert.equal(parseAppVersion('{"private":true}'), null)
   assert.throws(() => parseAppVersion('{', 'package.json'), /package\.json is not valid JSON/)
   assert.equal(readAppVersion(join(appAt(undefined), 'missing')), null)
