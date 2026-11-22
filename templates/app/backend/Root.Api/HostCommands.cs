@@ -1,5 +1,4 @@
 using Claudalisk.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace <Root>.Api;
 
@@ -16,13 +15,9 @@ public static class HostCommands
 
         if (args.Contains(ListMigrations))
         {
-            foreach (var registration in initializer.Contexts)
+            foreach (var migration in initializer.GetMigrations())
             {
-                var context = (DbContext)scope.ServiceProvider.GetRequiredService(registration.ContextType);
-                foreach (var migration in context.Database.GetMigrations())
-                {
-                    await output.WriteLineAsync($"{registration.Schema}/{migration}");
-                }
+                await output.WriteLineAsync($"{migration.Schema}/{migration.Id}");
             }
 
             return 0;
