@@ -12,7 +12,7 @@ Apps pin claudalisk to a release: the plugin by version, the registry by its `v<
 
 ## Decision
 
-- **The version in `.claude-plugin/plugin.json` is the release.** A pull request that should ship bumps it. Nothing else marks a release.
+- **The version in `.claude-plugin/plugin.json` is the release.** A pull request that should ship bumps it, by as much as its changes need (CLA-0098). Nothing else marks a release.
 - **On every push to `main`, `release.yml` releases a version that has no tag yet.** When `v<version>` already exists, the run does nothing. Its `release` job:
   - tags the pushed commit `v<version>`;
   - runs `node tools/release.mjs check`, which fetches every item of `registry/registry.json` from the release URL of CLA-0055 and fails unless each returns its own JSON. It retries for a short while, since the URL can lag the tag. On a failure it deletes the tag it just pushed, so the next push or a manual run tries again;
@@ -29,4 +29,4 @@ Apps pin claudalisk to a release: the plugin by version, the registry by its `v<
 
 - A merged version bump is a release. Merging a pull request that bumps the version is the owner's decision to ship (CLA-0024).
 - A broken registry build never becomes a release that apps can pin.
-- A scripts package version needs both this workflow and the owner's approval on npm.
+- A scripts package version needs both this workflow and the owner's approval on npm. A release that changes the package bumps the package's own version too, because the job skips a version that npm already has (CLA-0098).

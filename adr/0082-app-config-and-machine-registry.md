@@ -29,5 +29,6 @@ An app's settings were spread over its scripts and prose: its name, its ports, t
 
 - A new app gets ports and names that no other app on the machine uses.
 - A mistyped key in the config fails when it is read, not when the setting is needed.
+- Neither file has a version of its own. A removed or renamed key, or a new required one, is a breaking change of the plugin (CLA-0098).
 - The registry holds names and ports, never secrets.
 - Moving to another machine means registering the app again.

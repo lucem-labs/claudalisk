@@ -17,7 +17,7 @@
   - endpoints that every app has, such as health (CLA-0001).
 - **The packages live in [lucem-labs/claudalisk-dotnet](https://github.com/lucem-labs/claudalisk-dotnet)**, separate from this repository, so that this one stays focused on the plugin and its AI tooling. They are published to nuget.org.
 - **Package names and boundaries are decided in that repository** and can change as the packages are built. Its README lists the current packages. Where an ADR needs a package by name, as `Claudalisk.Domain` for Domain projects (CLA-0048), the ADR names it.
-- An app pins exact package versions. A fix reaches an app as a version bump in a normal pull request.
+- **The packages share one version,** which follows CLA-0098. An app pins exact package versions. A fix reaches an app as a version bump in a normal pull request.
 - Each package has its own tests, including Testcontainers tests against real PostgreSQL (CLA-0018). The CI of claudalisk-dotnet runs them.
 
 ## Consequences
