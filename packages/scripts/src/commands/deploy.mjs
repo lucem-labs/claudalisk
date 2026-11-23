@@ -63,7 +63,7 @@ export const deploy = environmentCommand({
   run: runDeploy,
 })
 
-async function runDeploy({ app, appRoot, env, options, runner, settings: settingsOf, health = waitForHealth, guard = assertUatDeployable, now }) {
+async function runDeploy({ app, appRoot, env, options, runner, settings: settingsOf, health = waitForHealth, guard = assertUatDeployable, now, home }) {
   const environment = options.environment
   assertEnvironment(environment)
   const uat = environment === 'uat'
@@ -78,7 +78,7 @@ async function runDeploy({ app, appRoot, env, options, runner, settings: setting
     throw new Error('--adopt-unrecorded-migrations is only for uat.')
   }
   await requireProxyRunning(runner, expectedProxyPort(env))
-  await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env), recreateDevVolume: options['recreate-dev-volume'] })
+  await ensureInitialised(runner, app, environment, { env, stateDir: stateDirectory(app.name, env), recreateDevVolume: options['recreate-dev-volume'], home })
 
   const settings = settingsOf(environment)
   if (uat && !existsSync(settings.backupDir)) mkdirSync(settings.backupDir, { recursive: true })

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { parseEnvFile } from './environment.mjs'
 import { fakeRunner } from './fake-runner.mjs'
-import { adoptVolume, ensureInitialised, initEnvironment } from './init.mjs'
+import { adoptVolume, ensureInitialised, initEnvironment, otherAppWithVolume } from './init.mjs'
 import { sampleApp } from '../test/sample-app.mjs'
 
 function withState(body) {
@@ -37,7 +37,7 @@ function dockerWith(initial) {
   })
 }
 
-const options = (stateDir) => ({ stateDir, password: 'pw-123' })
+const options = (stateDir) => ({ stateDir, password: 'pw-123', home: stateDir })
 const uatVolume = 'shop-uat_postgres-data'
 const devVolume = 'shop-dev_postgres-data'
 
@@ -147,6 +147,49 @@ test('with a configured dev volume, init checks, removes and creates that volume
   await ensureInitialised(fresh, configured, 'dev', options(stateDir))
   assert.ok(fresh.calls.some((call) => call.line === 'docker volume create shop-dev_postgres-18'))
   assert.ok(!fresh.calls.some((call) => call.line.includes(`volume rm ${devVolume}`)))
+}))
+
+function registryIn(home, registry) {
+  mkdirSync(join(home, '.claudalisk'), { recursive: true })
+  writeFileSync(join(home, '.claudalisk', 'apps.json'), typeof registry === 'string' ? registry : JSON.stringify(registry))
+}
+
+const blog = { name: 'blog', uat: { composeProject: 'blog-uat', volume: 'blog-uat-data', protectedVolumes: ['blog-old-data'] } }
+
+test('--recreate-dev-volume never removes a volume the machine registry lists for another app', withState(async (stateDir, app) => {
+  registryIn(stateDir, { apps: [{ name: 'shop', uat: { composeProject: 'shop-uat', volume: 'shop-uat_postgres-data' } }, blog, { name: 'news', dev: { volume: 'news-dev_postgres-18' }, uat: { composeProject: 'news-uat', volume: 'news-uat-data' } }] })
+  const cases = [
+    ['blog-uat-data', /holds the uat data of the app blog/],
+    ['blog-old-data', /holds the uat data of the app blog/],
+    ['blog-dev_postgres-data', /holds the dev data of the app blog/],
+    ['news-dev_postgres-18', /holds the dev data of the app news/],
+  ]
+  for (const [volume, pattern] of cases) {
+    const runner = dockerWith([volume])
+    await assert.rejects(ensureInitialised(runner, { ...app, dev: { volume } }, 'dev', { ...options(stateDir), recreateDevVolume: true }), (error) => {
+      assert.ok(error.message.startsWith(`Refusing to remove the volume ${volume}: `))
+      assert.match(error.message, pattern)
+      assert.match(error.message, /Nothing was changed\./)
+      return true
+    })
+    assert.ok(!runner.calls.some((call) => /volume (rm|create)|down/.test(call.line)), volume)
+    assert.equal(existsSync(join(stateDir, 'dev.env')), false)
+  }
+}))
+
+test('--recreate-dev-volume removes the app\'s own dev volume when the registry lists it, and when there is no registry', withState(async (stateDir, app) => {
+  registryIn(stateDir, { apps: [{ name: 'shop', dev: { volume: devVolume }, uat: { composeProject: 'shop-uat', volume: 'shop-uat_postgres-data' } }, blog] })
+  const runner = dockerWith([devVolume])
+  await ensureInitialised(runner, app, 'dev', { ...options(stateDir), recreateDevVolume: true })
+  assert.ok(runner.calls.some((call) => call.line === `docker volume rm ${devVolume}`))
+  assert.equal(otherAppWithVolume(devVolume, 'shop', { home: join(stateDir, 'no-such-home') }), null)
+}))
+
+test('a registry that is not JSON stops --recreate-dev-volume before anything is removed', withState(async (stateDir, app) => {
+  registryIn(stateDir, '{ apps: [')
+  const runner = dockerWith([devVolume])
+  await assert.rejects(ensureInitialised(runner, app, 'dev', { ...options(stateDir), recreateDevVolume: true }), /apps\.json is not valid JSON .*cannot be checked against the other apps.*Nothing was changed\./)
+  assert.ok(!runner.calls.some((call) => /volume rm|down/.test(call.line)))
 }))
 
 test('dev with a dev.env but no volume replaces the file and runs init', withState(async (stateDir, app) => {
