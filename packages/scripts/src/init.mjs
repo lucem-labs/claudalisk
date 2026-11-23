@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
   assertEnvironment,
@@ -80,7 +81,28 @@ export function devVolumeWithoutEnvFileMessage(volume, envFile) {
   return `The dev volume ${volume} exists but ${envFile} does not, so a deploy would remove the volume and its data. Nothing was changed. Keep the data with ${initCommand('dev')} --adopt-volume, which asks for the volume's password, or start dev empty with node scripts/deploy.mjs --environment dev --recreate-dev-volume.`
 }
 
-export async function ensureInitialised(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), password, recreateDevVolume = false } = {}) {
+const byteOrderMark = String.fromCharCode(0xfeff)
+
+export function otherAppWithVolume(volume, appName, { home = homedir() } = {}) {
+  const path = join(home, '.claudalisk', 'apps.json')
+  if (!existsSync(path)) return null
+  let registry
+  try {
+    const text = readFileSync(path, 'utf8')
+    registry = JSON.parse(text.startsWith(byteOrderMark) ? text.slice(1) : text)
+  } catch (error) {
+    throw new Error(`${path} is not valid JSON (${error.message}), so the volume ${volume} cannot be checked against the other apps on this machine. Nothing was changed.`)
+  }
+  for (const other of Array.isArray(registry?.apps) ? registry.apps : []) {
+    if (!other || other.name === appName) continue
+    const protectedVolumes = Array.isArray(other.uat?.protectedVolumes) ? other.uat.protectedVolumes : []
+    if ([other.uat?.volume, ...protectedVolumes].includes(volume)) return { name: other.name, holds: 'uat data', path }
+    if ((other.dev?.volume ?? `${other.name}-dev_postgres-data`) === volume) return { name: other.name, holds: 'dev data', path }
+  }
+  return null
+}
+
+export async function ensureInitialised(runner, app, environment, { env = process.env, stateDir = stateDirectory(app.name, env), password, recreateDevVolume = false, home = homedir() } = {}) {
   assertEnvironment(environment)
   const volume = volumeFor(app, environment)
   const envFile = join(stateDir, `${environment}.env`)
@@ -101,6 +123,10 @@ export async function ensureInitialised(runner, app, environment, { env = proces
 
   if (hasVolume) {
     if (!recreateDevVolume) throw new Error(devVolumeWithoutEnvFileMessage(volume, envFile))
+    const owner = otherAppWithVolume(volume, app.name, { home })
+    if (owner) {
+      throw new Error(`Refusing to remove the volume ${volume}: ${owner.path} lists it as a volume that holds the ${owner.holds} of the app ${owner.name}. Nothing was changed. Set dev.volume in .claude/claudalisk.json to this app's own dev volume, or correct the registry entry that is wrong.`)
+    }
     console.log(`${envFile} does not exist but the dev volume ${volume} does, and --recreate-dev-volume was passed, so the volume is removed.`)
     await runChecked(runner, 'docker', ['compose', '--project-name', projectFor(app, environment), 'down', '--remove-orphans'], { what: 'Stopping the dev stack' })
     await runChecked(runner, 'docker', ['volume', 'rm', volume], { what: `Removing volume ${volume}` })

@@ -65,6 +65,7 @@ test('registerApp creates the folder and the entry', () => {
       name: 'shop',
       repo: 'acme/shop',
       hostPrefix: 'shop',
+      dev: { volume: 'shop-dev_postgres-data' },
       uat: { composeProject: 'shop-uat', volume: 'v', protectedVolumes: ['f'] },
       ports: { devDb: 5433, apiLocal: 5100 },
     }],
@@ -155,6 +156,9 @@ const clashCases = [
   ['uat.composeProject', { uat: { composeProject: 'shop-uat', volume: 'other-v' } }, /uat\.composeProject shop-uat/],
   ['uat.volume', { uat: { composeProject: 'other-uat', volume: 'shop-uat-data' } }, /volume shop-uat-data/],
   ['a protected volume of the new app', { uat: { composeProject: 'other-uat', volume: 'other-v', protectedVolumes: ['shop-uat-data'] } }, /volume shop-uat-data/],
+  ['a configured dev volume', { dev: { volume: 'shop-dev_postgres-data' } }, /volume shop-dev_postgres-data/],
+  ['a dev volume that is the other app\'s uat volume', { dev: { volume: 'shop-uat-data' } }, /volume shop-uat-data/],
+  ['a uat volume that is the other app\'s default dev volume', { uat: { composeProject: 'other-uat', volume: 'shop-dev_postgres-data' } }, /volume shop-dev_postgres-data/],
   ['devDb port', { ports: { devDb: 5433, apiLocal: 5101 } }, /port 5433/],
   ['apiLocal port', { ports: { devDb: 5434, apiLocal: 5100 } }, /port 5100/],
   ['port across roles', { ports: { devDb: 5100, apiLocal: 5101 } }, /port 5100/],
@@ -171,6 +175,51 @@ for (const [label, overrides, pattern] of clashCases) {
     assert.deepEqual(readdirSync(join(home, '.claudalisk')), ['apps.json']);
   });
 }
+
+test('an entry records the dev volume, configured or the default', () => {
+  const home = tempHome();
+  assert.deepEqual(registerApp(config('shop'), { home }).dev, { volume: 'shop-dev_postgres-data' });
+  const blog = config('blog', { hostPrefix: 'blog', repo: 'acme/blog', ports: { devDb: 5434, apiLocal: 5101 }, dev: { volume: 'blog-dev_postgres-18' } });
+  assert.deepEqual(registerApp(blog, { home }).dev, { volume: 'blog-dev_postgres-18' });
+  assert.deepEqual(readRegistry({ home }).apps.map((app) => app.dev.volume), ['blog-dev_postgres-18', 'shop-dev_postgres-data']);
+});
+
+test('two apps cannot name the same configured dev volume', () => {
+  const home = tempHome();
+  registerApp(config('shop', { dev: { volume: 'shared-dev' } }), { home });
+  const blog = config('blog', { hostPrefix: 'blog', repo: 'acme/blog', ports: { devDb: 5434, apiLocal: 5101 }, dev: { volume: 'shared-dev' } });
+  assert.throws(() => registerApp(blog, { home }), /blog clashes with shop: volume shared-dev/);
+});
+
+test('an app cannot name one of its own uat volumes as its dev volume', () => {
+  const home = tempHome();
+  assert.throws(() => registerApp(config('shop', { dev: { volume: 'shop-uat-data' } }), { home }), /shop names shop-uat-data as its dev volume and as a volume that holds uat data/);
+  const protectedToo = config('shop', { uat: { composeProject: 'shop-uat', volume: 'shop-v', protectedVolumes: ['old-data'] }, dev: { volume: 'old-data' } });
+  assert.throws(() => registerApp(protectedToo, { home }), /shop names old-data as its dev volume/);
+  assert.equal(existsSync(join(home, '.claudalisk', 'apps.json')), false);
+});
+
+test('an entry written before dev volumes were recorded still reads, and its default dev volume still clashes', () => {
+  const home = tempHome();
+  registerApp(config('shop'), { home });
+  const path = join(home, '.claudalisk', 'apps.json');
+  const registry = JSON.parse(readFileSync(path, 'utf8'));
+  delete registry.apps[0].dev;
+  writeFileSync(path, JSON.stringify(registry));
+  assert.equal(readRegistry({ home }).apps[0].dev, undefined);
+  const blog = config('blog', { hostPrefix: 'blog', repo: 'acme/blog', ports: { devDb: 5434, apiLocal: 5101 }, dev: { volume: 'shop-dev_postgres-data' } });
+  assert.throws(() => registerApp(blog, { home }), /blog clashes with shop: volume shop-dev_postgres-data/);
+});
+
+test('a dev entry without a volume makes the registry the wrong shape', () => {
+  const home = tempHome();
+  registerApp(config('shop'), { home });
+  const path = join(home, '.claudalisk', 'apps.json');
+  const registry = JSON.parse(readFileSync(path, 'utf8'));
+  registry.apps[0].dev = { volume: '' };
+  writeFileSync(path, JSON.stringify(registry));
+  assert.throws(() => readRegistry({ home }), /apps\[0\]\.dev needs volume/);
+});
 
 test('a uat volume that is another app\'s protected volume clashes', () => {
   const home = tempHome();

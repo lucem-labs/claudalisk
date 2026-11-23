@@ -12,6 +12,9 @@ const isText = (value) => typeof value === 'string' && value !== '';
 const isPort = (value) => Number.isInteger(value) && value >= 1024 && value <= 65535;
 const isListenPort = (value) => Number.isInteger(value) && value >= 1 && value <= 65535;
 
+export const devVolumeOf = (app) => app.dev?.volume ?? `${app.name}-dev_postgres-data`;
+const uatVolumesOf = ({ uat }) => [uat.volume, ...(uat.protectedVolumes ?? [])];
+
 function stackProblems(stack, where) {
   if (!isObject(stack)) return [`${where} must be an object`];
   const problems = [];
@@ -32,6 +35,7 @@ function problemsOf(registry) {
     for (const key of ['name', 'repo', 'hostPrefix']) if (!isText(app[key])) problems.push(`${where}.${key} must be a string`);
     if (!isObject(app.uat) || !isText(app.uat.composeProject) || !isText(app.uat.volume)) problems.push(`${where}.uat needs composeProject and volume`);
     else if (app.uat.protectedVolumes !== undefined && !(Array.isArray(app.uat.protectedVolumes) && app.uat.protectedVolumes.every(isText))) problems.push(`${where}.uat.protectedVolumes must be an array of strings`);
+    if (app.dev !== undefined && !(isObject(app.dev) && isText(app.dev.volume))) problems.push(`${where}.dev needs volume`);
     if (!isObject(app.ports) || !isPort(app.ports.devDb) || !isPort(app.ports.apiLocal)) problems.push(`${where}.ports needs devDb and apiLocal`);
   });
   if (registry.proxy !== undefined && (!isObject(registry.proxy) || !isText(registry.proxy.composeProject) || !isText(registry.proxy.network))) problems.push('"proxy" needs composeProject and network');
@@ -92,7 +96,7 @@ function clashes(app, other) {
   if (app.repo.toLowerCase() === other.repo.toLowerCase()) found.push(`repo ${app.repo}`);
   if (app.hostPrefix === other.hostPrefix) found.push(`hostPrefix ${app.hostPrefix}`);
   if (app.uat.composeProject === other.uat.composeProject) found.push(`uat.composeProject ${app.uat.composeProject}`);
-  const volumesOf = ({ uat }) => [uat.volume, ...(uat.protectedVolumes ?? [])];
+  const volumesOf = (entry) => [...uatVolumesOf(entry), devVolumeOf(entry)];
   for (const volume of volumesOf(app)) if (volumesOf(other).includes(volume)) found.push(`volume ${volume}`);
   const used = [other.ports.devDb, other.ports.apiLocal];
   for (const [role, port] of Object.entries(app.ports)) if (used.includes(port)) found.push(`port ${port} (${role})`);
@@ -107,9 +111,11 @@ export function registerApp(config, { home = homedir(), replace = false } = {}) 
     name: config.name,
     repo: config.repo,
     hostPrefix: config.hostPrefix,
+    dev: { volume: devVolumeOf(config) },
     uat: { composeProject: config.uat.composeProject, volume: config.uat.volume, protectedVolumes: config.uat.protectedVolumes ?? [] },
     ports: { devDb: config.ports.devDb, apiLocal: config.ports.apiLocal },
   };
+  if (uatVolumesOf(entry).includes(entry.dev.volume)) throw new Error(`${entry.name} names ${entry.dev.volume} as its dev volume and as a volume that holds uat data. dev is disposable, so it needs a volume of its own`);
   for (const other of registry.apps) {
     if (other.name === entry.name) {
       if (!replace && other.repo.toLowerCase() !== entry.repo.toLowerCase()) throw new Error(`${entry.name} is already registered for ${other.repo}, not ${entry.repo}. Rename the app, or pass --replace if the repository moved`);

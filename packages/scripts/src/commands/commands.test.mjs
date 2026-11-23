@@ -83,12 +83,24 @@ test('a dev deploy that finds a dev volume without dev.env refuses before buildi
 
   const recreated = makeApp()
   const runner = docker({ state: recreated.state, volumes: ['shop-dev_postgres-data'] })
-  await deploy({ appRoot: recreated.root, argv: ['--environment', 'dev', '--recreate-dev-volume'], env: recreated.env, runner, health: healthy, guard: noGuard })
+  await deploy({ appRoot: recreated.root, argv: ['--environment', 'dev', '--recreate-dev-volume'], env: recreated.env, runner, health: healthy, guard: noGuard, home: recreated.state })
   const lines = runner.calls.map((call) => call.line)
   const at = (pattern) => lines.findIndex((line) => pattern.test(line))
   assert.ok(at(/volume rm shop-dev_postgres-data$/) < at(/volume create shop-dev_postgres-data$/))
   assert.ok(at(/volume create shop-dev_postgres-data$/) < at(/ build$/))
   assert.ok(existsSync(join(recreated.state, 'dev.env')))
+})
+
+test('a dev deploy with --recreate-dev-volume refuses to remove a volume the machine registry lists for another app', async () => {
+  const { root, state, env } = makeApp({ config: { ...sampleConfig, dev: { volume: 'blog-uat-data' } } })
+  mkdirSync(join(state, '.claudalisk'), { recursive: true })
+  writeFileSync(join(state, '.claudalisk', 'apps.json'), JSON.stringify({ apps: [{ name: 'blog', uat: { composeProject: 'blog-uat', volume: 'blog-uat-data' } }] }))
+  const runner = docker({ state, volumes: ['blog-uat-data'] })
+  await assert.rejects(
+    deploy({ appRoot: root, argv: ['--environment', 'dev', '--recreate-dev-volume'], env, runner, health: healthy, guard: noGuard, home: state }),
+    /Refusing to remove the volume blog-uat-data: .*apps\.json lists it as a volume that holds the uat data of the app blog\. Nothing was changed\./,
+  )
+  assert.equal(callsMatching(runner, /volume rm| down | build$/).length, 0)
 })
 
 test('a uat deploy refuses --recreate-dev-volume before it runs anything', async () => {
