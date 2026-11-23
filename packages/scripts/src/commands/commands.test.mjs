@@ -353,12 +353,14 @@ test('a uat deploy deletes every backup but the current and the previous one', a
   assert.deepEqual(readdirSync(join(state, 'backups')).sort(), ['20261003T000000Z-aaaaaaa', `20261029T100000Z-${sha.slice(0, 7)}`])
 })
 
-function images({ before = 'sha256:old', after = 'sha256:new', layersBefore = `["${before}-layer"]`, layersAfter = `["${after}-layer"]`, listed } = {}) {
+function images({ before = 'sha256:old', after = 'sha256:new', layersBefore = `["${before}-layer"]`, layersAfter = `["${after}-layer"]`, listed, inUse = [] } = {}) {
   const rows = listed ?? [['shop-dev-api', 'latest', after], ['shop-dev-migrate', 'latest', 'sha256:migrate']]
   return (call) => {
     const { args } = call
     if (args[0] === 'image' && args[1] === 'ls') return { stdout: rows.map((row) => row.join('\t')).join('\n') }
     if (args[0] === 'compose' && args.includes('ps') && !args.includes('api') && !args.includes('db')) return { stdout: 'api1\ndb1\n' }
+    if (args[0] === 'ps' && args.includes('--quiet')) return { stdout: inUse.length > 0 ? 'c1\nc2\n' : '' }
+    if (args[0] === 'inspect' && args[2] === '{{.Image}}') return { stdout: inUse.join('\n') }
     if (args[0] === 'inspect' && args[2].includes('com.docker.compose.service')) return { stdout: `api\t${before}\ndb\tsha256:postgres\n` }
     if (args[0] === 'image' && args[1] === 'inspect') {
       if (args.includes('shop-dev-db')) return { code: 1, stderr: 'No such image' }
@@ -519,6 +521,57 @@ test('a Compose config that cannot be read stops the deploy before it changes an
   const runner = docker({ state, volumes: ['shop-dev_postgres-data'], failOn: [' config '] })
   await assert.rejects(deploy({ appRoot: root, argv: ['--environment', 'dev'], env, runner, health: healthy }), /Reading the Compose config/)
   assert.equal(callsMatching(runner, / build$| up /).length, 0)
+})
+
+const goneServiceImages = [
+  ['shop-dev-api', 'latest', 'sha256:new'],
+  ['shop-dev-migrate', 'latest', 'sha256:migrate'],
+  ['shop-dev-worker', 'latest', 'sha256:worker'],
+  ['shop-dev-worker', 'previous', 'sha256:worker-old'],
+  ['shop-dev-worker', '1.3.0', 'sha256:worker'],
+  ['shop', '1234567', 'sha256:named'],
+]
+
+test('a deploy removes every tag of a project image whose service is no longer in the Compose config, before it tags versions', async () => {
+  const { runner, done } = devDeploy(images({ listed: goneServiceImages }), healthy, '1.4.0')
+  await done
+  assert.deepEqual(imageChanges(runner), [
+    'docker tag sha256:old shop-dev-api:replaced',
+    'docker tag shop-dev-api:replaced shop-dev-api:previous',
+    'docker image rm shop-dev-api:replaced',
+    'docker image rm shop-dev-worker:latest',
+    'docker image rm shop-dev-worker:previous',
+    'docker image rm shop-dev-worker:1.3.0',
+    'docker image rm shop:1234567',
+    'docker tag shop-dev-api:latest shop-dev-api:1.4.0',
+    'docker tag shop-dev-migrate:latest shop-dev-migrate:1.4.0',
+    'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
+  ])
+  const [services] = callsMatching(runner, / config --services$/)
+  assert.match(services.line, / --profile migrate config --services$/)
+  assert.equal(services.options.env.DEPLOYED_VERSION, '1.4.0')
+  assert.equal(callsMatching(runner, /^docker ps --all --quiet$/).length, 1)
+})
+
+test('an image of a gone service that a container still uses keeps all its tags and gains no version tag', async () => {
+  const { runner, done } = devDeploy(images({ listed: goneServiceImages, inUse: ['sha256:new', 'sha256:worker-old'] }), healthy, '1.4.0')
+  await done
+  const changes = imageChanges(runner)
+  assert.deepEqual(changes.filter((line) => line.includes('worker')), [])
+  assert.ok(changes.includes('docker image rm shop:1234567'))
+  assert.ok(changes.includes('docker tag shop-dev-api:latest shop-dev-api:1.4.0'))
+})
+
+test('when the Compose services cannot be listed, no image of a service is removed and the deploy still succeeds', async () => {
+  for (const response of [{ code: 1, stderr: 'no such file' }, { stdout: '\n' }]) {
+    const { runner, done } = devDeploy((call) => (call.line.endsWith(' config --services') ? response : images({ listed: goneServiceImages })(call)), healthy, '1.4.0')
+    await done
+    assert.deepEqual(imageChanges(runner), [
+      'docker tag sha256:old shop-dev-api:replaced',
+      'docker tag shop-dev-api:replaced shop-dev-api:previous',
+      'docker image rm shop-dev-api:replaced',
+    ])
+  }
 })
 
 test('a first deploy has no image to hold', async () => {

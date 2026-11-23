@@ -42,9 +42,9 @@ async function recordDeployment(runner, app, settings, { sha, ref, version }) {
   }
 }
 
-async function keepImages(runner, settings, held, version) {
+async function keepImages(runner, settings, held, version, env) {
   try {
-    const reclaimed = await keepCurrentAndPreviousImages(runner, settings, held, version)
+    const reclaimed = await keepCurrentAndPreviousImages(runner, settings, held, version, env)
     console.log(`Kept the current and previous ${settings.project} images and removed the older ones${reclaimed ? ` (${reclaimed} reclaimed)` : ''}.`)
   } catch (error) {
     console.warn(`Warning: the older ${settings.project} images were not removed (${error.message}).`)
@@ -140,7 +140,7 @@ async function runDeploy({ app, appRoot, env, options, runner, settings: setting
   if (!(await health(settings))) throw new Error(`The ${environment} API did not become healthy at ${settings.baseUrl}/api/health.`)
 
   if (uat) await recordDeployment(runner, app, settings, { sha: version.sha, ref: version.ref, version: appVersion })
-  await keepImages(runner, settings, held, appVersion)
+  await keepImages(runner, settings, held, appVersion, versionEnv)
 
   console.log(`Deployed ${environment} at ${settings.baseUrl}`)
 }
