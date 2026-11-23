@@ -700,6 +700,13 @@ test('a backup keeps the restore point from before a migration uat has and main 
   assert.deepEqual(backupsOf(state), ['20261001T000000Z-aaaaaaa', '20261003T000000Z-aaaaaaa', newest])
 })
 
+test('a backup keeps no restore point for the migrations a package ships, which main can never have', async () => {
+  const packaged = 'scheduling/20261108000000_InitialScheduling'
+  const { root, state, env } = threeBackups((day) => (day === '01' ? ['app/20261001000000_A'] : ['app/20261001000000_A', packaged]))
+  await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20261001000000_A', packaged], extra: mainHasOnlyA }), now: when })
+  assert.deepEqual(backupsOf(state), ['20261003T000000Z-aaaaaaa', newest])
+})
+
 test('a backup keeps the restore point before a migration in a schema main does not migrate at all', async () => {
   const { root, state, env } = threeBackups((day) => (day === '01' ? ['app/20261001000000_A'] : ['app/20261001000000_A', 'billing/20261005000000_N']))
   await backup({ appRoot: root, argv: [], env, runner: docker({ state, applied: ['app/20261001000000_A', 'billing/20261005000000_N'], extra: mainHasOnlyA }), now: when })

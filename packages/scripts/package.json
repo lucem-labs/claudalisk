@@ -1,6 +1,6 @@
 {
   "name": "@claudalisk/scripts",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "The scripts of a claudalisk app: the guarded environment scripts (deploy, backup, restore, refresh-dev, init, migrate, check-migrations, check-version) and the CI-run scripts (no-comments, check-e2e-locators, install-security-tools, scan-images, zap-baseline, trx-annotations, base-status, free-ports, check-forbidden-files, check-source-hygiene, check-suppressions).",
   "license": "MIT",
   "type": "module",

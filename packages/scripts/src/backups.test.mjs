@@ -11,6 +11,7 @@ import {
   isBackupName,
   parseManifest,
   listBackups,
+  migrationsToProtect,
   readBackup,
   restorePointFor,
   selectBackupsToKeep,
@@ -127,6 +128,16 @@ test('backups list newest first, and a folder without a manifest is incomplete',
 
 test('a schema none of whose migrations main has is not migrated by main, so its history is not unmerged', () => {
   assert.deepEqual(unmergedMigrations(['orders/20261020120000_A', 'legacy/20261001000000_Old'], new Set(['20261020120000_A'])), [])
+})
+
+test('pruning protects a migration main lacks, also in a schema main does not migrate, but not one a package ships', () => {
+  const applied = ['orders/20261020120000_A', 'orders/20261021120000_B', 'billing/20261022000000_N', 'scheduling/20261108000000_InitialScheduling', 'scheduling/20261108000001_AddSchedulingJobs']
+  assert.deepEqual(migrationsToProtect(applied, new Set(['20261020120000_A'])), ['billing/20261022000000_N', 'orders/20261021120000_B'])
+})
+
+test('a scheduling schema the app migrates from its own source is protected like any other', () => {
+  const applied = ['scheduling/20261001000000_Own', 'scheduling/20261002000000_Next']
+  assert.deepEqual(migrationsToProtect(applied, new Set(['20261001000000_Own'])), ['scheduling/20261002000000_Next'])
 })
 
 test('unmerged migrations are the ones uat has and main does not', () => {

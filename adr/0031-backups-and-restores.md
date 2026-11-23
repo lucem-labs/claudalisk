@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** `@claudalisk/scripts` and its tests (CLA-0084); guardrail hook (no uat restore by the agent)
-- **Issue:** #14, #86, #273
+- **Issue:** #14, #86, #273, #292
 
 ## Decision
 
@@ -16,7 +16,7 @@
   The folder is named `<UTC timestamp>-<sha7>`, with `unknown` when the commit cannot be read. A folder without a manifest is incomplete. Tools ignore it and never prune it.
 - **Every backup prunes after itself.** Once its manifest is written, a backup deletes every complete backup except:
   - itself and the one before it;
-  - the newest backup taken before any migration that uat has applied but `main` does not have yet, including one in a schema `main` does not migrate at all (CLA-0030 ignores such a schema for the deploy check, because the commit may retire it; pruning must not);
+  - the newest backup taken before any migration that uat has applied but `main` does not have yet, including one in a schema `main` does not migrate at all (CLA-0030 ignores such a schema for the deploy check, because the commit may retire it; pruning must not). A migration that a Claudalisk package ships, as the scheduler does for its `scheduling` schema, is not in the repository, so `main` can never have it and it keeps no restore point;
   - the backup a uat restore is about to restore.
 
   There is no separate prune command and no setting for the count. When `origin/main` cannot be read, the backup deletes nothing and says so.
