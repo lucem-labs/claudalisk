@@ -114,8 +114,12 @@ export function unmergedMigrations(applied, ids) {
   return [...applied].filter((entry) => !ids.has(migrationId(entry)) && migrated.has(schemaOf(entry))).sort()
 }
 
+const packageSchemas = ['scheduling']
+
 export function migrationsToProtect(applied, ids) {
-  return [...applied].filter((entry) => !ids.has(migrationId(entry))).sort()
+  const fromSource = new Set([...applied].filter((entry) => ids.has(migrationId(entry))).map(schemaOf))
+  const shippedInAPackage = (entry) => packageSchemas.includes(schemaOf(entry)) && !fromSource.has(schemaOf(entry))
+  return [...applied].filter((entry) => !ids.has(migrationId(entry)) && !shippedInAPackage(entry)).sort()
 }
 
 export function restorePointFor(newestFirst, migrations, known = () => true) {
