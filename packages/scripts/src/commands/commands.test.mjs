@@ -353,7 +353,7 @@ test('a uat deploy deletes every backup but the current and the previous one', a
   assert.deepEqual(readdirSync(join(state, 'backups')).sort(), ['20261003T000000Z-aaaaaaa', `20261029T100000Z-${sha.slice(0, 7)}`])
 })
 
-function images({ before = 'sha256:old', after = 'sha256:new', listed } = {}) {
+function images({ before = 'sha256:old', after = 'sha256:new', layersBefore = `["${before}-layer"]`, layersAfter = `["${after}-layer"]`, listed } = {}) {
   const rows = listed ?? [['shop-dev-api', 'latest', after], ['shop-dev-migrate', 'latest', 'sha256:migrate']]
   return (call) => {
     const { args } = call
@@ -362,7 +362,8 @@ function images({ before = 'sha256:old', after = 'sha256:new', listed } = {}) {
     if (args[0] === 'inspect' && args[2].includes('com.docker.compose.service')) return { stdout: `api\t${before}\ndb\tsha256:postgres\n` }
     if (args[0] === 'image' && args[1] === 'inspect') {
       if (args.includes('shop-dev-db')) return { code: 1, stderr: 'No such image' }
-      return { stdout: args.at(-1) === 'shop-dev-api:replaced' ? `${after}\n${before}\n` : `${before}\n` }
+      if (args[3].includes('.RootFS.Layers')) return { stdout: `${layersAfter}\n${layersBefore}\n` }
+      return { stdout: `${before}\n` }
     }
     if (args[0] === 'image' && args[1] === 'rm') return {}
     if (args[0] === 'image' && args[1] === 'prune') return { stdout: 'Deleted Images:\nsha256:older\n\nTotal reclaimed space: 386MB\n' }
@@ -403,6 +404,27 @@ test('a deploy that rebuilt the same image leaves the previous tag where it is',
     'docker image rm shop-dev-api:replaced',
     'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
   ])
+})
+
+test('a cached rebuild that got a new id but the same layers leaves the previous tag where it is', async () => {
+  const layers = '["sha256:base","sha256:app"]'
+  const { runner, done } = devDeploy(images({ before: 'sha256:first-id', after: 'sha256:second-id', layersBefore: layers, layersAfter: layers }))
+  await done
+  assert.deepEqual(imageChanges(runner), [
+    'docker tag sha256:first-id shop-dev-api:replaced',
+    'docker image rm shop-dev-api:replaced',
+    'docker image prune --force --filter label=com.docker.compose.project=shop-dev',
+  ])
+  assert.equal(callsMatching(runner, /^docker image inspect --format \{\{json \.RootFS\.Layers\}\} shop-dev-api shop-dev-api:replaced$/).length, 1)
+})
+
+test('a rebuild whose layers changed moves the previous tag, and so does one whose layers cannot be read', async () => {
+  const changed = devDeploy(images({ layersBefore: '["sha256:base","sha256:app-1"]', layersAfter: '["sha256:base","sha256:app-2"]' }))
+  await changed.done
+  assert.ok(imageChanges(changed.runner).includes('docker tag shop-dev-api:replaced shop-dev-api:previous'))
+  const unreadable = devDeploy(images({ layersBefore: '', layersAfter: '' }))
+  await unreadable.done
+  assert.ok(imageChanges(unreadable.runner).includes('docker tag shop-dev-api:replaced shop-dev-api:previous'))
 })
 
 test('a deploy that does not become healthy only holds the running image and removes nothing', async () => {

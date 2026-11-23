@@ -3,6 +3,7 @@ import { runChecked } from './process.mjs'
 
 const serviceAndImage = '{{index .Config.Labels "com.docker.compose.service"}}\t{{.Image}}'
 const imageId = ['image', 'inspect', '--format', '{{.Id}}']
+const imageLayers = ['image', 'inspect', '--format', '{{json .RootFS.Layers}}']
 const fixedTags = ['latest', 'previous', 'replaced']
 
 export async function requireDefaultImageNames(runner, settings, env = {}) {
@@ -43,9 +44,9 @@ export async function holdReplacedImages(runner, settings) {
 }
 
 async function keepPrevious(runner, repository) {
-  const ids = await runChecked(runner, 'docker', [...imageId, repository, `${repository}:replaced`], { what: `Reading the images of ${repository}` })
-  const [current, replaced] = ids.stdout.trim().split(/\r?\n/)
-  if (current !== replaced) {
+  const layers = await runChecked(runner, 'docker', [...imageLayers, repository, `${repository}:replaced`], { what: `Reading the layers of ${repository}` })
+  const [current, replaced] = layers.stdout.trim().split(/\r?\n/).map((line) => line.trim())
+  if (!current || current !== replaced) {
     await runChecked(runner, 'docker', ['tag', `${repository}:replaced`, `${repository}:previous`], { what: `Tagging the previous image of ${repository}` })
   }
   await runChecked(runner, 'docker', ['image', 'rm', `${repository}:replaced`], { what: `Untagging ${repository}:replaced` })
