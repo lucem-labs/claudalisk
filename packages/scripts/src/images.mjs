@@ -1,9 +1,24 @@
-import { compose } from './environment.mjs'
+import { compose, composeChecked } from './environment.mjs'
 import { runChecked } from './process.mjs'
 
 const serviceAndImage = '{{index .Config.Labels "com.docker.compose.service"}}\t{{.Image}}'
 const imageId = ['image', 'inspect', '--format', '{{.Id}}']
 const fixedTags = ['latest', 'previous', 'replaced']
+
+export async function requireDefaultImageNames(runner, settings, env = {}) {
+  const read = await composeChecked(runner, settings, ['--profile', 'migrate', 'config', '--format', 'json'], { env, what: 'Reading the Compose config' })
+  let services
+  try {
+    services = JSON.parse(read.stdout).services ?? {}
+  } catch (error) {
+    throw new Error(`Refusing to deploy ${settings.environment}: docker compose config did not print JSON (${error.message}). Nothing was changed.`)
+  }
+  const named = Object.entries(services)
+    .filter(([service, { build, image }]) => build && image && ![`${settings.project}-${service}`, `${settings.project}-${service}:latest`].includes(image))
+    .map(([service, { image }]) => `${service} (image: ${image})`)
+  if (named.length === 0) return
+  throw new Error(`Refusing to deploy ${settings.environment}: the Compose files name the image of a service they build: ${named.join(', ')}. A deploy keeps the current and the previous image under Compose's default name, ${settings.project}-<service>, so under another name nothing is kept or removed and every deploy leaves an image behind (CLA-0030). Remove the image key from each service that has a build key; the deploy tags what it built with the app's version (CLA-0099). Nothing was changed.`)
+}
 
 async function runningImages(runner, settings) {
   const listed = await compose(runner, settings, ['ps', '--all', '--quiet'])

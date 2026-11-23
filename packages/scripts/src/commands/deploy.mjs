@@ -4,7 +4,7 @@ import { assertEnvironment, composeChecked, deployedEnv, expectedProxyPort, requ
 import { environmentCommand } from '../environment-command.mjs'
 import { assertUatDeployable } from '../guards.mjs'
 import { waitForHealth } from '../http.mjs'
-import { holdReplacedImages, keepCurrentAndPreviousImages } from '../images.mjs'
+import { holdReplacedImages, keepCurrentAndPreviousImages, requireDefaultImageNames } from '../images.mjs'
 import { ensureInitialised } from '../init.mjs'
 import { checkUatMigrations, fetchMain, readApprovedEdits, readMainMigrations, recordUatFingerprints, sourceMigrations } from '../migration-checks.mjs'
 import { migrate, takeBackup } from '../operations.mjs'
@@ -92,6 +92,7 @@ async function runDeploy({ app, appRoot, env, options, runner, settings: setting
   console.log(`Deploying ${environment}${appVersion ? ` ${appVersion}` : ''} from ${version.ref} (${version.sha.slice(0, 7)}${version.dirty ? ', with uncommitted changes' : ''}) using ${settings.envFile}.`)
 
   const versionEnv = deployedEnv(deployed)
+  await requireDefaultImageNames(runner, settings, versionEnv)
   let held = []
   const build = async () => {
     held = await holdReplacedImages(runner, settings)

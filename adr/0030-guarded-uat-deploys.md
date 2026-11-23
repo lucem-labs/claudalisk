@@ -4,7 +4,7 @@
 - **Date:** 2026-10-25
 - **Area:** environments
 - **Enforced by:** the deploy script of `@claudalisk/scripts` and its guards (CLA-0084); guardrail hook (no uat Compose commands, restores or SQL by hand)
-- **Issue:** #64, #66, #273, #276
+- **Issue:** #64, #66, #273, #276, #278
 
 ## Context
 
@@ -30,9 +30,9 @@ Rejected: CD that deploys uat from a workflow on a deploy runner, a self-hosted 
   6. Start the built image without rebuilding it, and check health.
   7. Record a GitHub deployment for `uat`, with the app's version (CLA-0099).
   8. Remove the older images.
-- **A deploy keeps two sets of images per environment,** the current and the previous one, on dev as on uat. After the health check passes, the image each service ran becomes `<project>-<service>:previous`, and the untagged images with the environment's Compose project label are removed. It never removes a volume or another project's image, and a failure here is a warning, not a failed deploy. A deploy that fails removes nothing.
-- **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit lacks a migration that uat already applied, as when a pull request was abandoned or replaced on uat, the deploy refuses and changes nothing. It names the newest backup that holds only migrations the commit knows, and prints the owner's restore command (CLA-0031). The deploy never restores uat. Only schemas the commit migrates count, so a retired schema is not missing.
-- **An empty database next to complete backups is not a first deploy.** It is the wrong volume or a lost one, and migrating it would leave a healthy-looking empty uat. The deploy refuses, changes nothing, and names uat's volume, the newest backup and the owner's restore command (CLA-0031).
+- **A deploy keeps two sets of images per environment,** the current and the previous, on dev and uat. Built images keep Compose's default name, `<project>-<service>`. A deploy refuses, with nothing changed, a Compose file that names one otherwise, because a per-commit tag has no `latest` to compare. After the health check passes, the image each service ran becomes `:previous`, and the project's untagged images are removed. It never removes a volume or another project's image. A failure here is only a warning, and a failed deploy removes nothing.
+- **Migrations from other pull requests.** An open pull request's migrations reach uat before it merges. If the commit lacks a migration that uat already applied, the deploy refuses and changes nothing. It names the newest backup that holds only migrations the commit knows, and prints the owner's restore command (CLA-0031). The deploy never restores uat. Only schemas the commit migrates count, so a retired schema is not missing.
+- **An empty database next to complete backups is not a first deploy.** It is the wrong volume or a lost one. The deploy refuses, changes nothing, and names uat's volume, the newest backup and the owner's restore command (CLA-0031).
 - **A failed migration stops the deploy.** The old version keeps running, and the script prints the pre-deploy backup for the owner to decide on.
 
 ## Consequences

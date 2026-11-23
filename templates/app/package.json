@@ -3,6 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "devDependencies": {
-    "@claudalisk/scripts": "0.2.1"
+    "@claudalisk/scripts": "0.3.0"
   }
 }
