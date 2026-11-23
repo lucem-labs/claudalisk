@@ -66,9 +66,9 @@ async function projectTags(runner, project) {
   return repositories
 }
 
-async function keepVersionTags(runner, project, version) {
+async function keepVersionTags(runner, project, version, current) {
   for (const [repository, tags] of await projectTags(runner, project)) {
-    if (!tags.has('latest')) continue
+    if (!tags.has('latest') || !current.has(repository)) continue
     if (version) await runChecked(runner, 'docker', ['tag', `${repository}:latest`, `${repository}:${version}`], { what: `Tagging ${repository} with its version` })
     for (const [tag, id] of tags) {
       if (fixedTags.includes(tag) || tag === version || id === tags.get('previous')) continue
@@ -77,9 +77,36 @@ async function keepVersionTags(runner, project, version) {
   }
 }
 
-export async function keepCurrentAndPreviousImages(runner, settings, held, version = null) {
+async function imagesInUse(runner) {
+  const listed = await runChecked(runner, 'docker', ['ps', '--all', '--quiet'], { what: 'Listing the containers' })
+  const containers = listed.stdout.split(/\r?\n/).filter(Boolean)
+  if (containers.length === 0) return new Set()
+  const inspected = await runChecked(runner, 'docker', ['inspect', '--format', '{{.Image}}', ...containers], { what: 'Reading the images the containers use' })
+  return new Set(inspected.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean))
+}
+
+async function currentRepositories(runner, settings, env) {
+  const listed = await composeChecked(runner, settings, ['--profile', 'migrate', 'config', '--services'], { env, what: 'Listing the Compose services' })
+  const services = listed.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  if (services.length === 0) throw new Error('docker compose config listed no services')
+  return new Set(services.map((service) => `${settings.project}-${service}`))
+}
+
+async function removeImagesOfGoneServices(runner, settings, current) {
+  const gone = [...(await projectTags(runner, settings.project))].filter(([repository]) => !current.has(repository))
+  if (gone.length === 0) return
+  const used = await imagesInUse(runner)
+  for (const [repository, tags] of gone) {
+    if ([...tags.values()].some((id) => used.has(id))) continue
+    for (const tag of tags.keys()) await runner('docker', ['image', 'rm', `${repository}:${tag}`])
+  }
+}
+
+export async function keepCurrentAndPreviousImages(runner, settings, held, version = null, env = {}) {
   for (const repository of held) await keepPrevious(runner, repository)
-  await keepVersionTags(runner, settings.project, version)
+  const current = await currentRepositories(runner, settings, env)
+  await removeImagesOfGoneServices(runner, settings, current)
+  await keepVersionTags(runner, settings.project, version, current)
   const pruned = await runChecked(runner, 'docker', ['image', 'prune', '--force', '--filter', `label=com.docker.compose.project=${settings.project}`], {
     what: `Removing the older ${settings.project} images`,
   })
