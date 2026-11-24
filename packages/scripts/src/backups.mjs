@@ -109,15 +109,25 @@ export function schemaOf(entry) {
   return entry.includes('/') ? entry.slice(0, entry.indexOf('/')) : ''
 }
 
+const packageSchemas = ['scheduling']
+
+function schemasFromSource(applied, ids) {
+  const schemasOf = new Map()
+  for (const entry of applied) {
+    const id = migrationId(entry)
+    schemasOf.set(id, (schemasOf.get(id) ?? new Set()).add(schemaOf(entry)))
+  }
+  const tellsItsSchema = (entry) => !packageSchemas.includes(schemaOf(entry)) || schemasOf.get(migrationId(entry)).size === 1
+  return new Set([...applied].filter((entry) => ids.has(migrationId(entry)) && tellsItsSchema(entry)).map(schemaOf))
+}
+
 export function unmergedMigrations(applied, ids) {
-  const migrated = new Set([...applied].filter((entry) => ids.has(migrationId(entry))).map(schemaOf))
+  const migrated = schemasFromSource(applied, ids)
   return [...applied].filter((entry) => !ids.has(migrationId(entry)) && migrated.has(schemaOf(entry))).sort()
 }
 
-const packageSchemas = ['scheduling']
-
 export function migrationsToProtect(applied, ids) {
-  const fromSource = new Set([...applied].filter((entry) => ids.has(migrationId(entry))).map(schemaOf))
+  const fromSource = schemasFromSource(applied, ids)
   const shippedInAPackage = (entry) => packageSchemas.includes(schemaOf(entry)) && !fromSource.has(schemaOf(entry))
   return [...applied].filter((entry) => !ids.has(migrationId(entry)) && !shippedInAPackage(entry)).sort()
 }

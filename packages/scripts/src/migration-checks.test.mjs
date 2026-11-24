@@ -154,6 +154,19 @@ test('fetching main warns when the fetch fails, and stays quiet when it works', 
   assert.match(warnings[0], /origin\/main may be stale/)
 })
 
+test('migrations a package ships are not missing when the app keeps an old migration with the id of the first of them', () => {
+  const source = new Map([['20261026000000_InitialScheduling', 'h1'], ['20261124090000_DropOldSchedules', 'h2']])
+  const applied = [
+    'scheduling_old/20261026000000_InitialScheduling',
+    'scheduling_old/20261124090000_DropOldSchedules',
+    'scheduling/20261026000000_InitialScheduling',
+    'scheduling/20261108000001_AddSchedulingJobs',
+    'scheduling/20261108000002_RenameLastFiredAt',
+  ]
+  const recorded = { '20261026000000_InitialScheduling': 'h1', '20261124090000_DropOldSchedules': 'h2' }
+  assert.deepEqual(checkMigrations({ applied, source, recorded }), { changed: [], missing: [], unrecorded: [] })
+})
+
 test('a migration absent from both main and the branch is not missing', () => {
   const base = new Map([['20260101000000_A', 'h1']])
   assert.deepEqual(checkAgainstMain({ main: new Map(), base, source: new Map() }), { changed: [], missing: [] })
