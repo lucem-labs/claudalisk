@@ -27,6 +27,7 @@ dotnet ef migrations add <Name> --project <Module>.Persistence --startup-project
 
 - Default rows are written in idempotent migrations (`INSERT ... ON CONFLICT DO NOTHING`), never at startup (CLA-0009).
 - A cleanup or backfill is a raw-SQL migration on the module's own schema, never the DbContext. It is tried on dev with uat data first (CLA-0012).
+- A module's `jobs` table (CLA-0058) comes from the jobs library, never hand-written DDL: one migration runs `migrationBuilder.Sql(JobsTable.CreateSql(schema))` and then `migrationBuilder.Sql(JobsTable.RenameColumnsSql(schema))`. `CreateSql` alone leaves the columns under their old names; the rename gives them the CLA-0051 names `not_before_timestamp`, `created_timestamp`, `started_timestamp`, `heartbeat_timestamp`, `finished_timestamp` and `is_cancel_requested`.
 - Review the generated file and the snapshot diff for changes you did not intend.
 
 ### Writing a data fix
