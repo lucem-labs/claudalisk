@@ -42,7 +42,7 @@ describe('generateBackend', () => {
     const props = readFileSync(join(generated(), 'backend', 'Directory.Packages.props'), 'utf8')
     const versions = [...props.matchAll(/Include="Claudalisk\.[^"]+" Version="([^"]+)"/g)].map((match) => match[1])
     assert.ok(versions.length > 0)
-    assert.deepEqual([...new Set(versions)], ['0.1.0-alpha.4'])
+    assert.deepEqual([...new Set(versions)], ['0.1.0-alpha.5'])
   })
 
   it('names the baseline migration from the clock', () => {
