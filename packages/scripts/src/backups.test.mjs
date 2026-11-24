@@ -140,6 +140,33 @@ test('a scheduling schema the app migrates from its own source is protected like
   assert.deepEqual(migrationsToProtect(applied, new Set(['20261001000000_Own'])), ['scheduling/20261002000000_Next'])
 })
 
+const retiredScheduler = [
+  'scheduling_old/20261026000000_InitialScheduling',
+  'scheduling_old/20261124090000_DropOldSchedules',
+  'scheduling/20261026000000_InitialScheduling',
+  'scheduling/20261108000001_AddSchedulingJobs',
+  'scheduling/20261108000002_RenameLastFiredAt',
+]
+const retiredSchedulerSource = new Set(['20261026000000_InitialScheduling', '20261124090000_DropOldSchedules'])
+
+test('an id the scheduling schema shares with another schema does not make the package migrations unmerged', () => {
+  assert.deepEqual(unmergedMigrations(retiredScheduler, retiredSchedulerSource), [])
+  assert.deepEqual(migrationsToProtect(retiredScheduler, retiredSchedulerSource), [])
+})
+
+test('a migration the other schema of a shared id lacks is still unmerged and protected', () => {
+  const applied = [...retiredScheduler, 'scheduling_old/20261125000000_Abandoned']
+  assert.deepEqual(unmergedMigrations(applied, retiredSchedulerSource), ['scheduling_old/20261125000000_Abandoned'])
+  assert.deepEqual(migrationsToProtect(applied, retiredSchedulerSource), ['scheduling_old/20261125000000_Abandoned'])
+})
+
+test('a scheduling schema the app migrates from its own source is checked even when another schema shares one of its ids', () => {
+  const applied = ['scheduling/20261001000000_Own', 'scheduling/20261002000000_Shared', 'scheduling/20261003000000_Next', 'orders/20261002000000_Shared']
+  const source = new Set(['20261001000000_Own', '20261002000000_Shared'])
+  assert.deepEqual(unmergedMigrations(applied, source), ['scheduling/20261003000000_Next'])
+  assert.deepEqual(migrationsToProtect(applied, source), ['scheduling/20261003000000_Next'])
+})
+
 test('unmerged migrations are the ones uat has and main does not', () => {
   const unmerged = unmergedMigrations(['orders/20261020120000_A', 'orders/20261021120000_B', 'public/20261001000000_Old'], new Set(['20261020120000_A', '20261001000000_Old']))
   assert.deepEqual(unmerged, ['orders/20261021120000_B'])
