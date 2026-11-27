@@ -114,26 +114,46 @@ async function overNetwork(url, operation) {
   }
 }
 
-async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, request) {
+const REFUSED_WITH_TOKEN = [401, 403, 429];
+
+function rateLimitFailure(url, response, whose) {
+  if (![403, 429].includes(response.status) || response.headers?.get('x-ratelimit-remaining') !== '0') return null;
+  const limit = response.headers.get('x-ratelimit-limit');
+  const reset = Number(response.headers.get('x-ratelimit-reset'));
+  const resetsAt = Number.isFinite(reset) && reset > 0 ? new Date(reset * 1000).toISOString() : 'an unknown time';
+  return new Error(`Downloading ${url} failed: the GitHub API rate limit ${whose}${limit ? ` (${limit} requests)` : ''} is used up and resets at ${resetsAt}.`);
+}
+
+async function requestReleaseAsset(url, [, owner, repo, tag, assetName], token, request, log) {
   const repository = `https://api.github.com/repos/${owner}/${repo}`;
   const lookUpRelease = (credentials) => request(`${repository}/releases/tags/${tag}`, { headers: { ...credentials, accept: 'application/vnd.github+json' } });
+  const messageOf = async (response) => (await overNetwork(url, () => response.text())).slice(0, 300);
   let credentials = { authorization: `Bearer ${token}` };
   let release = await lookUpRelease(credentials);
-  if (release.status === 401 || release.status === 403) {
+  if (REFUSED_WITH_TOKEN.includes(release.status)) {
+    const message = await messageOf(release);
+    log(`Looking up the release for ${url} with the token returned HTTP ${release.status}: ${message}`);
+    const limited = rateLimitFailure(url, release, 'of the token');
+    if (limited) throw limited;
+    if (release.status === 429) throw new Error(`Downloading ${url} failed: looking up the release returned HTTP 429: ${message}`);
     credentials = {};
     release = await lookUpRelease(credentials);
   }
-  if (!release.ok) throw httpFailure(release.status, `Downloading ${url} failed: looking up the release returned HTTP ${release.status}: ${(await overNetwork(url, () => release.text())).slice(0, 300)}`);
+  if (!release.ok) {
+    const limited = rateLimitFailure(url, release, 'for requests without a token');
+    if (limited) throw limited;
+    throw httpFailure(release.status, `Downloading ${url} failed: looking up the release returned HTTP ${release.status}: ${await messageOf(release)}`);
+  }
   const { assets } = await overNetwork(url, () => release.json());
   const asset = assets.find(({ name }) => name === assetName);
   if (!asset) throw new Error(`Downloading ${url} failed: the release has no asset named ${assetName}.`);
   return request(`${repository}/releases/assets/${asset.id}`, { headers: { ...credentials, accept: 'application/octet-stream' } });
 }
 
-async function downloadOnce(url, token, request) {
+async function downloadOnce(url, token, request, log) {
   const send = (...args) => overNetwork(url, () => request(...args));
   const releaseAsset = token ? url.match(RELEASE_ASSET_URL) : null;
-  const response = releaseAsset ? await requestReleaseAsset(url, releaseAsset, token, send) : await send(url);
+  const response = releaseAsset ? await requestReleaseAsset(url, releaseAsset, token, send, log) : await send(url);
   if (!response.ok) throw httpFailure(response.status, `Downloading ${url} failed (HTTP ${response.status}).`);
   return Buffer.from(await overNetwork(url, () => response.arrayBuffer()));
 }
@@ -141,14 +161,14 @@ async function downloadOnce(url, token, request) {
 export async function download(url, { token, request = fetch, wait = sleep, log = console.log } = {}) {
   for (const delay of RETRY_DELAYS_MS) {
     try {
-      return await downloadOnce(url, token, request);
+      return await downloadOnce(url, token, request, log);
     } catch (error) {
       if (!(error instanceof TransientDownloadError)) throw error;
       log(`${error.message} Retrying in ${delay / 1000} seconds.`);
       await wait(delay);
     }
   }
-  return downloadOnce(url, token, request);
+  return downloadOnce(url, token, request, log);
 }
 
 function untar(archive, folder) {
