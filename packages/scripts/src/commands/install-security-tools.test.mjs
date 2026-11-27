@@ -150,13 +150,78 @@ test('download repeats the API requests without credentials when GitHub refuses 
     if (url.endsWith('/releases/tags/v1.2.3')) return new Response(JSON.stringify({ assets: [{ id: 77, name: 'scanner.tar.gz' }] }));
     return new Response('asset bytes');
   };
-  const content = await download(RELEASE_URL, { token: 'test-token', request });
+  const logs = [];
+  const content = await download(RELEASE_URL, { token: 'test-token', request, log: (line) => logs.push(line) });
   assert.equal(content.toString(), 'asset bytes');
   assert.deepEqual(calls, [
     { url: 'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3', authorization: 'Bearer test-token' },
     { url: 'https://api.github.com/repos/acme/scanner/releases/tags/v1.2.3', authorization: undefined },
     { url: 'https://api.github.com/repos/acme/scanner/releases/assets/77', authorization: undefined },
   ]);
+  assert.deepEqual(logs, [`Looking up the release for ${RELEASE_URL} with the token returned HTTP 403: {"message":"IP allow list"}`]);
+});
+
+const RESET_SECONDS = 1_800_000_000;
+const RESET_TIME = new Date(RESET_SECONDS * 1000).toISOString();
+const usedUp = (limit) => ({ 'x-ratelimit-remaining': '0', 'x-ratelimit-limit': String(limit), 'x-ratelimit-reset': String(RESET_SECONDS) });
+
+test('download does not retry without the token when the token is rate limited, and names the limit and its reset time', async () => {
+  for (const code of [403, 429]) {
+    const calls = [];
+    const request = async (url, options) => {
+      calls.push(options.headers.authorization);
+      return new Response('{"message":"API rate limit exceeded for installation"}', { status: code, headers: usedUp(1000) });
+    };
+    const pause = withoutWaiting();
+    await assert.rejects(
+      download(RELEASE_URL, { token: 'test-token', request, ...pause }),
+      (error) => error.message === `Downloading ${RELEASE_URL} failed: the GitHub API rate limit of the token (1000 requests) is used up and resets at ${RESET_TIME}.`,
+      String(code),
+    );
+    assert.deepEqual(calls, ['Bearer test-token'], String(code));
+    assert.deepEqual(pause.delays, [], String(code));
+    assert.deepEqual(pause.logs, [`Looking up the release for ${RELEASE_URL} with the token returned HTTP ${code}: {"message":"API rate limit exceeded for installation"}`], String(code));
+  }
+});
+
+test('download names the limit and its reset time when the lookup without the token is rate limited', async () => {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push(options.headers.authorization);
+    if (options.headers.authorization) return new Response('{"message":"Bad credentials"}', { status: 401 });
+    return new Response('{"message":"API rate limit exceeded for 203.0.113.7"}', { status: 403, headers: usedUp(60) });
+  };
+  const pause = withoutWaiting();
+  await assert.rejects(
+    download(RELEASE_URL, { token: 'test-token', request, ...pause }),
+    (error) => error.message === `Downloading ${RELEASE_URL} failed: the GitHub API rate limit for requests without a token (60 requests) is used up and resets at ${RESET_TIME}.`,
+  );
+  assert.deepEqual(calls, ['Bearer test-token', undefined]);
+  assert.deepEqual(pause.delays, []);
+  assert.deepEqual(pause.logs, [`Looking up the release for ${RELEASE_URL} with the token returned HTTP 401: {"message":"Bad credentials"}`]);
+});
+
+test('download fails on a 429 that names no used-up limit, with its message and without another request', async () => {
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push(options.headers.authorization);
+    return new Response('{"message":"You have exceeded a secondary rate limit"}', { status: 429 });
+  };
+  const pause = withoutWaiting();
+  await assert.rejects(
+    download(RELEASE_URL, { token: 'test-token', request, ...pause }),
+    (error) => error.message === `Downloading ${RELEASE_URL} failed: looking up the release returned HTTP 429: {"message":"You have exceeded a secondary rate limit"}`,
+  );
+  assert.deepEqual(calls, ['Bearer test-token']);
+  assert.deepEqual(pause.delays, []);
+});
+
+test('download says the reset time is unknown when a used-up limit carries none', async () => {
+  const request = async () => new Response('{}', { status: 403, headers: { 'x-ratelimit-remaining': '0' } });
+  await assert.rejects(
+    download(RELEASE_URL, { token: 'test-token', request, ...withoutWaiting() }),
+    (error) => error.message === `Downloading ${RELEASE_URL} failed: the GitHub API rate limit of the token is used up and resets at an unknown time.`,
+  );
 });
 
 test('download without a token uses the public release URL and sends no credentials', async () => {
